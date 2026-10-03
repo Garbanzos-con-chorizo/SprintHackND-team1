@@ -1,0 +1,82 @@
+{
+  "scenario": "day_ebay_missing",
+  "business_date": "2026-10-03",
+  "definitions": {
+    "business_date": "order (or refund) timestamp converted to America/New_York, date part",
+    "revenue_cents": "item subtotal of sales minus refunds; excludes shipping, tax and fees",
+    "fees_cents": "marketplace fees on sales, reported separately (refunds carry no fee in this data)",
+    "orders": "distinct order ids among sales",
+    "customers": "distinct buyer usernames; Amazon has no buyer id so it counts orders",
+    "enterprise.customers": "sum of per-marketplace counts (buyers can't be matched across marketplaces)",
+    "status": "ok = rows for that day, stale = file present but no rows that day, missing = no file"
+  },
+  "days": {
+    "2026-10-02": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 122800,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 122800,
+        "orders": 43,
+        "customers": 41,
+        "customer_basis": "buyer"
+      },
+      "ebay": {
+        "status": "missing"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 19438,
+        "refunds_cents": -2949,
+        "fees_cents": 5793,
+        "revenue_cents": 16489,
+        "orders": 12,
+        "customers": 12,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 142238,
+        "refunds_cents": -2949,
+        "revenue_cents": 139289,
+        "fees_cents": 5793,
+        "orders": 55,
+        "customers": 53
+      }
+    },
+    "2026-10-03": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 232400,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 232400,
+        "orders": 68,
+        "customers": 62,
+        "customer_basis": "buyer"
+      },
+      "ebay": {
+        "status": "missing"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 34232,
+        "refunds_cents": 0,
+        "fees_cents": 9452,
+        "revenue_cents": 34232,
+        "orders": 17,
+        "customers": 17,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 266632,
+        "refunds_cents": 0,
+        "revenue_cents": 266632,
+        "fees_cents": 9452,
+        "orders": 85,
+        "customers": 79
+      }
+    }
+  },
+  "mess": "No eBay file. eBay must show as missing (no data), never $0."
+}

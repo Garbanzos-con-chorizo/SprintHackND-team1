@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monthly dashboard</title>
+<!-- Proof of concept (phase 2, O5). Loads <YYYY-MM>.json written by `python -m reports.monthly`.
+     fetch() is blocked on file:// pages, so serve this folder:
+       python -m http.server 8000 -d reports/monthly   ->  http://localhost:8000/?month=2026-09 -->
+<style>
+:root { --bg:#f6f7f9; --card:#fff; --ink:#1d2433; --muted:#6b7280; --line:#e5e7eb;
+  --warn-bg:#fff6e0; --warn-ink:#7a4b00; --nodata:#f3f4f6; --accent:#0053a0; }
+@media (prefers-color-scheme: dark) { :root { --bg:#111418; --card:#1a1f26; --ink:#e6e8eb;
+  --muted:#9aa3ae; --line:#2b323c; --warn-bg:#3a2d10; --warn-ink:#fcd88a; --nodata:#222830;
+  --accent:#6aa8ff; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink);
+  font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+main { max-width:1100px; margin:0 auto; padding:24px 16px 48px; }
+header { display:flex; flex-wrap:wrap; gap:12px; align-items:end; justify-content:space-between; }
+h1 { margin:0; font-size:22px; }
+header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+select { font:inherit; padding:6px 10px; border-radius:8px; border:1px solid var(--line);
+  background:var(--card); color:var(--ink); }
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin:20px 0; }
+.kpi, .card, #chart { background:var(--card); border:1px solid var(--line); border-radius:10px; }
+.kpi { padding:14px 16px; }
+.kpi .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+.kpi .value { font-size:24px; font-weight:650; font-variant-numeric:tabular-nums; }
+.kpi .sub { font-size:13px; color:var(--muted); }
+#chart { min-height:220px; display:grid; place-items:center; color:var(--muted); margin-bottom:16px;
+  border-style:dashed; }
+.banner { background:var(--warn-bg); color:var(--warn-ink); border-radius:10px; padding:10px 14px;
+  margin:0 0 16px; font-size:14px; }
+.card { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; min-width:820px; }
+th, td { padding:8px 12px; text-align:right; border-bottom:1px solid var(--line);
+  font-variant-numeric:tabular-nums; white-space:nowrap; }
+th { font-size:12px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.04em;
+  position:sticky; top:0; background:var(--card); }
+th:first-child, td:first-child { text-align:left; }
+td.nodata { background:var(--nodata); color:var(--muted); font-style:italic; }
+tr.partial td:first-child::after { content:" *"; color:var(--warn-ink); }
+tfoot td { font-weight:650; border-top:2px solid var(--ink); border-bottom:none; }
+.foot { margin-top:16px; font-size:13px; color:var(--muted); }
+#error { display:none; }
+code { font-size:13px; }
+a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1 id="title">Monthly dashboard</h1>
+      <p id="subtitle">Goodwill Michiana e-commerce</p>
+    </div>
+    <label>Month <select id="month"></select></label>
+  </header>
+
+  <div id="error" class="banner"></div>
+  <div class="kpis" id="kpis"></div>
+  <div id="chart" aria-label="Daily revenue chart">Daily revenue chart goes here (phase 2)</div>
+  <div id="partial-note" class="banner" hidden></div>
+  <div class="card"><table id="table"></table></div>
+  <div class="foot" id="notes"></div>
+</main>
+
+<script>
+const MARKETS = [["shopgoodwill", "ShopGoodwill"], ["amazon", "Amazon"], ["ebay", "eBay"], ["other", "Other"]];
+const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const int = new Intl.NumberFormat("en-US");
+const money = (c) => (c == null ? "" : usd.format(c / 100));
+const count = (n) => (n == null ? "" : int.format(n));
+
+function el(tag, attrs = {}, text) {
+  const node = document.createElement(tag);
+  Object.entries(attrs).forEach(([k, v]) => (k === "class" ? (node.className = v) : node.setAttribute(k, v)));
+  if (text != null) node.textContent = text;  // textContent only: data never becomes markup
+  return node;
+}
+
+function row(cells, cls) {
+  const tr = el("tr", cls ? { class: cls } : {});
+  cells.forEach((c) => tr.append(typeof c === "string" ? el("td", {}, c) : c));
+  return tr;
+}
+
+async function getJSON(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+  return res.json();
+}
+
+function showError(msg) {
+  const box = document.getElementById("error");
+  box.textContent = msg;
+  box.style.display = "block";
+}
+
+function renderKpis(data) {
+  const t = data.totals.enterprise;
+  const kpis = document.getElementById("kpis");
+  kpis.replaceChildren();
+  [
+    ["Revenue", money(t.revenue_cents), "net of refunds"],
+    ["Orders", count(t.orders), `${t.days_with_data} of ${data.days_expected} days reported`],
+    ["Refunds", money(t.refunds_cents), "already subtracted from revenue"],
+    ["Marketplace fees", money(t.fees_cents), "not deducted from revenue"],
+  ].forEach(([label, value, sub]) => {
+    const card = el("div", { class: "kpi" });
+    card.append(el("div", { class: "label" }, label), el("div", { class: "value" }, value), el("div", { class: "sub" }, sub));
+    kpis.append(card);
+  });
+}
+
+function renderTable(data) {
+  const table = document.getElementById("table");
+  table.replaceChildren();
+  const head = el("tr");
+  ["Date", ...MARKETS.map(([, label]) => label), "Total revenue", "Orders", "Refunds", "Fees"]
+    .forEach((h) => head.append(el("th", {}, h)));
+  const thead = el("thead");
+  thead.append(head);
+  table.append(thead);
+
+  const body = el("tbody");
+  const dayLabel = (iso) => new Date(iso + "T12:00:00")
+    .toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  const rows = [...data.days, ...data.days_missing.map((iso) => ({ date: iso, missing: true }))]
+    .sort((a, b) => a.date.localeCompare(b.date));
+  rows.forEach((d) => {
+    if (d.missing) {
+      const td = el("td", { class: "nodata", colspan: MARKETS.length + 4 }, "No pulse for this day");
+      body.append(row([dayLabel(d.date), td]));
+      return;
+    }
+    const cells = [dayLabel(d.date)];
+    MARKETS.forEach(([key]) => {
+      const m = d.marketplaces[key];
+      cells.push(m.status === "ok" ? money(m.revenue_cents)
+        : el("td", { class: "nodata", title: m.status }, m.status === "not_configured" ? "n/a" : "No data"));
+    });
+    const e = d.enterprise;
+    cells.push(money(e.revenue_cents), count(e.orders), money(e.refunds_cents), money(e.fees_cents));
+    body.append(row(cells, e.complete ? "" : "partial"));
+  });
+  table.append(body);
+
+  const t = data.totals;
+  const foot = el("tfoot");
+  foot.append(row(["Month", ...MARKETS.map(([k]) => (t[k].revenue_cents == null ? "-" : money(t[k].revenue_cents))),
+    money(t.enterprise.revenue_cents), count(t.enterprise.orders), money(t.enterprise.refunds_cents),
+    money(t.enterprise.fees_cents)]));
+  table.append(foot);
+
+  const partial = data.days.filter((d) => !d.enterprise.complete).length;
+  const note = document.getElementById("partial-note");
+  note.hidden = !partial;
+  note.textContent = partial ? `* ${partial} day(s) are missing at least one marketplace file; their totals are partial.` : "";
+}
+
+async function load(month) {
+  try {
+    const data = await getJSON(`${month}.json`);
+    const first = new Date(month + "-01T12:00:00");
+    document.getElementById("title").textContent =
+      "Monthly dashboard: " + first.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    document.getElementById("subtitle").textContent =
+      `Goodwill Michiana e-commerce · generated ${data.generated_at}`;
+    renderKpis(data);
+    renderTable(data);
+    document.getElementById("notes").textContent = data.notes.join(" ");
+    history.replaceState(null, "", `?month=${month}`);
+  } catch (err) {
+    showError(`Could not load ${month}.json (${err.message}). Run: python -m reports.monthly --month ${month}`);
+  }
+}
+
+async function init() {
+  if (location.protocol === "file:") {
+    showError("This page loads its data with fetch(), which browsers block for files opened from disk. " +
+      "Serve it instead: python -m http.server 8000 -d reports/monthly, then open http://localhost:8000/");
+    return;
+  }
+  let months = [];
+  try {
+    months = (await getJSON("months.json")).months;
+  } catch (err) {
+    showError("No months yet. Run: python -m reports.monthly --month YYYY-MM");
+    return;
+  }
+  const select = document.getElementById("month");
+  months.forEach((m) => select.append(el("option", { value: m }, m)));
+  const wanted = new URLSearchParams(location.search).get("month");
+  select.value = months.includes(wanted) ? wanted : months[months.length - 1];
+  select.addEventListener("change", () => load(select.value));
+  load(select.value);
+}
+
+init();
+</script>
+</body>
+</html>
