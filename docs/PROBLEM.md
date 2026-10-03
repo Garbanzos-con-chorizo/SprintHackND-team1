@@ -2,6 +2,8 @@
 
 Partner: **Goodwill Michiana**. Track: **Reporting**. Contact: Amanda Baumer (office hours 3:00-5:00 PM, room 109B). Full analysis in `docs/roadmap.md`.
 
+**Read this too:** `docs/goodwill-project-context.md` is the full extraction of the event deck (all 95 slides, speaker notes, screenshots), the rubric and the problem sheet: Goodwill's current manual process, the nightly report table, the KPI lists, the month-end close, judging, schedule and office hours. Paragraphs marked **[Interpretation]** in it are a reading, not something Goodwill said.
+
 ## Statement
 **Brief:** Reporting. Automate the recurring operations reports that staff put together by hand today.
 
@@ -15,7 +17,7 @@ Open the demo with this in the partner's own words: "From manual reporting to ma
 - Submission format (innovationsprintlab.com/go/submit): Google Slides link with recorded demo video embedded (anyone with the link), GitHub repo link, built-versus-used text, sources cited (open source, tooling, models, APIs, templates).
 - Demo: slides plus recorded video, then Q&A, hard cut at time limit.
 - Zero-point flags: eligibility (build looks pre-weekend; all code must be written this weekend), overclaim (checked against built-vs-used and repo; moves Working Evidence to level 1), and "would you spend 30 minutes with this team next week?"
-- Known partner limits: none confirmed yet. Questions for Amanda are in `docs/roadmap.md` (BC version and import method, sample exports, top spreadsheet rules, staff skills, IT policy).
+- Known partner limits: the rubric names one for Goodwill, **"tools they already pay for"** (criterion 3). Nothing else confirmed yet. Questions for Amanda are in `docs/roadmap.md` (BC version and import method, sample exports, top spreadsheet rules, staff skills, IT policy).
 
 ## Judging criteria
 Six criteria, 100 points, each scored level 0-4 (level 2 = solid team):
