@@ -21,6 +21,9 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 
 - Pluggable ingestion (branch `victor/ingest-framework`): `engine/ingest/` with `DataIngestAdapter.fetch_and_normalize()`, `EmailAttachmentAdapter` (CSV/TSV/TXT/XLSX from the inbox folder, which is also where manual exports and ERP file drops land), `MockScraperAdapter` (synthetic fixture, no network), and `ingest()` which merges adapters and dedupes. `python -m engine run` now goes through it. 8 new tests, 70 in total.
 
+- Sample generator + checker (branch `victor/sample-generator`): `python -m engine.tools.make_sample --scenario clean_day|messy_day --check` writes synthetic Upright and Cash Monkey files shaped like the deck shows, an answer key computed from the generated orders, then runs the pipeline and compares. Added parsers `engine/sources/upright.py` and `cashmonkey.py` (columns partly guessed). Both scenarios match; 82 tests pass.
+- `docs/ASSUMPTIONS.md`: every assumption, why, and confidence (for the pitch).
+
 ### Assumptions (stated on purpose, change any of them and tell Victor)
 1. **Lane and paths:** the request named `src/ingest/` and `tests/test_ingest.py`. Our lane is `engine/` and new top-level dirs need a decision record, so it lives in `engine/ingest/` and `engine/tests/test_ingest.py`. Branch is `victor/ingest-framework` (team convention) not `feature/ingest-framework`.
 2. **Reuse, not rewrite:** reading and cleaning reuse the existing source parsers (ShopGoodwill, eBay, Amazon). "Normalized format" means the canonical transaction CSV in `docs/contracts/transaction.md`.

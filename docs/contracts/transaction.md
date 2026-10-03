@@ -20,7 +20,7 @@ CSV, UTF-8 (no BOM), header row, RFC 4180 quoting, `\n` line endings. One row pe
 | Column | Type | Required | Rule |
 |---|---|---|---|
 | `txn_id` | string | yes | Unique and deterministic: `<source>:<order id>:<type>`. Same input always gives the same id. |
-| `source` | enum | yes | The export it came from: `shopgoodwill`, `amazon`, `ebay`. Other sources join the enum when we have samples. |
+| `source` | enum | yes | The export it came from: `upright`, `cashmonkey`, and the older single-marketplace layouts `shopgoodwill`, `amazon`, `ebay`. Other sources join the enum when we have samples. The pulse buckets by `marketplace`, not `source`, because one Cash Monkey file carries several marketplaces. |
 | `marketplace` | enum | yes | Pulse bucket: `shopgoodwill`, `amazon`, `ebay`, `other`. Mapping from `source` is engine config (P-V1). |
 | `type` | enum | yes | `sale` or `refund`. |
 | `business_date` | date | yes | `YYYY-MM-DD`. The day the row counts toward (P-V3). Default: order date in `America/New_York`; timezone and cutoff are engine config. |
