@@ -1,0 +1,18 @@
+"""Pluggable ingestion: any adapter that returns canonical rows plugs into the same pipeline."""
+from ..dedupe import dedupe_rows
+from .base import DataIngestAdapter, NormalizedBatch
+from .email_adapter import EmailAttachmentAdapter
+from .scraper_adapter import MockScraperAdapter
+
+__all__ = ["DataIngestAdapter", "NormalizedBatch", "EmailAttachmentAdapter", "MockScraperAdapter", "ingest"]
+
+
+def ingest(adapters: list[DataIngestAdapter], business_date: str | None = None) -> NormalizedBatch:
+    """Run every adapter, merge their rows, and count a transaction that arrived twice (from the
+    same or different adapters) once. Duplicates dropped are listed in the warnings."""
+    merged = NormalizedBatch()
+    for adapter in adapters:
+        merged.extend(adapter.fetch_and_normalize(business_date))
+    merged.rows, duplicate_warnings = dedupe_rows(merged.rows)
+    merged.warnings.extend(duplicate_warnings)
+    return merged
