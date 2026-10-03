@@ -27,9 +27,9 @@ Numbers to expect (synthetic data):
 **Do:** run `python -m reports.run_nightly --scenario day_clean --open --pace 0.4`.
 
 **Say:**
-> "Every morning, staff download exports from ShopGoodwill, eBay and Amazon. Today that's three files in different formats: an Excel sheet, and two CSVs with their own headers, date formats and time zones. They drop them in one folder, and this runs."
+> "Every day the marketplace reports arrive as emailed Excel files. Amanda told us we can assume an API delivers them, so for the demo this folder stands in for that API: whatever lands here is today's mail. Three files, three formats, three time zones."
 >
-> *(point at the log)* "It checks which files arrived, cleans them, calculates, and publishes. Under a second."
+> *(point at the log)* "E-commerce closes at 9 PM Pacific, midnight Eastern, so this runs after midnight. It checks which files arrived, cleans them, puts every order on the right Eastern day, calculates, and publishes. Under a second."
 >
 > *(page opens)* "This is the nightly pulse. The first line is written for a manager who reads one sentence: revenue up 7% versus Wednesday, ShopGoodwill is the strongest channel. Below it, revenue, orders and customers for each marketplace, and the enterprise total."
 
@@ -63,9 +63,10 @@ Numbers to expect (synthetic data):
 
 ## Be honest about (say it if asked, and it's on the closing slide)
 - All data is synthetic; column layouts are modeled on public eBay and Amazon reports, and ShopGoodwill's is a guess until Amanda sends a sample.
-- `run_nightly` runs on demand; a real deployment would trigger it from Windows Task Scheduler.
-- Files are dropped in a folder by hand; we don't log into the portals.
-- Until the engine and pulse modules are merged, the log says "SIMULATED" for those steps. **Re-record after integration (I1) so the log shows the real steps.**
+- Ingestion is simulated: the `inbox/` folder stands in for the emailed Excel reports and the API Amanda said we can assume (decision 004). We built no email reader or API client.
+- `run_nightly` runs on demand; a real deployment would trigger it after midnight Eastern (e-commerce closes 9 PM Pacific), from the API delivery or Windows Task Scheduler.
+- The day boundary is midnight Eastern. It is verified for exports whose timestamps carry a zone; plain timestamps are assumed Eastern until per-source time zones are added.
+- The engine and pulse steps show "SIMULATED" in the default run. `--real` runs them for real, and the engine already matches the sample answer keys on 112 of 112 marketplace-days, but until per-source status (P-V4) lands every source shows as missing. **Re-record with `--real` once P-V4 is merged.**
 
 ## If something breaks live
 Switch to the pre-opened browser tabs and keep talking; the story is the same. Never debug on stage.
