@@ -1,0 +1,2 @@
+# Keep sample exports byte-exact (BOMs, CRLF vs LF are part of the test data).
+* -text
