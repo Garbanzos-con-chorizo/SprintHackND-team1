@@ -1,4 +1,4 @@
-# KPI catalog (decision 005)
+# KPI catalog (decision 006)
 
 Five groups from the team sync. For each KPI: how it is defined, and where the data comes from.
 - **Files**: computable today from the exports we parse (`data/sample/`, engine output).

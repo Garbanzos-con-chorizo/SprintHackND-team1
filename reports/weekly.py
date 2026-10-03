@@ -1,4 +1,4 @@
-"""Weekly dashboard: a week of daily pulses plus the KPI groups from decision 005.
+"""Weekly dashboard: a week of daily pulses plus the KPI groups from decision 006.
 
 Reads out/pulse/<date>.json for the ISO week (Monday to Sunday), adds internal data from the
 mock Goodwill internal API (reports/mock_api.py), and writes reports/weekly/<YYYY>-W<WW>.html,

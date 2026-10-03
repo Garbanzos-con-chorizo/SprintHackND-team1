@@ -1,4 +1,4 @@
-"""Mock Goodwill internal API (decision 005): company data we don't have.
+"""Mock Goodwill internal API (decision 006): company data we don't have.
 
 Everything here is SYNTHETIC. Each response carries "source": "mock" and the label
 "Simulated internal data", which every page must show next to numbers built on it.

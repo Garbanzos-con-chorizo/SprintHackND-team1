@@ -1,7 +1,8 @@
-# 005 — Web app, hosting, scope cuts and the internal API assumption
+# 006 — Web app, hosting, scope cuts and the internal API assumption
 
 - **Date / author:** 2026-10-03, Orlando (from the team's lunch sync, "Notes on 03-10-26.pdf"; the PDF is not in the repo yet, add it under `docs/` if you have it)
-- **Status:** proposed (Victor and Dani to accept or change in the PR)
+- **Status:** proposed (Victor and Dani to accept or change)
+- **Complements:** `005-api-email-delivery-and-run-schedule.md` (Victor): 005 covers how reports come **in** (API, emailed Excel) and when the run happens (once a day, just after midnight Eastern). This record covers the app around it and the pulse email going **out**.
 
 ## Decisions from the sync
 1. **One web app** wraps what exists: pulse, monthly dashboard, close outputs, a data input page, an email page. Served by an ASGI server (Uvicorn), self-hosted.
@@ -17,7 +18,7 @@
 ## How we keep these honest (the rubric penalizes overclaiming)
 - **Every number fed by the mock internal API is labelled** on screen ("simulated internal data") and in the submission's built-versus-used text. The mock lives in one place (`data/internal_api/`), returns JSON shaped like a real API, and its responses say `"source": "mock"`.
 - **No auth means local only.** The container binds to localhost by default; the demo says "authentication is out of scope; in production it sits behind Goodwill's Microsoft 365 sign-in". We do not deploy it publicly.
-- **Email:** we generate the email (HTML + `.eml` file) and show it; we do not send real mail without an SMTP account Goodwill provides. **Scheduler:** a schedule setting plus the `run_nightly` job; in the container a simple in-process timer, in production Windows Task Scheduler or a cloud scheduler. Both stated as such.
+- **Email:** we generate the email (HTML + `.eml` file) and show it; we do not send real mail without an SMTP account Goodwill provides. **Scheduler:** the run time from decision 005 (just after midnight Eastern) as a setting, plus the `run_nightly` job; in the container a simple in-process timer, in production Windows Task Scheduler or a cloud scheduler. Both stated as such.
 - **Data input page:** uploads land in the same inbox the engine reads; the endpoint is the API contract. Real API clients (Upright, Cash Monkey, email) are not built.
 
 ## Database: evaluation
