@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 
 from .contract import EXPECTED_SOURCES
+from .dedupe import dedupe_rows
 from .parsers import Ambiguous, NoMatch, Parser, detect_source, load_sources
 from .table import SUPPORTED_SUFFIXES, UnreadableFile, read_table
 from .writer import now_local, write_outputs
@@ -40,6 +41,9 @@ def run(inbox: Path, out: Path, business_date: str, parsers: list[Parser] | None
         result = parser.parse(table)
         rows.extend(result.rows)
         warnings.extend(result.warnings)
+
+    rows, duplicate_warnings = dedupe_rows(rows)
+    warnings.extend(duplicate_warnings)
 
     # Per-source status is P-V4. Until then every expected source reports `missing`, never $0.
     source_status = {

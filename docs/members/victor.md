@@ -16,8 +16,11 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 
 - V3 parsers (branch `victor/v3-parsers`, stacked on the scraper skeleton): ShopGoodwill, eBay, Amazon on a shared `OrderReportParser`; money/date cleaning in `engine/clean.py`; 56 tests pass. Checked against Orlando's synthetic samples (`data/sample/*`): 64 of 66 marketplace-days off at first, now all match except the overlapping eBay re-download, which needs P-V5. Column names are still not from real Goodwill files, and ShopGoodwill's layout is a guess on both sides. Not yet done: cross-file dedupe (P-V5), source status (P-V4), day cutoff config (P-V3 beyond timezone).
 
+- P-V5 cross-file dedupe (`engine/dedupe.py`): keeps the first copy, logs the rest, flags conflicting amounts. All 5 of Orlando's scenarios now match their answer keys (0 of 66 marketplace-days off).
+- `docs/contracts/source-formats.md`: what the deck actually shows about the real files. **Finding: the nightly ShopGoodwill file is probably Upright's Paid Orders report and eBay/Amazon probably come from one Cash Monkey Orders CSV, not the seller-portal reports our samples imitate.** Orlando should read it before changing `data/generate.py`.
+
 ## In progress (claimed, so nobody doubles up)
-- P-V5 cross-file dedupe, P-V4 real `source_status.json`, P-V3 day cutoff config, V9 runner summary (all `engine/`)
+- P-V4 real `source_status.json`, P-V3 day cutoff config, V9 runner summary (all `engine/`)
 - Running `engine` against Orlando's `data/sample/*` and comparing with each `expected.json`
 - 0.2 rules contract draft (`docs/contracts/rules.md`), after the items above
 - Not mine: pulse calculation (Dani), sample data and HTML report (Orlando)

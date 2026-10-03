@@ -209,3 +209,28 @@ def test_shopgoodwill_xlsx_with_title_rows_order_hash_and_mixed_dates(tmp_path):
     with open(tmp_path / "out" / "transactions.csv", newline="", encoding="utf-8") as f:
         got = {r["order_id"]: (r["gross_cents"], r["business_date"]) for r in csv.DictReader(f)}
     assert got == {"SG-1": ("3900", "2026-10-01"), "SG-2": ("2700", "2026-10-01")}
+
+
+# --- P-V5: the same transaction in two files counts once ---
+
+def test_overlapping_downloads_count_once_and_are_logged(tmp_path):
+    first = EBAY_TXN_REPORT.replace("\r\n", "\n")
+    # a later re-download that overlaps the first and adds one new order
+    second = first.rstrip("\n") + '\n"Oct 2, 2026","Order","25-2","newbuyer","10.00","-0.30","-1.00","12.00","USD"\n'
+    rows, warnings = run_inbox(tmp_path, {
+        "ebay_transactions_2026-10-02.csv": first,
+        "ebay_transactions_2026-10-02 (1).csv": second,
+    })
+    assert sorted(r["txn_id"] for r in rows) == ["ebay:25-1:refund", "ebay:25-1:sale", "ebay:25-2:sale"]
+    dupes = [w for w in warnings if w["kind"] == "duplicate"]
+    assert len(dupes) == 2 and all("differ" not in w["reason"] for w in dupes)
+    assert all(w["source_file"] == "ebay_transactions_2026-10-02.csv" or "(1)" in w["source_file"] for w in dupes)
+
+
+def test_conflicting_copies_keep_first_and_say_so(tmp_path):
+    a = EBAY_TXN_REPORT.replace("\r\n", "\n")
+    b = a.replace('"33.99"', '"34.99"')  # same order, different amount
+    rows, warnings = run_inbox(tmp_path, {"ebay_a.csv": a, "ebay_b.csv": b})
+    sale = next(r for r in rows if r["txn_id"] == "ebay:25-1:sale")
+    assert sale["gross_cents"] == "3399" and sale["source_file"] == "ebay_a.csv"
+    assert any("gross_cents differ" in w["reason"] for w in warnings)
