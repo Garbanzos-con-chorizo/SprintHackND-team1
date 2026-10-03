@@ -26,6 +26,9 @@ class OrderReportParser(Parser):
     # channel name and a {normalized channel name: marketplace} map. Unknown channels use `marketplace`.
     channel: tuple[str, ...] = ()
     channel_marketplaces: dict[str, str] = {}
+    # True when staff count customers as rows (Upright, slide 26) even though a buyer column exists:
+    # the buyer id is kept in customer_id but customer_basis is "order", so the pulse counts orders.
+    customers_are_orders: bool = False
     strict_channels: bool = False        # True: rows of channels not in the map belong to another source; skip them
     date_assume_tz: str | None = None    # zone of timestamps that carry none (Cash Monkey writes UTC)
     # Regex with three groups (month, day, year) for a date in the file name, used when the file has no
@@ -109,7 +112,7 @@ class OrderReportParser(Parser):
                     "business_date": day,
                     "order_id": order_id,
                     "customer_id": buyer_key(buyer) if buyer else "",
-                    "customer_basis": "buyer" if buyer else "order",
+                    "customer_basis": "buyer" if buyer and not self.customers_are_orders else "order",
                     "gross_cents": amount,
                     "fee_cents": event_fee,
                     "source_file": table.name,
