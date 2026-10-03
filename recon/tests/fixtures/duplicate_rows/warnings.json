@@ -1,0 +1,4 @@
+[
+  { "source_file": "ebay_2026-10-02_copy.csv", "source_row": 14, "kind": "duplicate", "reason": "same order id as ebay_2026-10-02.csv row 14" },
+  { "source_file": "amazon_2026-10-02.csv", "source_row": 9, "kind": "duplicate", "reason": "same order id as row 5" }
+]

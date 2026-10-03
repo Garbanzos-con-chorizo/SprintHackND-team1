@@ -1,0 +1,11 @@
+txn_id,source,marketplace,type,business_date,order_id,customer_id,customer_basis,gross_cents,fee_cents,source_file,source_row
+shopgoodwill:SG-883100:sale,shopgoodwill,shopgoodwill,sale,2026-10-01,SG-883100,sgbidder05,buyer,19000,0,sg_orders_oct01.xlsx,2
+amazon:114-1111111-0000001:sale,amazon,amazon,sale,2026-10-01,114-1111111-0000001,,order,2600,390,amazon_2026-10-01.csv,2
+amazon:114-1111111-0000002:sale,amazon,amazon,sale,2026-10-01,114-1111111-0000002,,order,2600,390,amazon_2026-10-01.csv,3
+ebay:11-00000-00001:sale,ebay,ebay,sale,2026-10-01,11-00000-00001,buyer_zz99,buyer,1600,208,ebay_2026-10-01.csv,2
+ebay:12-34567-89012:sale,ebay,ebay,sale,2026-10-02,12-34567-89012,buyer_ab12,buyer,2599,336,ebay_2026-10-02.csv,14
+ebay:12-34567-89013:sale,ebay,ebay,sale,2026-10-02,12-34567-89013,buyer_cd34,buyer,1850,240,ebay_2026-10-02.csv,15
+amazon:114-2345678-9012345:sale,amazon,amazon,sale,2026-10-02,114-2345678-9012345,,order,3299,495,amazon_2026-10-02.csv,5
+amazon:114-2345678-9012346:sale,amazon,amazon,sale,2026-10-02,114-2345678-9012346,,order,1499,225,amazon_2026-10-02.csv,6
+shopgoodwill:SG-883210:sale,shopgoodwill,shopgoodwill,sale,2026-10-02,SG-883210,sgbidder77,buyer,8400,0,sg_orders_oct02.xlsx,3
+shopgoodwill:SG-883211:sale,shopgoodwill,shopgoodwill,sale,2026-10-02,SG-883211,sgbidder12,buyer,12500,0,sg_orders_oct02.xlsx,4
