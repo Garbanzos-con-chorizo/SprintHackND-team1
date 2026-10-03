@@ -73,6 +73,12 @@ class Parser:
             return 3 if name_ok else 2
         return 1 if name_ok else 0
 
+    @property
+    def feeds(self) -> tuple[str, ...]:
+        """Marketplaces this source can produce rows for. Drives source_status: a file that feeds a
+        marketplace but has no rows for the day makes it `stale`, not `missing`."""
+        return (self.marketplace,)
+
     def parse(self, table: Table) -> ParseResult:
         raise NotImplementedError(f"{type(self).__name__}.parse is not implemented")
 

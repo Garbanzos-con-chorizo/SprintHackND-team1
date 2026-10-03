@@ -15,7 +15,8 @@ class FakeA(Parser):
     def parse(self, table):
         result = ParseResult()
         for n, row in table.rows:
-            result.add({"txn_id": f"fake_a:{table.get(row, 'order id')}", "source_row": n})
+            result.add({"txn_id": f"fake_a:{table.get(row, 'order id')}", "source_row": n,
+                        "business_date": "2026-10-02", "marketplace": "other", "source_file": table.name})
         return result
 
 

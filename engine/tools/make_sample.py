@@ -98,7 +98,7 @@ def eastern_day(dt: datetime) -> str:
     return dt.astimezone(EASTERN).date().isoformat()
 
 
-def truth(orders: list[Order], days: list[date], missing: set[tuple[str, str]]) -> dict:
+def truth(orders: list[Order], days: list[date], no_data: dict[tuple[str, str], str]) -> dict:
     """Expected numbers per Eastern day and marketplace, straight from the orders."""
     buckets: dict[tuple[str, str], dict] = defaultdict(lambda: dict(
         sales_cents=0, refunds_cents=0, fees_cents=0, orders=set(), customers=set()))
@@ -115,8 +115,8 @@ def truth(orders: list[Order], days: list[date], missing: set[tuple[str, str]]) 
         iso = d.isoformat()
         result[iso] = {}
         for mk in ("shopgoodwill", "ebay", "amazon", "other"):
-            if (iso, mk) in missing:
-                result[iso][mk] = {"status": "missing"}
+            if (iso, mk) in no_data:
+                result[iso][mk] = {"status": no_data[(iso, mk)]}
                 continue
             b = buckets.get((iso, mk))
             if b is None:
@@ -202,7 +202,7 @@ def build(scenario: str, day: date, seed: int, out_dir: Path) -> dict:
     rng = random.Random(seed)
     days = [day - timedelta(days=1), day]
     orders = make_orders(rng, days, {"shopgoodwill": 24, "ebay": 16, "amazon": 14, "other": 4})
-    missing: set[tuple[str, str]] = set()
+    no_data: dict[tuple[str, str], str] = {}
 
     if messy:  # three single-unit orders get refunded on day D
         eligible = [o for o in orders if o.marketplace in ("ebay", "amazon") and o.units == 1]
@@ -219,7 +219,7 @@ def build(scenario: str, day: date, seed: int, out_dir: Path) -> dict:
 
     for d in days:
         if messy and d == day:
-            missing.add((d.isoformat(), "shopgoodwill"))  # today's Upright download never happened
+            no_data[(d.isoformat(), "shopgoodwill")] = "stale"  # today's Upright download never happened; yesterday's exists
             continue
         stamp = f"{d.month:02d}-{d.day:02d}-{d.year}"
         text = render_upright(rng, orders, d, noise_rows=messy)
@@ -236,8 +236,8 @@ def build(scenario: str, day: date, seed: int, out_dir: Path) -> dict:
         orders = [o for o in orders if not (o.marketplace == "shopgoodwill" and eastern_day(o.placed) == day.isoformat())]
     key = {
         "scenario": scenario, "synthetic": True, "business_date": day.isoformat(), "seed": seed,
-        "note": "Computed from the generated orders, not from the engine. 'missing' = no file was written.",
-        "days": truth(orders, days, missing),
+        "note": "Computed from the generated orders, not from the engine. 'stale' = no file for that day was written but another day's was.",
+        "days": truth(orders, days, no_data),
     }
     (out_dir / "expected.json").write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
     return key
@@ -264,7 +264,7 @@ def check(out_dir: Path, key: dict) -> tuple[bool, list[str]]:
     for day, markets in key["days"].items():
         for mk, want in markets.items():
             have = got.get((day, mk))
-            if want["status"] == "missing":
+            if want["status"] != "ok":
                 good = have is None
                 ok &= good
                 lines.append(f"{'ok  ' if good else 'FAIL'} {day} {mk:<13} no file written; "
@@ -286,6 +286,46 @@ def check(out_dir: Path, key: dict) -> tuple[bool, list[str]]:
     return ok, lines
 
 
+def check_pulse(out_dir: Path, key: dict) -> tuple[bool, list[str]]:
+    """Run the real engine command and Dani's real pulse command, then compare the pulse to the answer key."""
+    import subprocess
+
+    work = out_dir / "pipeline_out"
+    day = key["business_date"]
+    cmds = [[sys.executable, "-m", "engine", "run", "--inbox", str(out_dir / "inbox"), "--out", str(work), "--date", day],
+            [sys.executable, "-m", "recon.pulse", "--date", day, "--in-dir", str(work)]]
+    for cmd in cmds:
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        if r.returncode:
+            return False, [f"FAIL `{' '.join(cmd[1:4])}` exited {r.returncode}: {(r.stdout + r.stderr).strip()[-300:]}"]
+    pulse = json.loads((work / "pulse" / f"{day}.json").read_text(encoding="utf-8"))
+    lines, ok = [], True
+    total = dict(revenue_cents=0, fees_cents=0, orders=0, customers=0)
+    for mk, want in key["days"][day].items():
+        have = pulse["marketplaces"].get(mk, {})
+        if want["status"] != "ok":
+            good = have.get("status") == want["status"] and have.get("revenue_cents") is None
+            lines.append(f"{'ok  ' if good else 'FAIL'} pulse {mk:<13} status {have.get('status')} "
+                         f"(expected {want['status']}; shown as no data)")
+        else:
+            exp = dict(revenue_cents=want["sales_cents"] + want["refunds_cents"], fees_cents=want["fees_cents"],
+                       orders=want["orders"], customers=want["customers"])
+            for k in total:
+                total[k] += exp[k]
+            got = {k: have.get(k) for k in exp}
+            good = have.get("status") == "ok" and got == exp
+            lines.append(f"{'ok  ' if good else 'FAIL'} pulse {mk:<13} revenue ${exp['revenue_cents'] / 100:>9,.2f} "
+                         f"orders {exp['orders']:>3}"
+                         + ("" if good else f"\n       expected {exp}\n       got      {got} status={have.get('status')}"))
+        ok &= good
+    good = {k: pulse["enterprise"].get(k) for k in total} == total
+    ok &= good
+    left_out = ", ".join(x["marketplace"] for x in pulse["enterprise"].get("excluded", [])) or "none"
+    lines.append(f"{'ok  ' if good else 'FAIL'} pulse enterprise    revenue ${total['revenue_cents'] / 100:>9,.2f} "
+                 f"(left out as no data: {left_out})")
+    return ok, lines
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--scenario", choices=["clean_day", "messy_day"], default="clean_day")
@@ -293,6 +333,8 @@ def main(argv=None) -> int:
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--out", type=Path, default=None, help="default: out/sample/<scenario>")
     ap.add_argument("--check", action="store_true", help="run the generated files through the pipeline and compare")
+    ap.add_argument("--pulse", action="store_true",
+                    help="also run `engine run` and Dani's `recon.pulse`, and compare the pulse to the answer key")
     args = ap.parse_args(argv)
 
     out_dir = args.out or Path("out") / "sample" / args.scenario
@@ -307,6 +349,12 @@ def main(argv=None) -> int:
     print()
     print("\n".join(lines))
     print("\nPIPELINE MATCHES THE ANSWER KEY" if ok else "\nPIPELINE DOES NOT MATCH THE ANSWER KEY")
+    if args.pulse:
+        pulse_ok, pulse_lines = check_pulse(out_dir, key)
+        print()
+        print("\n".join(pulse_lines))
+        print("\nPULSE MATCHES THE ANSWER KEY" if pulse_ok else "\nPULSE DOES NOT MATCH THE ANSWER KEY")
+        ok &= pulse_ok
     return 0 if ok else 1
 
 

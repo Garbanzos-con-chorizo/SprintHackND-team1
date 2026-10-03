@@ -119,6 +119,13 @@ class OrderReportParser(Parser):
             result.add(item)
         return result
 
+    @property
+    def feeds(self) -> tuple[str, ...]:
+        if not self.channel:
+            return (self.marketplace,)
+        mapped = set(self.channel_marketplaces.values())
+        return tuple(sorted(mapped if self.strict_channels else mapped | {self.marketplace}))
+
     def _filename_day(self, name: str) -> str | None:
         """The day in the file name (e.g. paid_orders_09-30-2026_09-30-2026), if configured and present."""
         if not self.filename_date:

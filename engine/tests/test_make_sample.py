@@ -90,3 +90,14 @@ def test_cashmonkey_one_line_per_unit_is_one_order_and_utc_crosses_midnight(tmp_
         rows = {r["order_id"]: r for r in csv.DictReader(f)}
     assert (rows["E-1"]["gross_cents"], rows["E-1"]["fee_cents"], rows["E-1"]["business_date"], rows["E-1"]["marketplace"]) == ("2000", "320", "2026-10-02", "ebay")
     assert (rows["G-1"]["business_date"], rows["G-1"]["marketplace"]) == ("2026-10-03", "other")
+
+
+# --- end to end: engine output -> Dani's real pulse command -> compared with the answer key ---
+
+@pytest.mark.parametrize("scenario", ["clean_day", "messy_day"])
+def test_engine_output_drives_the_real_pulse_command_correctly(tmp_path, scenario):
+    from engine.tools.make_sample import check_pulse
+
+    key = build(scenario, date(2026, 10, 2), 42, tmp_path)
+    ok, lines = check_pulse(tmp_path, key)
+    assert ok, "\n".join(lines)

@@ -12,10 +12,14 @@ from dataclasses import dataclass, field
 class NormalizedBatch:
     rows: list[dict] = field(default_factory=list)       # canonical rows, engine.contract.COLUMNS
     warnings: list[dict] = field(default_factory=list)   # contract warnings (bad rows, unreadable files)
+    # One entry per file that was read and recognized: {"file", "source", "feeds": [marketplaces]}.
+    # Used to tell a marketplace with no file (missing) from one whose file had nothing for the day (stale).
+    files: list[dict] = field(default_factory=list)
 
     def extend(self, other: "NormalizedBatch") -> None:
         self.rows.extend(other.rows)
         self.warnings.extend(other.warnings)
+        self.files.extend(other.files)
 
 
 class DataIngestAdapter(ABC):

@@ -2,9 +2,9 @@
 import argparse
 from pathlib import Path
 
-from .contract import EXPECTED_SOURCES
 from .ingest import EmailAttachmentAdapter, ingest
 from .parsers import Parser
+from .status import build_source_status
 from .writer import now_local, write_outputs
 
 
@@ -12,12 +12,7 @@ def run(inbox: Path, out: Path, business_date: str, parsers: list[Parser] | None
     batch = ingest([EmailAttachmentAdapter(inbox, parsers)], business_date)
     rows, warnings = batch.rows, batch.warnings
 
-    # Per-source status is P-V4. Until then every expected source reports `missing`, never $0.
-    source_status = {
-        "generated_at": now_local().isoformat(),
-        "business_date": business_date,
-        "sources": {s: {"status": "missing", "files": [], "rows": 0} for s in EXPECTED_SOURCES},
-    }
+    source_status = build_source_status(business_date, now_local().isoformat(), batch.files, rows)
     write_outputs(out, rows=rows, source_status=source_status, warnings=warnings)
 
 

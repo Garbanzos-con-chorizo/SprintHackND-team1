@@ -82,6 +82,7 @@ class _Handler(BaseHTTPRequestHandler):
         pass
 
     def do_POST(self):
+        self.rfile.read(int(self.headers.get("Content-Length") or 0))  # consume the body, or Windows resets the socket
         self.send_response(200)
         self.send_header("Set-Cookie", "sid=abc; Path=/")
         self.end_headers()

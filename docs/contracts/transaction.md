@@ -50,22 +50,23 @@ The engine applies these in order. Anything it can't fix is skipped and listed i
 | Source name varies (`eBay`, `EBAY`, `ebay-us`) | Normalized to the `source` enum via the detection rules in engine config (V2). |
 
 ## `out/source_status.json` (P-V4)
-Lets the pulse show "no data" instead of `$0`.
+Lets the pulse show "no data" instead of `$0`. **Keyed by marketplace**, because one file can feed several marketplaces (a Cash Monkey export carries Amazon, eBay and Goodwillbooks) and the pulse is organized by marketplace.
 ```json
 {
-  "generated_at": "2026-10-03T02:15:00-04:00",
+  "generated_at": "2026-10-03T13:00:00-04:00",
   "business_date": "2026-10-02",
   "sources": {
-    "shopgoodwill": { "status": "ok",      "files": ["sg_orders_oct02.xlsx"], "rows": 41 },
-    "ebay":         { "status": "missing", "files": [],                      "rows": 0 },
-    "amazon":       { "status": "stale",   "files": ["amazon_oct01.csv"],     "rows": 0 }
+    "shopgoodwill": { "status": "ok",      "files": ["paid_orders_10-02-2026_10-02-2026.csv"], "rows": 24 },
+    "ebay":         { "status": "ok",      "files": ["orders2023-20261002-132256-96170.csv"],  "rows": 17 },
+    "amazon":       { "status": "stale",   "files": ["orders2023-20261002-132256-96170.csv"],  "rows": 0 }
   }
 }
 ```
-- `ok`: a file with at least one row for `business_date`.
-- `missing`: no file for that source in `inbox/`.
-- `stale`: a file exists but has no rows for `business_date`.
-- Keyed by `source`. Expected sources come from config. `other` is not a source, so it never appears as `missing`.
+- `ok`: a file that feeds this marketplace was read and has at least one row for `business_date`. `files` lists the files that contributed rows.
+- `stale`: a file that feeds it was read but has no rows for `business_date` (a quiet day and an old export look the same). `files` lists the candidate files.
+- `missing`: no file that could feed it was read: never downloaded, or unreadable (see `warnings.json`).
+- Expected marketplaces come from `EXPECTED_MARKETPLACES` in `engine/contract.py` (`shopgoodwill`, `amazon`, `ebay`). **`other` is listed only on a day it has rows**; otherwise it is left out and the pulse treats it as not configured.
+- The top-level key is still named `sources` so Dani's loader needs no change; its values are marketplaces.
 
 ## `out/warnings.json`
 ```json

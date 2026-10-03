@@ -2,7 +2,7 @@ import csv
 import json
 
 from engine.cli import main
-from engine.contract import COLUMNS, EXPECTED_SOURCES
+from engine.contract import COLUMNS, EXPECTED_MARKETPLACES
 
 
 def test_run_on_empty_inbox_writes_valid_files(tmp_path):
@@ -19,7 +19,7 @@ def test_run_on_empty_inbox_writes_valid_files(tmp_path):
 
     status = json.loads((out / "source_status.json").read_text(encoding="utf-8"))
     assert status["business_date"] == "2026-10-02"
-    assert set(status["sources"]) == set(EXPECTED_SOURCES)
+    assert set(status["sources"]) == set(EXPECTED_MARKETPLACES)
     assert all(s["status"] == "missing" and s["rows"] == 0 for s in status["sources"].values())
 
     assert json.loads((out / "warnings.json").read_text(encoding="utf-8")) == []
