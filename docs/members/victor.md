@@ -14,6 +14,8 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 
 - Portal acquisition skeleton (branch `victor/scraper-skeleton`, stacked on V2): `python -m engine fetch` runs one scraper per portal (HTTP or browser backend), saves reports to `inbox/`, logs to `out/fetch_log.json`. Upright is a skeleton only (no URLs/selectors known). Decision 003 proposed.
 
+- V3 parsers (branch `victor/v3-parsers`, stacked on the scraper skeleton): ShopGoodwill, eBay, Amazon on a shared `OrderReportParser`; money/date cleaning in `engine/clean.py`; 56 tests pass. **Column names are guesses until we get real exports.** Not yet done: cross-file dedupe (P-V5), source status (P-V4), day cutoff config (P-V3 beyond timezone).
+
 ## In progress
 - Nothing; waiting on portal access to record the real flows, then V3 parsers
 
@@ -26,7 +28,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 ## Next (phase 1, in order)
 1. ~~V1 scaffold~~ done
 2. ~~V2 parser base interface and source detection~~ done (branch `victor/v2-parsers`, stacked on V1). To add a source: one module in `engine/sources/`, see `engine/parsers.py` docstring
-3. V3 parsers: ShopGoodwill, eBay, Amazon
+3. ~~V3 parsers: ShopGoodwill, eBay, Amazon~~ done on guessed columns; correct the aliases in `engine/sources/*.py` when real files arrive
 4. V6 cleaning and warnings, P-V5 dedupe, P-V3 day boundary
 5. P-V1 marketplace tagging, P-V2 customer identity
 6. V9 runner and P-V4 source status

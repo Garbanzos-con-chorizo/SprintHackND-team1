@@ -15,7 +15,7 @@ Contract: `docs/contracts/transaction.md` (Victor owns). Mock: `docs/contracts/e
 | `out/source_status.json` | Per source for the pulse day: `ok`, `missing` or `stale`, with files and row counts. | Showing "no data" instead of $0, excluding missing sources from totals (P-D2) |
 | `out/warnings.json` | Duplicates dropped, bad dates, bad amounts, rejected files. | Optional data-quality count carried into the pulse JSON |
 
-Victor also provides the command `engine run` (name set in V1) that regenerates all three from `inbox/`.
+Victor also provides `python -m engine run`, which regenerates all three from `inbox/`, and `python -m engine fetch`, which first downloads the portal reports into `inbox/` (writing `out/fetch_log.json`). Files reach `inbox/` either from a scraper or by hand; the parsers don't care which.
 
 ## 2. Dani gives Orlando
 Contract: `docs/contracts/pulse.md` (**Dani owns, P0, not written yet**). Mock: Dani publishes `docs/contracts/examples/pulse.sample.json` with the contract. Proposed shape for Dani to confirm or change:

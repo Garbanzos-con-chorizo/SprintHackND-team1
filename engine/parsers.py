@@ -51,7 +51,9 @@ class Parser:
     source: str = ""             # value for the `source` column; also the key in source_status.json
     marketplace: str = "other"   # default `marketplace` bucket for this source
     filename_patterns: tuple[str, ...] = ()   # regexes, searched case-insensitively in the file name
-    required_columns: tuple[str, ...] = ()    # column names that must all be present (matched normalized)
+    # Columns that must all be present (matched normalized). An entry can be a tuple of alternative
+    # names, any one of which satisfies it: ("order id", ("buyer username", "buyer")).
+    required_columns: tuple = ()
 
     def detect(self, table: Table) -> int:
         """Return 0 if this parser does not recognize the file, else a score (higher = surer).
@@ -59,7 +61,11 @@ class Parser:
         Columns are stronger evidence than the file name, since people rename downloads.
         Override only for sources that need something custom.
         """
-        columns_ok = bool(self.required_columns) and all(norm(c) in table.norm_header for c in self.required_columns)
+        def present(entry) -> bool:
+            names = (entry,) if isinstance(entry, str) else entry
+            return any(norm(n) in table.norm_header for n in names)
+
+        columns_ok = bool(self.required_columns) and all(present(c) for c in self.required_columns)
         name_ok = any(re.search(p, table.name, re.IGNORECASE) for p in self.filename_patterns)
         if self.required_columns and not columns_ok:
             return 0  # a declared column signature is a hard requirement
