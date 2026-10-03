@@ -16,8 +16,11 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 
 - V3 parsers (branch `victor/v3-parsers`, stacked on the scraper skeleton): ShopGoodwill, eBay, Amazon on a shared `OrderReportParser`; money/date cleaning in `engine/clean.py`; 56 tests pass. **Column names are guesses until we get real exports.** Not yet done: cross-file dedupe (P-V5), source status (P-V4), day cutoff config (P-V3 beyond timezone).
 
-## In progress
-- Nothing; waiting on portal access to record the real flows, then V3 parsers
+## In progress (claimed, so nobody doubles up)
+- P-V5 cross-file dedupe, P-V4 real `source_status.json`, P-V3 day cutoff config, V9 runner summary (all `engine/`)
+- Running `engine` against Orlando's `data/sample/*` and comparing with each `expected.json`
+- 0.2 rules contract draft (`docs/contracts/rules.md`), after the items above
+- Not mine: pulse calculation (Dani), sample data and HTML report (Orlando)
 
 ## Blocked / needs from others
 - Dani: write `docs/contracts/pulse.md` (P0); confirm or change the pulse JSON shape proposed in `docs/HANDOFFS.md`
