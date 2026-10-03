@@ -1,0 +1,1948 @@
+{
+  "scenario": "messy_month",
+  "business_date": null,
+  "definitions": {
+    "business_date": "order (or refund) timestamp converted to America/New_York, date part",
+    "revenue_cents": "item subtotal of sales minus refunds; excludes shipping, tax and fees",
+    "fees_cents": "marketplace fees on sales, reported separately (refunds carry no fee in this data)",
+    "orders": "distinct order ids among sales",
+    "customers": "distinct buyer usernames; Amazon has no buyer id so it counts orders",
+    "enterprise.customers": "sum of per-marketplace counts (buyers can't be matched across marketplaces)",
+    "status": "ok = rows for that day, stale = file present but no rows that day, missing = no file"
+  },
+  "days": {
+    "2026-09-01": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 131200,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 131200,
+        "orders": 45,
+        "customers": 45,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 49381,
+        "refunds_cents": 0,
+        "fees_cents": 7825,
+        "revenue_cents": 49381,
+        "orders": 19,
+        "customers": 19,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 35336,
+        "refunds_cents": 0,
+        "fees_cents": 8659,
+        "revenue_cents": 35336,
+        "orders": 12,
+        "customers": 12,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 215917,
+        "refunds_cents": 0,
+        "revenue_cents": 215917,
+        "fees_cents": 16484,
+        "orders": 76,
+        "customers": 76
+      }
+    },
+    "2026-09-02": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 97500,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 97500,
+        "orders": 29,
+        "customers": 29,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 66880,
+        "refunds_cents": 0,
+        "fees_cents": 10098,
+        "revenue_cents": 66880,
+        "orders": 20,
+        "customers": 20,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 32532,
+        "refunds_cents": 0,
+        "fees_cents": 9199,
+        "revenue_cents": 32532,
+        "orders": 16,
+        "customers": 16,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 196912,
+        "refunds_cents": 0,
+        "revenue_cents": 196912,
+        "fees_cents": 19297,
+        "orders": 65,
+        "customers": 65
+      }
+    },
+    "2026-09-03": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 140600,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 140600,
+        "orders": 35,
+        "customers": 35,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 82366,
+        "refunds_cents": -2399,
+        "fees_cents": 13122,
+        "revenue_cents": 79967,
+        "orders": 34,
+        "customers": 34,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 27035,
+        "refunds_cents": 0,
+        "fees_cents": 7653,
+        "revenue_cents": 27035,
+        "orders": 15,
+        "customers": 15,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 250001,
+        "refunds_cents": -2399,
+        "revenue_cents": 247602,
+        "fees_cents": 20775,
+        "orders": 84,
+        "customers": 84
+      }
+    },
+    "2026-09-04": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 107700,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 107700,
+        "orders": 37,
+        "customers": 37,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 84674,
+        "refunds_cents": 0,
+        "fees_cents": 12635,
+        "revenue_cents": 84674,
+        "orders": 26,
+        "customers": 25,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 36082,
+        "refunds_cents": 0,
+        "fees_cents": 9730,
+        "revenue_cents": 36082,
+        "orders": 17,
+        "customers": 17,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 228456,
+        "refunds_cents": 0,
+        "revenue_cents": 228456,
+        "fees_cents": 22365,
+        "orders": 80,
+        "customers": 79
+      }
+    },
+    "2026-09-05": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 126500,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 126500,
+        "orders": 35,
+        "customers": 35,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 37785,
+        "refunds_cents": 0,
+        "fees_cents": 5774,
+        "revenue_cents": 37785,
+        "orders": 15,
+        "customers": 15,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 19790,
+        "refunds_cents": 0,
+        "fees_cents": 5367,
+        "revenue_cents": 19790,
+        "orders": 10,
+        "customers": 10,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 184075,
+        "refunds_cents": 0,
+        "revenue_cents": 184075,
+        "fees_cents": 11141,
+        "orders": 60,
+        "customers": 60
+      }
+    },
+    "2026-09-06": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 149600,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 149600,
+        "orders": 41,
+        "customers": 41,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 87861,
+        "refunds_cents": 0,
+        "fees_cents": 13608,
+        "revenue_cents": 87861,
+        "orders": 39,
+        "customers": 39,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 44580,
+        "refunds_cents": 0,
+        "fees_cents": 11484,
+        "revenue_cents": 44580,
+        "orders": 18,
+        "customers": 18,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 282041,
+        "refunds_cents": 0,
+        "revenue_cents": 282041,
+        "fees_cents": 25092,
+        "orders": 98,
+        "customers": 98
+      }
+    },
+    "2026-09-07": {
+      "shopgoodwill": {
+        "status": "stale",
+        "sales_cents": 0,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 0,
+        "orders": 0,
+        "customers": 0,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 65177,
+        "refunds_cents": 0,
+        "fees_cents": 9956,
+        "revenue_cents": 65177,
+        "orders": 23,
+        "customers": 23,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 26436,
+        "refunds_cents": 0,
+        "fees_cents": 7324,
+        "revenue_cents": 26436,
+        "orders": 12,
+        "customers": 12,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 91613,
+        "refunds_cents": 0,
+        "revenue_cents": 91613,
+        "fees_cents": 17280,
+        "orders": 35,
+        "customers": 35
+      }
+    },
+    "2026-09-08": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 92300,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 92300,
+        "orders": 34,
+        "customers": 34,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 58877,
+        "refunds_cents": 0,
+        "fees_cents": 9363,
+        "revenue_cents": 58877,
+        "orders": 23,
+        "customers": 22,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 20337,
+        "refunds_cents": -3299,
+        "fees_cents": 6169,
+        "revenue_cents": 17038,
+        "orders": 13,
+        "customers": 13,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 171514,
+        "refunds_cents": -3299,
+        "revenue_cents": 168215,
+        "fees_cents": 15532,
+        "orders": 70,
+        "customers": 69
+      }
+    },
+    "2026-09-09": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 108500,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 108500,
+        "orders": 28,
+        "customers": 28,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 55775,
+        "refunds_cents": 0,
+        "fees_cents": 8776,
+        "revenue_cents": 55775,
+        "orders": 25,
+        "customers": 23,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 28238,
+        "refunds_cents": 0,
+        "fees_cents": 7114,
+        "revenue_cents": 28238,
+        "orders": 11,
+        "customers": 11,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 192513,
+        "refunds_cents": 0,
+        "revenue_cents": 192513,
+        "fees_cents": 15890,
+        "orders": 64,
+        "customers": 62
+      }
+    },
+    "2026-09-10": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 142600,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 142600,
+        "orders": 46,
+        "customers": 46,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 65475,
+        "refunds_cents": 0,
+        "fees_cents": 9980,
+        "revenue_cents": 65475,
+        "orders": 25,
+        "customers": 25,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 34684,
+        "refunds_cents": 0,
+        "fees_cents": 9040,
+        "revenue_cents": 34684,
+        "orders": 14,
+        "customers": 14,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 242759,
+        "refunds_cents": 0,
+        "revenue_cents": 242759,
+        "fees_cents": 19020,
+        "orders": 85,
+        "customers": 85
+      }
+    },
+    "2026-09-11": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 219200,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 219200,
+        "orders": 57,
+        "customers": 57,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 58377,
+        "refunds_cents": 0,
+        "fees_cents": 8980,
+        "revenue_cents": 58377,
+        "orders": 23,
+        "customers": 22,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 22139,
+        "refunds_cents": 0,
+        "fees_cents": 5960,
+        "revenue_cents": 22139,
+        "orders": 10,
+        "customers": 10,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 299716,
+        "refunds_cents": 0,
+        "revenue_cents": 299716,
+        "fees_cents": 14940,
+        "orders": 90,
+        "customers": 89
+      }
+    },
+    "2026-09-12": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 151700,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 151700,
+        "orders": 42,
+        "customers": 42,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 60480,
+        "refunds_cents": -5399,
+        "fees_cents": 9090,
+        "revenue_cents": 55081,
+        "orders": 20,
+        "customers": 19,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 38882,
+        "refunds_cents": 0,
+        "fees_cents": 10149,
+        "revenue_cents": 38882,
+        "orders": 18,
+        "customers": 18,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 251062,
+        "refunds_cents": -5399,
+        "revenue_cents": 245663,
+        "fees_cents": 19239,
+        "orders": 80,
+        "customers": 79
+      }
+    },
+    "2026-09-13": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 222300,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 222300,
+        "orders": 63,
+        "customers": 63,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 84767,
+        "refunds_cents": 0,
+        "fees_cents": 13092,
+        "revenue_cents": 84767,
+        "orders": 33,
+        "customers": 33,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 43429,
+        "refunds_cents": 0,
+        "fees_cents": 11553,
+        "revenue_cents": 43429,
+        "orders": 19,
+        "customers": 19,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 350496,
+        "refunds_cents": 0,
+        "revenue_cents": 350496,
+        "fees_cents": 24645,
+        "orders": 115,
+        "customers": 115
+      }
+    },
+    "2026-09-14": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 87200,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 87200,
+        "orders": 31,
+        "customers": 31,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 57676,
+        "refunds_cents": 0,
+        "fees_cents": 9393,
+        "revenue_cents": 57676,
+        "orders": 24,
+        "customers": 24,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 30982,
+        "refunds_cents": 0,
+        "fees_cents": 8965,
+        "revenue_cents": 30982,
+        "orders": 16,
+        "customers": 16,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 175858,
+        "refunds_cents": 0,
+        "revenue_cents": 175858,
+        "fees_cents": 18358,
+        "orders": 71,
+        "customers": 71
+      }
+    },
+    "2026-09-15": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 135800,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 135800,
+        "orders": 39,
+        "customers": 39,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 75470,
+        "refunds_cents": 0,
+        "fees_cents": 11614,
+        "revenue_cents": 75470,
+        "orders": 30,
+        "customers": 29,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 23138,
+        "refunds_cents": 0,
+        "fees_cents": 6350,
+        "revenue_cents": 23138,
+        "orders": 11,
+        "customers": 11,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 234408,
+        "refunds_cents": 0,
+        "revenue_cents": 234408,
+        "fees_cents": 17964,
+        "orders": 80,
+        "customers": 79
+      }
+    },
+    "2026-09-16": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 94400,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 94400,
+        "orders": 34,
+        "customers": 34,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 75673,
+        "refunds_cents": 0,
+        "fees_cents": 11788,
+        "revenue_cents": 75673,
+        "orders": 27,
+        "customers": 27,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 31085,
+        "refunds_cents": 0,
+        "fees_cents": 8263,
+        "revenue_cents": 31085,
+        "orders": 14,
+        "customers": 14,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 201158,
+        "refunds_cents": 0,
+        "revenue_cents": 201158,
+        "fees_cents": 20051,
+        "orders": 75,
+        "customers": 75
+      }
+    },
+    "2026-09-17": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 202200,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 202200,
+        "orders": 52,
+        "customers": 52,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 112859,
+        "refunds_cents": 0,
+        "fees_cents": 17376,
+        "revenue_cents": 112859,
+        "orders": 41,
+        "customers": 41,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 31185,
+        "refunds_cents": 0,
+        "fees_cents": 8276,
+        "revenue_cents": 31185,
+        "orders": 12,
+        "customers": 12,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 346244,
+        "refunds_cents": 0,
+        "revenue_cents": 346244,
+        "fees_cents": 25652,
+        "orders": 105,
+        "customers": 105
+      }
+    },
+    "2026-09-18": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 129100,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 129100,
+        "orders": 37,
+        "customers": 37,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 80168,
+        "refunds_cents": 0,
+        "fees_cents": 12529,
+        "revenue_cents": 80168,
+        "orders": 32,
+        "customers": 32,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 43780,
+        "refunds_cents": 0,
+        "fees_cents": 11367,
+        "revenue_cents": 43780,
+        "orders": 17,
+        "customers": 17,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 253048,
+        "refunds_cents": 0,
+        "revenue_cents": 253048,
+        "fees_cents": 23896,
+        "orders": 86,
+        "customers": 86
+      }
+    },
+    "2026-09-19": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 135300,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 135300,
+        "orders": 44,
+        "customers": 44,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 99762,
+        "refunds_cents": 0,
+        "fees_cents": 15627,
+        "revenue_cents": 99762,
+        "orders": 38,
+        "customers": 37,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 37735,
+        "refunds_cents": -1899,
+        "fees_cents": 9260,
+        "revenue_cents": 35836,
+        "orders": 14,
+        "customers": 14,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 272797,
+        "refunds_cents": -1899,
+        "revenue_cents": 270898,
+        "fees_cents": 24887,
+        "orders": 96,
+        "customers": 95
+      }
+    },
+    "2026-09-20": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 134500,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 134500,
+        "orders": 38,
+        "customers": 38,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 52673,
+        "refunds_cents": 0,
+        "fees_cents": 8106,
+        "revenue_cents": 52673,
+        "orders": 27,
+        "customers": 27,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 60074,
+        "refunds_cents": 0,
+        "fees_cents": 15250,
+        "revenue_cents": 60074,
+        "orders": 21,
+        "customers": 21,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 247247,
+        "refunds_cents": 0,
+        "revenue_cents": 247247,
+        "fees_cents": 23356,
+        "orders": 86,
+        "customers": 86
+      }
+    },
+    "2026-09-21": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 180700,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 180700,
+        "orders": 55,
+        "customers": 55,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 66474,
+        "refunds_cents": 0,
+        "fees_cents": 10459,
+        "revenue_cents": 66474,
+        "orders": 26,
+        "customers": 25,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "stale",
+        "sales_cents": 0,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 0,
+        "orders": 0,
+        "customers": 0,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 247174,
+        "refunds_cents": 0,
+        "revenue_cents": 247174,
+        "fees_cents": 10459,
+        "orders": 81,
+        "customers": 80
+      }
+    },
+    "2026-09-22": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 107700,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 107700,
+        "orders": 41,
+        "customers": 41,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 48680,
+        "refunds_cents": 0,
+        "fees_cents": 7762,
+        "revenue_cents": 48680,
+        "orders": 20,
+        "customers": 20,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "stale",
+        "sales_cents": 0,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 0,
+        "orders": 0,
+        "customers": 0,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 156380,
+        "refunds_cents": 0,
+        "revenue_cents": 156380,
+        "fees_cents": 7762,
+        "orders": 61,
+        "customers": 61
+      }
+    },
+    "2026-09-23": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 54500,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 54500,
+        "orders": 19,
+        "customers": 19,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 73372,
+        "refunds_cents": 0,
+        "fees_cents": 11114,
+        "revenue_cents": 73372,
+        "orders": 28,
+        "customers": 28,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 28935,
+        "refunds_cents": 0,
+        "fees_cents": 7937,
+        "revenue_cents": 28935,
+        "orders": 14,
+        "customers": 14,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 156807,
+        "refunds_cents": 0,
+        "revenue_cents": 156807,
+        "fees_cents": 19051,
+        "orders": 61,
+        "customers": 61
+      }
+    },
+    "2026-09-24": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 137400,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 137400,
+        "orders": 44,
+        "customers": 44,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 58179,
+        "refunds_cents": 0,
+        "fees_cents": 8814,
+        "revenue_cents": 58179,
+        "orders": 21,
+        "customers": 20,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 29037,
+        "refunds_cents": 0,
+        "fees_cents": 7476,
+        "revenue_cents": 29037,
+        "orders": 13,
+        "customers": 13,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 224616,
+        "refunds_cents": 0,
+        "revenue_cents": 224616,
+        "fees_cents": 16290,
+        "orders": 78,
+        "customers": 77
+      }
+    },
+    "2026-09-25": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 122900,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 122900,
+        "orders": 38,
+        "customers": 38,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 80177,
+        "refunds_cents": -1699,
+        "fees_cents": 11949,
+        "revenue_cents": 78478,
+        "orders": 23,
+        "customers": 23,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 36934,
+        "refunds_cents": 0,
+        "fees_cents": 9378,
+        "revenue_cents": 36934,
+        "orders": 15,
+        "customers": 15,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 240011,
+        "refunds_cents": -1699,
+        "revenue_cents": 238312,
+        "fees_cents": 21327,
+        "orders": 76,
+        "customers": 76
+      }
+    },
+    "2026-09-26": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 108800,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 108800,
+        "orders": 41,
+        "customers": 41,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 51478,
+        "refunds_cents": 0,
+        "fees_cents": 8035,
+        "revenue_cents": 51478,
+        "orders": 22,
+        "customers": 21,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 53124,
+        "refunds_cents": 0,
+        "fees_cents": 14207,
+        "revenue_cents": 53124,
+        "orders": 22,
+        "customers": 22,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 213402,
+        "refunds_cents": 0,
+        "revenue_cents": 213402,
+        "fees_cents": 22242,
+        "orders": 85,
+        "customers": 84
+      }
+    },
+    "2026-09-27": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 202200,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 202200,
+        "orders": 60,
+        "customers": 60,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 55579,
+        "refunds_cents": 0,
+        "fees_cents": 8947,
+        "revenue_cents": 55579,
+        "orders": 21,
+        "customers": 21,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 41128,
+        "refunds_cents": 0,
+        "fees_cents": 11447,
+        "revenue_cents": 41128,
+        "orders": 20,
+        "customers": 20,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 298907,
+        "refunds_cents": 0,
+        "revenue_cents": 298907,
+        "fees_cents": 20394,
+        "orders": 101,
+        "customers": 101
+      }
+    },
+    "2026-09-28": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 74400,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 74400,
+        "orders": 25,
+        "customers": 25,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 37284,
+        "refunds_cents": 0,
+        "fees_cents": 5816,
+        "revenue_cents": 37284,
+        "orders": 16,
+        "customers": 16,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 32835,
+        "refunds_cents": 0,
+        "fees_cents": 8523,
+        "revenue_cents": 32835,
+        "orders": 13,
+        "customers": 13,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 144519,
+        "refunds_cents": 0,
+        "revenue_cents": 144519,
+        "fees_cents": 14339,
+        "orders": 54,
+        "customers": 54
+      }
+    },
+    "2026-09-29": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 173500,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 173500,
+        "orders": 42,
+        "customers": 42,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 65676,
+        "refunds_cents": 0,
+        "fees_cents": 10136,
+        "revenue_cents": 65676,
+        "orders": 24,
+        "customers": 23,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 34187,
+        "refunds_cents": 0,
+        "fees_cents": 8248,
+        "revenue_cents": 34187,
+        "orders": 13,
+        "customers": 13,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 273363,
+        "refunds_cents": 0,
+        "revenue_cents": 273363,
+        "fees_cents": 18384,
+        "orders": 79,
+        "customers": 78
+      }
+    },
+    "2026-09-30": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 141500,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 141500,
+        "orders": 42,
+        "customers": 42,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 56177,
+        "refunds_cents": 0,
+        "fees_cents": 8609,
+        "revenue_cents": 56177,
+        "orders": 23,
+        "customers": 23,
+        "customer_basis": "buyer"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 24990,
+        "refunds_cents": 0,
+        "fees_cents": 6148,
+        "revenue_cents": 24990,
+        "orders": 10,
+        "customers": 10,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 222667,
+        "refunds_cents": 0,
+        "revenue_cents": 222667,
+        "fees_cents": 14757,
+        "orders": 75,
+        "customers": 75
+      }
+    }
+  },
+  "close": {
+    "month": "2026-09",
+    "marketplace_totals_from_files": {
+      "shopgoodwill": {
+        "sales_cents": 3911800,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "orders": 1174,
+        "revenue_cents": 3911800
+      },
+      "ebay": {
+        "sales_cents": 2005232,
+        "refunds_cents": -9497,
+        "fees_cents": 310373,
+        "orders": 768,
+        "revenue_cents": 1995735
+      },
+      "amazon": {
+        "sales_cents": 948649,
+        "refunds_cents": -5198,
+        "fees_cents": 250496,
+        "orders": 410,
+        "revenue_cents": 943451
+      }
+    },
+    "payouts": [
+      {
+        "id": "EBAY-0901",
+        "source": "ebay",
+        "activity_from": "2026-09-01",
+        "activity_to": "2026-09-01",
+        "paid_date": "2026-09-02",
+        "deposit_date": "2026-09-04",
+        "status": "deposited",
+        "amount_cents": 46947,
+        "net_in_files_cents": 46947,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0902",
+        "source": "ebay",
+        "activity_from": "2026-09-02",
+        "activity_to": "2026-09-02",
+        "paid_date": "2026-09-03",
+        "deposit_date": "2026-09-08",
+        "status": "deposited",
+        "amount_cents": 61574,
+        "net_in_files_cents": 61574,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0903",
+        "source": "ebay",
+        "activity_from": "2026-09-03",
+        "activity_to": "2026-09-03",
+        "paid_date": "2026-09-04",
+        "deposit_date": "2026-09-08",
+        "status": "deposited",
+        "amount_cents": 75830,
+        "net_in_files_cents": 75830,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0904",
+        "source": "ebay",
+        "activity_from": "2026-09-04",
+        "activity_to": "2026-09-04",
+        "paid_date": "2026-09-05",
+        "deposit_date": "2026-09-08",
+        "status": "deposited",
+        "amount_cents": 76831,
+        "net_in_files_cents": 76831,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0905",
+        "source": "ebay",
+        "activity_from": "2026-09-05",
+        "activity_to": "2026-09-05",
+        "paid_date": "2026-09-06",
+        "deposit_date": "2026-09-08",
+        "status": "deposited",
+        "amount_cents": 34407,
+        "net_in_files_cents": 34407,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0906",
+        "source": "ebay",
+        "activity_from": "2026-09-06",
+        "activity_to": "2026-09-06",
+        "paid_date": "2026-09-07",
+        "deposit_date": "2026-09-09",
+        "status": "deposited",
+        "amount_cents": 80243,
+        "net_in_files_cents": 80243,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0907",
+        "source": "ebay",
+        "activity_from": "2026-09-07",
+        "activity_to": "2026-09-07",
+        "paid_date": "2026-09-08",
+        "deposit_date": "2026-09-10",
+        "status": "deposited",
+        "amount_cents": 60013,
+        "net_in_files_cents": 60013,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0908",
+        "source": "ebay",
+        "activity_from": "2026-09-08",
+        "activity_to": "2026-09-08",
+        "paid_date": "2026-09-09",
+        "deposit_date": "2026-09-11",
+        "status": "deposited",
+        "amount_cents": 56103,
+        "net_in_files_cents": 56103,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0909",
+        "source": "ebay",
+        "activity_from": "2026-09-09",
+        "activity_to": "2026-09-09",
+        "paid_date": "2026-09-10",
+        "deposit_date": "2026-09-14",
+        "status": "deposited",
+        "amount_cents": 51791,
+        "net_in_files_cents": 51791,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0910",
+        "source": "ebay",
+        "activity_from": "2026-09-10",
+        "activity_to": "2026-09-10",
+        "paid_date": "2026-09-11",
+        "deposit_date": "2026-09-14",
+        "status": "deposited",
+        "amount_cents": 59688,
+        "net_in_files_cents": 59688,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0911",
+        "source": "ebay",
+        "activity_from": "2026-09-11",
+        "activity_to": "2026-09-11",
+        "paid_date": "2026-09-12",
+        "deposit_date": "2026-09-14",
+        "status": "deposited",
+        "amount_cents": 53590,
+        "net_in_files_cents": 53590,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0912",
+        "source": "ebay",
+        "activity_from": "2026-09-12",
+        "activity_to": "2026-09-12",
+        "paid_date": "2026-09-13",
+        "deposit_date": "2026-09-15",
+        "status": "deposited",
+        "amount_cents": 49585,
+        "net_in_files_cents": 49585,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0913",
+        "source": "ebay",
+        "activity_from": "2026-09-13",
+        "activity_to": "2026-09-13",
+        "paid_date": "2026-09-14",
+        "deposit_date": "2026-09-16",
+        "status": "deposited",
+        "amount_cents": 78264,
+        "net_in_files_cents": 78264,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0914",
+        "source": "ebay",
+        "activity_from": "2026-09-14",
+        "activity_to": "2026-09-14",
+        "paid_date": "2026-09-15",
+        "deposit_date": "2026-09-17",
+        "status": "deposited",
+        "amount_cents": 56070,
+        "net_in_files_cents": 56070,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0915",
+        "source": "ebay",
+        "activity_from": "2026-09-15",
+        "activity_to": "2026-09-15",
+        "paid_date": "2026-09-16",
+        "deposit_date": "2026-09-18",
+        "status": "deposited",
+        "amount_cents": 69247,
+        "net_in_files_cents": 69247,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0916",
+        "source": "ebay",
+        "activity_from": "2026-09-16",
+        "activity_to": "2026-09-16",
+        "paid_date": "2026-09-17",
+        "deposit_date": "2026-09-21",
+        "status": "deposited",
+        "amount_cents": 71073,
+        "net_in_files_cents": 71073,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0917",
+        "source": "ebay",
+        "activity_from": "2026-09-17",
+        "activity_to": "2026-09-17",
+        "paid_date": "2026-09-18",
+        "deposit_date": "2026-09-21",
+        "status": "deposited",
+        "amount_cents": 104468,
+        "net_in_files_cents": 104468,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0918",
+        "source": "ebay",
+        "activity_from": "2026-09-18",
+        "activity_to": "2026-09-18",
+        "paid_date": "2026-09-19",
+        "deposit_date": "2026-09-21",
+        "status": "deposited",
+        "amount_cents": 74827,
+        "net_in_files_cents": 74827,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0919",
+        "source": "ebay",
+        "activity_from": "2026-09-19",
+        "activity_to": "2026-09-19",
+        "paid_date": "2026-09-20",
+        "deposit_date": "2026-09-22",
+        "status": "deposited",
+        "amount_cents": 93719,
+        "net_in_files_cents": 93719,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0920",
+        "source": "ebay",
+        "activity_from": "2026-09-20",
+        "activity_to": "2026-09-20",
+        "paid_date": "2026-09-21",
+        "deposit_date": "2026-09-23",
+        "status": "deposited",
+        "amount_cents": 46963,
+        "net_in_files_cents": 46963,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0921",
+        "source": "ebay",
+        "activity_from": "2026-09-21",
+        "activity_to": "2026-09-21",
+        "paid_date": "2026-09-22",
+        "deposit_date": "2026-09-24",
+        "status": "deposited",
+        "amount_cents": 62604,
+        "net_in_files_cents": 62604,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0922",
+        "source": "ebay",
+        "activity_from": "2026-09-22",
+        "activity_to": "2026-09-22",
+        "paid_date": "2026-09-23",
+        "deposit_date": "2026-09-25",
+        "status": "deposited",
+        "amount_cents": 46309,
+        "net_in_files_cents": 46309,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0923",
+        "source": "ebay",
+        "activity_from": "2026-09-23",
+        "activity_to": "2026-09-23",
+        "paid_date": "2026-09-24",
+        "deposit_date": "2026-09-28",
+        "status": "deposited",
+        "amount_cents": 66451,
+        "net_in_files_cents": 66451,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0924",
+        "source": "ebay",
+        "activity_from": "2026-09-24",
+        "activity_to": "2026-09-24",
+        "paid_date": "2026-09-25",
+        "deposit_date": "2026-09-28",
+        "status": "deposited",
+        "amount_cents": 52959,
+        "net_in_files_cents": 52959,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0925",
+        "source": "ebay",
+        "activity_from": "2026-09-25",
+        "activity_to": "2026-09-25",
+        "paid_date": "2026-09-26",
+        "deposit_date": "2026-09-28",
+        "status": "deposited",
+        "amount_cents": 71321,
+        "net_in_files_cents": 71321,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0926",
+        "source": "ebay",
+        "activity_from": "2026-09-26",
+        "activity_to": "2026-09-26",
+        "paid_date": "2026-09-27",
+        "deposit_date": "2026-09-29",
+        "status": "deposited",
+        "amount_cents": 47636,
+        "net_in_files_cents": 47636,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0927",
+        "source": "ebay",
+        "activity_from": "2026-09-27",
+        "activity_to": "2026-09-27",
+        "paid_date": "2026-09-28",
+        "deposit_date": "2026-09-30",
+        "status": "deposited",
+        "amount_cents": 53820,
+        "net_in_files_cents": 53820,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0928",
+        "source": "ebay",
+        "activity_from": "2026-09-28",
+        "activity_to": "2026-09-28",
+        "paid_date": "2026-09-29",
+        "deposit_date": null,
+        "status": "in_transit",
+        "amount_cents": 34463,
+        "net_in_files_cents": 34463,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0929",
+        "source": "ebay",
+        "activity_from": "2026-09-29",
+        "activity_to": "2026-09-29",
+        "paid_date": "2026-09-30",
+        "deposit_date": null,
+        "status": "in_transit",
+        "amount_cents": 60931,
+        "net_in_files_cents": 60931,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "EBAY-0930",
+        "source": "ebay",
+        "activity_from": "2026-09-30",
+        "activity_to": "2026-09-30",
+        "paid_date": "2026-10-01",
+        "deposit_date": null,
+        "status": "in_transit",
+        "amount_cents": 51162,
+        "net_in_files_cents": 51162,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "AMZN-0914",
+        "source": "amazon",
+        "activity_from": "2026-09-01",
+        "activity_to": "2026-09-14",
+        "paid_date": "2026-09-15",
+        "deposit_date": "2026-09-18",
+        "status": "deposited",
+        "amount_cents": 405400,
+        "net_in_files_cents": 405400,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "AMZN-0928",
+        "source": "amazon",
+        "activity_from": "2026-09-15",
+        "activity_to": "2026-09-28",
+        "paid_date": "2026-09-29",
+        "deposit_date": null,
+        "status": "in_transit",
+        "amount_cents": 489384,
+        "net_in_files_cents": 415074,
+        "data_gap_cents": 74310
+      },
+      {
+        "id": "SGW-0906",
+        "source": "shopgoodwill",
+        "activity_from": "2026-09-01",
+        "activity_to": "2026-09-06",
+        "paid_date": "2026-09-07",
+        "deposit_date": "2026-09-08",
+        "status": "deposited",
+        "amount_cents": 1088878,
+        "net_in_files_cents": 1088878,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "SGW-0913",
+        "source": "shopgoodwill",
+        "activity_from": "2026-09-07",
+        "activity_to": "2026-09-13",
+        "paid_date": "2026-09-14",
+        "deposit_date": "2026-09-15",
+        "status": "deposited",
+        "amount_cents": 1531893,
+        "net_in_files_cents": 1344329,
+        "data_gap_cents": 187564
+      },
+      {
+        "id": "SGW-0920",
+        "source": "shopgoodwill",
+        "activity_from": "2026-09-14",
+        "activity_to": "2026-09-20",
+        "paid_date": "2026-09-21",
+        "deposit_date": "2026-09-22",
+        "status": "deposited",
+        "amount_cents": 1329924,
+        "net_in_files_cents": 1329924,
+        "data_gap_cents": 0
+      },
+      {
+        "id": "SGW-0927",
+        "source": "shopgoodwill",
+        "activity_from": "2026-09-21",
+        "activity_to": "2026-09-27",
+        "paid_date": "2026-09-28",
+        "deposit_date": "2026-09-29",
+        "status": "deposited",
+        "amount_cents": 1370702,
+        "net_in_files_cents": 1370702,
+        "data_gap_cents": 0
+      }
+    ],
+    "bank_deposits": [
+      {
+        "date": "2026-09-04",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0901",
+        "amount_cents": 46947,
+        "matches": [
+          "EBAY-0901"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-08",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0902+",
+        "amount_cents": 248642,
+        "matches": [
+          "EBAY-0902",
+          "EBAY-0903",
+          "EBAY-0904",
+          "EBAY-0905"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-08",
+        "description": "SHOPGOODWILL.COM DES:SELLER PAYOUT ID:0906",
+        "amount_cents": 1088878,
+        "matches": [
+          "SGW-0906"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-09",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0906",
+        "amount_cents": 80243,
+        "matches": [
+          "EBAY-0906"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-10",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0907",
+        "amount_cents": 60013,
+        "matches": [
+          "EBAY-0907"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-11",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0908",
+        "amount_cents": 56103,
+        "matches": [
+          "EBAY-0908"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-14",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0909+",
+        "amount_cents": 165069,
+        "matches": [
+          "EBAY-0909",
+          "EBAY-0910",
+          "EBAY-0911"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-15",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0912",
+        "amount_cents": 49585,
+        "matches": [
+          "EBAY-0912"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-15",
+        "description": "SHOPGOODWILL.COM DES:SELLER PAYOUT ID:0913",
+        "amount_cents": 1531893,
+        "matches": [
+          "SGW-0913"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-16",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0913",
+        "amount_cents": 78264,
+        "matches": [
+          "EBAY-0913"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-17",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0914",
+        "amount_cents": 56070,
+        "matches": [
+          "EBAY-0914"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-17",
+        "description": "REMOTE DEPOSIT CAPTURE REF 88213",
+        "amount_cents": 41237,
+        "matches": [],
+        "status": "unmatched"
+      },
+      {
+        "date": "2026-09-18",
+        "description": "AMAZON.COM SERVICES LLC DES:PAYMENTS ID:0914",
+        "amount_cents": 405400,
+        "matches": [
+          "AMZN-0914"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-18",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0915",
+        "amount_cents": 69247,
+        "matches": [
+          "EBAY-0915"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-21",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0916+",
+        "amount_cents": 250368,
+        "matches": [
+          "EBAY-0916",
+          "EBAY-0917",
+          "EBAY-0918"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-22",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0919",
+        "amount_cents": 93719,
+        "matches": [
+          "EBAY-0919"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-22",
+        "description": "SHOPGOODWILL.COM DES:SELLER PAYOUT ID:0920",
+        "amount_cents": 1329924,
+        "matches": [
+          "SGW-0920"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-23",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0920",
+        "amount_cents": 46963,
+        "matches": [
+          "EBAY-0920"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-24",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0921",
+        "amount_cents": 62604,
+        "matches": [
+          "EBAY-0921"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-25",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0922",
+        "amount_cents": 46309,
+        "matches": [
+          "EBAY-0922"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-28",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0923+",
+        "amount_cents": 190731,
+        "matches": [
+          "EBAY-0923",
+          "EBAY-0924",
+          "EBAY-0925"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-29",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0926",
+        "amount_cents": 47636,
+        "matches": [
+          "EBAY-0926"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-29",
+        "description": "SHOPGOODWILL.COM DES:SELLER PAYOUT ID:0927",
+        "amount_cents": 1370702,
+        "matches": [
+          "SGW-0927"
+        ],
+        "status": "matched"
+      },
+      {
+        "date": "2026-09-30",
+        "description": "EBAY COMMERCE INC DES:PAYOUT ID:0927",
+        "amount_cents": 53820,
+        "matches": [
+          "EBAY-0927"
+        ],
+        "status": "matched"
+      }
+    ],
+    "exceptions": [
+      {
+        "kind": "missing_file",
+        "detail": "Upright paid orders for Sep 7 (Pacific) never downloaded; ShopGoodwill payout SGW-0913 is larger than the files show"
+      },
+      {
+        "kind": "missing_file",
+        "detail": "Amazon Sep 21-22 (Pacific) not downloaded; settlement AMZN-0928 is larger than the files show"
+      },
+      {
+        "kind": "duplicate_file",
+        "detail": "paid_orders_09-15-2026_09-15-2026 (4).xlsx repeats the Sep 15 report"
+      },
+      {
+        "kind": "overlapping_download",
+        "detail": "ebay_transactions_2026-09-12_2026-09-18 (1).csv overlaps two weekly files"
+      },
+      {
+        "kind": "malformed_row",
+        "detail": "eBay 19-55021-60713: amount is #VALUE!"
+      },
+      {
+        "kind": "malformed_row",
+        "detail": "eBay 19-55021-60714: date Sep 31, 2026 does not exist"
+      },
+      {
+        "kind": "refund_without_order",
+        "detail": "eBay 26-31877-40522 refunded Sep 3; sold Aug 30 (previous month)"
+      },
+      {
+        "kind": "refund_without_order",
+        "detail": "Amazon 113-5501842-7720931 refunded Sep 8; sold Aug 29 (previous month)"
+      },
+      {
+        "kind": "unmatched_deposit",
+        "detail": "Sep 17 REMOTE DEPOSIT CAPTURE REF 88213, $412.37"
+      },
+      {
+        "kind": "unpaid_at_month_end",
+        "detail": "ShopGoodwill Sep 28-30 and Amazon Sep 29-30 (Pacific) settle in October: earned in September, not yet paid out"
+      },
+      {
+        "kind": "in_transit",
+        "detail": "payouts paid in September that reach the bank in October: EBAY-0928, EBAY-0929, EBAY-0930, AMZN-0928"
+      }
+    ],
+    "not_modeled": "Cash Monkey, Goodwill Books, the ShopGoodwill periodic statement, payout fees and reserves, chargebacks; the August payouts that settle in early September are not in the bank file"
+  },
+  "mess": "Phase 3 test month: see close.exceptions"
+}

@@ -39,3 +39,26 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - On my machine Python 3.13 is only on the `py` launcher, so `py -m ...`.
 
 ## Requests to me (append only: `- [from X, time] request`)
+- [from Orlando, 2026-10-03 18:45] **Business Central export module (D6-D8): proposed CSV schemas, yours to accept or change in `docs/contracts/outputs.md` (task 0.3).** Format: CSV, UTF-8, header row, columns in the same order as the BC page so staff can paste rows into the General Journal / Sales Invoice grid or use "Edit in Excel" (no new tools, per the partner constraint). Amounts in dollars with 2 decimals; BC sign convention: positive = debit, negative = credit; every Document No. sums to 0.00. Test data: `data/sample/messy_month/` (September; `expected.json` -> `close` has month totals, every payout, every bank deposit with the payouts it matches, and the planted exceptions). **All account numbers, customer numbers and the department code below are placeholders** except the pattern from the deck (FedEx: G/L 40356, Dept 180): the real mapping lives in the E-Commerce Allocation workbook's Journal Entry and Invoices tabs, which we have not seen.
+
+  **1. `general_journal_<YYYY-MM>.csv`** (one balanced document per source per month, plus one per bank deposit):
+  ```
+  Posting Date,Document Type,Document No.,Account Type,Account No.,Description,Amount,Department Code
+  09/30/2026,,ECOM-2609-EBAY,G/L Account,11310,eBay net receivable Sep 2026,16853.62,180
+  09/30/2026,,ECOM-2609-EBAY,G/L Account,40120,eBay sales Sep 2026,-20052.32,180
+  09/30/2026,,ECOM-2609-EBAY,G/L Account,40190,eBay refunds Sep 2026,94.97,180
+  09/30/2026,,ECOM-2609-EBAY,G/L Account,61210,eBay marketplace fees Sep 2026,3103.73,180
+  09/04/2026,Payment,BNK-0904-EBAY,Bank Account,OPERATING,EBAY PAYOUT 0901 deposit,469.47,180
+  09/04/2026,Payment,BNK-0904-EBAY,G/L Account,11310,EBAY PAYOUT 0901 deposit,-469.47,180
+  ```
+  (The ECOM-2609-EBAY figures are the real messy-month eBay totals from the files: sales 20,052.32, refunds 94.97, fees 3,103.73.)
+
+  **2. `ar_invoice_<YYYY-MM>.csv`** (sales invoice lines; header fields repeated on each line so it stays one flat CSV):
+  ```
+  Document No.,Customer No.,Posting Date,Type,No.,Description,Quantity,Unit Price,Amount,Department Code
+  SI-ECOM-2609-SGW,C-SHOPGOODWILL,09/30/2026,G/L Account,40110,ShopGoodwill sales Sep 2026,1,39118.00,39118.00,180
+  SI-ECOM-2609-SGW,C-SHOPGOODWILL,09/30/2026,G/L Account,40115,ShopGoodwill handling Sep 2026,1,3522.00,3522.00,180
+  ```
+  `Type` is `Item` or `G/L Account`; `Amount = Quantity x Unit Price`.
+
+  **Rules to keep it safe:** (a) each source's revenue posts through exactly one path, journal or invoice, never both (the mapping table decides; which sources go on the invoice is a question for Amanda); (b) refuse to write a document that doesn't sum to 0.00 (D7) and list it as an exception instead; (c) write a `control_totals_<YYYY-MM>.csv` next to them (source, files read, revenue from files, posted amount, difference) so the close shows "source-to-BC totals" as the deck asks; (d) anything in `close.exceptions` (missing file, unmatched deposit, refund of a prior-month order) stays out of the journal until resolved.

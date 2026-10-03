@@ -185,7 +185,7 @@ def clock(dt):
     return f"{dt.hour % 12 or 12}:{dt:%M:%S} {'AM' if dt.hour < 12 else 'PM'}"
 
 
-def write_ebay(path, events, start, end, rng):
+def write_ebay(path, events, start, end, rng, payouts=None, junk_rows=()):
     cols = ["Transaction creation date", "Type", "Order number", "Legacy order ID", "Buyer username",
             "Item ID", "Item title", "Custom label", "Quantity", "Item subtotal", "Shipping and handling",
             "Seller collected tax", "eBay collected tax", "Final Value Fee - fixed",
@@ -212,17 +212,25 @@ def write_ebay(path, events, start, end, rng):
                         it.sku, "1", money(o.subtotal), money(o.shipping_cents), "--", money(o.tax_cents),
                         "-0.30", money(-(o.fee - 30)), money(o.subtotal + o.shipping_cents + o.tax_cents),
                         money(o.subtotal + o.shipping_cents - o.fee), "USD", "--"])
+    w.writerows(junk_rows)
     # eBay pays out daily; payout rows are not sales and must be skipped by the parser.
     d = start
     while d <= end:
+        if payouts is None:
+            amount = -rng.randint(30000, 90000)
+        elif d in payouts:
+            amount = -payouts[d]
+        else:
+            d += timedelta(days=1)
+            continue
         w.writerow([us_date(d), "Payout", "--", "--", "--", "--", "--", "--", "--", "--", "--", "--", "--",
-                    "--", "--", "--", money(-rng.randint(30000, 90000)), "USD", "Payout to bank ending 4417"])
+                    "--", "--", "--", money(amount), "USD", "Payout to bank ending 4417"])
         d += timedelta(days=1)
     path.write_text(buf.getvalue(), encoding="utf-8-sig", newline="")
     return events
 
 
-def write_amazon(path, events, start, end, rng, dup_row=False):
+def write_amazon(path, events, start, end, rng, dup_row=False, transfers=None):
     cols = ["date/time", "settlement id", "type", "order id", "sku", "description", "quantity",
             "marketplace", "fulfillment", "order state", "product sales", "product sales tax",
             "shipping credits", "promotional rebates", "marketplace withheld tax", "selling fees",
@@ -241,10 +249,15 @@ def write_amazon(path, events, start, end, rng, dup_row=False):
                          "1", "amazon.com", "Seller", o.state, money(sign * it.price_cents, True),
                          money(sign * tax, True), money(sign * 399, True), "0", money(-sign * tax, True),
                          money(fee, True), "0", "0", "0", money(total, True)])
-    t = datetime(end.year, end.month, end.day, 9, 12, 44, tzinfo=PT)
-    transfer = money(-rng.randint(100000, 300000), True)  # payout to bank: not a sale, parser must skip
-    rows.append([f"{us_date(end)} {clock(t)} {t.tzname()}", "11843920571", "Transfer", "", "", "To account ending in: 4417",
-                 "", "", "", "", "0", "0", "0", "0", "0", "0", "0", "0", transfer, transfer])
+    # Transfers (payouts to the bank) are not sales; the parser must skip them.
+    if transfers is None:
+        transfers = [(end, rng.randint(100000, 300000))]
+    for day, cents in transfers:
+        t = datetime(day.year, day.month, day.day, 9, 12, 44, tzinfo=PT)
+        transfer = money(-cents, True)
+        rows.append([f"{us_date(day)} {clock(t)} {t.tzname()}", "11843920571", "Transfer", "", "",
+                     "To account ending in: 4417", "", "", "", "", "0", "0", "0", "0", "0", "0", "0", "0",
+                     transfer, transfer])
     if dup_row:
         sales = [i for i, r in enumerate(rows) if r[2] == "Order"]
         i = sales[len(sales) // 2]
@@ -449,6 +462,209 @@ def scenario(name, start, end, business_date, rng, events, skip=(), ebay_redownl
     return key
 
 
+# ---------------------------------------------------------------- messy month (O2)
+# September again (same orders as clean_month), downloaded the messy way, plus the money side:
+# marketplace payouts and the bank account they land in. For phase 3 (reconciliation, close).
+SEP1, SEP30 = date(2026, 9, 1), date(2026, 9, 30)
+SGW_HANDLING = 300  # Upright "Handling" (write_upright)
+
+
+def days(a, b):
+    while a <= b:
+        yield a
+        a += timedelta(days=1)
+
+
+BANK_HOLIDAYS = {date(2026, 9, 7)}  # Labor Day
+
+
+def bank_day(d):
+    """Banks post on business days: a weekend or holiday deposit lands on the next business day."""
+    while d.weekday() >= 5 or d in BANK_HOLIDAYS:
+        d += timedelta(days=1)
+    return d
+
+
+def net(e):
+    """What the marketplace owes Goodwill for one event (tax is remitted by the marketplace)."""
+    o = e.order if isinstance(e, Refund) else e
+    ship = 399 * len(o.items) if o.source == "amazon" else o.shipping_cents
+    if isinstance(e, Refund):
+        return -(o.subtotal + ship)
+    if o.source == "shopgoodwill":
+        return o.subtotal + ship + SGW_HANDLING
+    return o.subtotal + ship - o.fee
+
+
+def payout_schedule(events):
+    """Every payout for September activity, from ALL events (the truth, whatever our files miss).
+
+    eBay: daily, paid the next day for the Eastern day. Amazon: settlements Sep 1-14 and 15-28
+    (Pacific days), paid the day after; Sep 29-30 settle in October. ShopGoodwill: weekly, Monday
+    for the prior Monday-Sunday (Pacific days). Money reaches the bank 2-3 days after payout,
+    weekdays only.
+    """
+    out = []
+    for d in days(SEP1, SEP30):
+        evs = [e for e in events if e.source == "ebay" and when(e).date() == d]
+        if evs:
+            out.append({"id": f"EBAY-{d:%m%d}", "source": "ebay", "from": d, "to": d, "events": evs,
+                        "paid": d + timedelta(days=1), "deposit": bank_day(d + timedelta(days=3))})
+    for a, b in ((date(2026, 9, 1), date(2026, 9, 14)), (date(2026, 9, 15), date(2026, 9, 28))):
+        evs = [e for e in events if e.source == "amazon" and a <= when(e).astimezone(PT).date() <= b]
+        out.append({"id": f"AMZN-{b:%m%d}", "source": "amazon", "from": a, "to": b, "events": evs,
+                    "paid": b + timedelta(days=1), "deposit": bank_day(b + timedelta(days=4))})
+    for a in (date(2026, 9, 1), date(2026, 9, 7), date(2026, 9, 14), date(2026, 9, 21)):
+        b = a + timedelta(days=6 - a.weekday())  # through Sunday
+        evs = [e for e in events if e.source == "shopgoodwill" and isinstance(e, Order)
+               and a <= e.placed.astimezone(PT).date() <= b]
+        out.append({"id": f"SGW-{b:%m%d}", "source": "shopgoodwill", "from": a, "to": b, "events": evs,
+                    "paid": b + timedelta(days=1), "deposit": bank_day(b + timedelta(days=2))})
+    for p in out:
+        p["amount"] = sum(net(e) for e in p["events"])
+    return out
+
+
+BANK_TEXT = {"ebay": "EBAY COMMERCE INC DES:PAYOUT", "amazon": "AMAZON.COM SERVICES LLC DES:PAYMENTS",
+             "shopgoodwill": "SHOPGOODWILL.COM DES:SELLER PAYOUT"}
+
+
+def write_bank(path, payouts):
+    """Operating account export: Debit/Credit columns, running balance. eBay deposits landing on the
+    same day are combined into one line (one deposit, several payouts)."""
+    lines = {}
+    for p in payouts:
+        if p["deposit"] <= SEP30:
+            key = (p["deposit"], p["source"])
+            lines.setdefault(key, []).append(p)
+    rows = [(d, f"{BANK_TEXT[src]} ID:{ps[0]['id'][-4:]}{'+' if len(ps) > 1 else ''}", sum(p["amount"] for p in ps), [p["id"] for p in ps])
+            for (d, src), ps in lines.items()]
+    rows += [(date(2026, 9, 17), "REMOTE DEPOSIT CAPTURE REF 88213", 41237, []),  # nobody can explain this one
+             (date(2026, 9, 15), "ADP PAYROLL DES:PAYROLL", -1834211, None),
+             (date(2026, 9, 30), "MONTHLY SERVICE CHARGE", -2500, None)]
+    rows.sort(key=lambda r: (r[0], r[1]))
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\r\n")
+    w.writerow(["Posting Date", "Description", "Debit", "Credit", "Balance"])
+    balance = 8421055
+    for d, text, cents, _ in rows:
+        balance += cents
+        w.writerow([f"{d.month:02d}/{d.day:02d}/{d.year}", text, money(-cents, True) if cents < 0 else "",
+                    money(cents, True) if cents > 0 else "", money(balance, True)])
+    path.write_text(buf.getvalue(), encoding="utf-8", newline="")
+    return [r for r in rows if r[3] is not None]  # deposits only
+
+
+def messy_month(events):
+    rng = random.Random(SEED + 2)  # own stream: leaves every other scenario byte-identical
+    # Two refunds issued in September for August orders: the original sale is not in this month.
+    august = []
+    for src, placed, refunded, oid in (("ebay", datetime(2026, 8, 30, 15, 4, 0, tzinfo=ET), date(2026, 9, 3), "26-31877-40522"),
+                                       ("amazon", datetime(2026, 8, 29, 11, 41, 0, tzinfo=ET), date(2026, 9, 8), "113-5501842-7720931")):
+        price = rng.randint(15, 40) * 100 + 99
+        fee = 30 + round(0.1325 * price) if src == "ebay" else round(0.15 * (price + 399)) + 180
+        item = Item("EB-4410" if src == "ebay" else "BK-0420", "Pyrex Butterprint Bowl" if src == "ebay" else "The Hobbit",
+                    "", price, fee)
+        o = Order(src, oid, placed, "goldenowl311" if src == "ebay" else None, [item],
+                  0 if src == "ebay" else 399, round(price * 0.07), "IN")
+        august.append(Refund(o, datetime(refunded.year, refunded.month, refunded.day, 13, 20, 0, tzinfo=ET)))
+    events = events + august
+    payouts = payout_schedule(events)
+    by_day = {p["paid"]: p["amount"] for p in payouts if p["source"] == "ebay"}
+
+    name = "messy_month"
+    inbox = OUT / name / "inbox"
+    inbox.mkdir(parents=True)
+    exported = {"shopgoodwill": {}, "ebay": {}, "amazon": {}}
+    files = []
+
+    # ShopGoodwill: one Upright file per Pacific day. Sep 7 never downloaded; Sep 15 saved twice.
+    for d in days(SEP1, SEP30):
+        if d == date(2026, 9, 7):
+            continue
+        orders = [e for e in events if e.source == "shopgoodwill" and isinstance(e, Order)
+                  and e.placed.astimezone(PT).date() == d]
+        fname = f"paid_orders_{d:%m-%d-%Y}_{d:%m-%d-%Y}"
+        write_upright(inbox / f"{fname}.xlsx", orders)
+        if d == date(2026, 9, 15):
+            write_upright(inbox / f"{fname} (4).xlsx", orders)
+        exported["shopgoodwill"].update({id(o): o for o in orders})
+
+    # eBay: weekly Transaction reports, one week re-downloaded with an overlapping range, and two
+    # rows broken in Excel (an error value and an impossible date).
+    junk = [["Sep 18, 2026", "Order", "19-55021-60713", "--", "bluefox12", "5521", "Nintendo DS Lite Pink", "EB-5521",
+             "1", "#VALUE!", "0.00", "--", "--", "-0.30", "-2.91", "#VALUE!", "#VALUE!", "USD", "--"],
+            ["Sep 31, 2026", "Order", "19-55021-60714", "--", "quietowl8", "5522", "Vera Bradley Tote", "EB-5522",
+             "1", "18.99", "0.00", "--", "1.33", "-0.30", "-2.52", "20.32", "16.17", "USD", "--"]]
+    for a, b, extra in ((date(2026, 9, 1), date(2026, 9, 7), ""), (date(2026, 9, 8), date(2026, 9, 14), ""),
+                        (date(2026, 9, 15), date(2026, 9, 21), ""), (date(2026, 9, 12), date(2026, 9, 18), " (1)"),
+                        (date(2026, 9, 22), date(2026, 9, 30), "")):
+        evs = window(events, "ebay", a, b, ET)
+        write_ebay(inbox / f"ebay_transactions_{a:%Y-%m-%d}_{b:%Y-%m-%d}{extra}.csv", evs, a, b, rng,
+                   payouts={d: v for d, v in by_day.items() if a <= d <= b},
+                   junk_rows=junk if (a, extra) == (date(2026, 9, 15), "") else ())
+        exported["ebay"].update({id(e): e for e in evs})
+
+    # Amazon: Date Range reports with a gap: Sep 21-22 (Pacific) never downloaded.
+    transfers = [(p["paid"], p["amount"]) for p in payouts if p["source"] == "amazon"]
+    for a, b in ((date(2026, 9, 1), date(2026, 9, 20)), (date(2026, 9, 23), date(2026, 9, 30))):
+        evs = window(events, "amazon", a, b, PT)
+        write_amazon(inbox / f"amazon_daterange_{a:%Y-%m-%d}_{b:%Y-%m-%d}.csv", evs, a, b, rng,
+                     transfers=[(d, c) for d, c in transfers if a <= d <= b])
+        exported["amazon"].update({id(e): e for e in evs})
+
+    deposits = write_bank(inbox / "bank_activity_2026-09.csv", payouts)
+
+    exported = {k: sorted(v.values(), key=when) for k, v in exported.items()}
+    key = expected(name, exported, None, list(days(SEP1, SEP30)), basis={"shopgoodwill": "order"})
+    in_files = {k: {id(e) for e in v} for k, v in exported.items()}
+    month = {}
+    for src in SOURCES:
+        evs = [e for e in exported[src] if SEP1 <= when(e).date() <= SEP30]
+        sales = [e for e in evs if isinstance(e, Order)]
+        month[src] = {"sales_cents": sum(e.subtotal for e in sales),
+                      "refunds_cents": -sum(e.order.subtotal for e in evs if isinstance(e, Refund)),
+                      "fees_cents": sum(e.fee for e in sales), "orders": len(sales)}
+        month[src]["revenue_cents"] = month[src]["sales_cents"] + month[src]["refunds_cents"]
+    key["close"] = {
+        "month": "2026-09",
+        "marketplace_totals_from_files": month,
+        "payouts": [{
+            "id": p["id"], "source": p["source"], "activity_from": p["from"].isoformat(),
+            "activity_to": p["to"].isoformat(), "paid_date": p["paid"].isoformat(),
+            "deposit_date": p["deposit"].isoformat() if p["deposit"] <= SEP30 else None,
+            "status": "deposited" if p["deposit"] <= SEP30 else "in_transit",
+            "amount_cents": p["amount"],
+            "net_in_files_cents": sum(net(e) for e in p["events"] if id(e) in in_files[p["source"]]),
+            "data_gap_cents": sum(net(e) for e in p["events"] if id(e) not in in_files[p["source"]]),
+        } for p in payouts],
+        "bank_deposits": [{"date": d.isoformat(), "description": t, "amount_cents": c, "matches": ids,
+                           "status": "matched" if ids else "unmatched"} for d, t, c, ids in deposits],
+        "exceptions": [
+            {"kind": "missing_file", "detail": "Upright paid orders for Sep 7 (Pacific) never downloaded; "
+                                               "ShopGoodwill payout SGW-0913 is larger than the files show"},
+            {"kind": "missing_file", "detail": "Amazon Sep 21-22 (Pacific) not downloaded; settlement AMZN-0928 "
+                                               "is larger than the files show"},
+            {"kind": "duplicate_file", "detail": "paid_orders_09-15-2026_09-15-2026 (4).xlsx repeats the Sep 15 report"},
+            {"kind": "overlapping_download", "detail": "ebay_transactions_2026-09-12_2026-09-18 (1).csv overlaps two weekly files"},
+            {"kind": "malformed_row", "detail": "eBay 19-55021-60713: amount is #VALUE!"},
+            {"kind": "malformed_row", "detail": "eBay 19-55021-60714: date Sep 31, 2026 does not exist"},
+            {"kind": "refund_without_order", "detail": "eBay 26-31877-40522 refunded Sep 3; sold Aug 30 (previous month)"},
+            {"kind": "refund_without_order", "detail": "Amazon 113-5501842-7720931 refunded Sep 8; sold Aug 29 (previous month)"},
+            {"kind": "unmatched_deposit", "detail": "Sep 17 REMOTE DEPOSIT CAPTURE REF 88213, $412.37"},
+            {"kind": "unpaid_at_month_end", "detail": "ShopGoodwill Sep 28-30 and Amazon Sep 29-30 (Pacific) "
+                                                      "settle in October: earned in September, not yet paid out"},
+            {"kind": "in_transit", "detail": "payouts paid in September that reach the bank in October: "
+                                             + ", ".join(p["id"] for p in payouts if p["deposit"] > SEP30)},
+        ],
+        "not_modeled": "Cash Monkey, Goodwill Books, the ShopGoodwill periodic statement, payout fees and reserves, "
+                       "chargebacks; the August payouts that settle in early September are not in the bank file",
+    }
+    key["mess"] = "Phase 3 test month: see close.exceptions"
+    (OUT / name / "expected.json").write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
+    return key
+
+
 def goodwill_scenario(name, business_date, events, skip=(), upright_twice=False, note=""):
     """Nightly inbox as Goodwill receives it: Upright (ShopGoodwill) + Cash Monkey (eBay, Amazon), .xlsx.
 
@@ -517,6 +733,7 @@ def main():
                           note="The Upright report saved twice ('... (4).xlsx'): every ShopGoodwill order appears twice. "
                                "Cash Monkey multi-unit orders repeat the order id on purpose and are NOT duplicates."),
     ]
+    keys.append(messy_month(events))
     for k in keys:
         bd = k["business_date"]
         if bd:

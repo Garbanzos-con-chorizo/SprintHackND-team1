@@ -68,3 +68,15 @@ Reports are pulled at 00:15 Eastern, after e-commerce closes at 9 PM Pacific. Up
 }
 ```
 A missing source is `{"status": "missing"}` with no numbers. Enterprise totals only add sources that have data. Definitions follow the defaults in `docs/contracts/transaction.md` (revenue net of refunds, fees separate, ET order date). Refunds count on the day they are issued.
+
+## Messy month (`messy_month`, task O2, for phase 3)
+September again (the same orders as `clean_month`), downloaded the messy way, plus the money side. `expected.json` has the usual `days` plus a `close` section: month totals from the files, every payout (amount, activity window, deposit date or `in_transit`, and `data_gap_cents` = money paid for activity missing from our files), every bank deposit with the payouts it matches, and the list of planted exceptions.
+
+| File(s) | Mess |
+|---|---|
+| `paid_orders_MM-DD-YYYY_MM-DD-YYYY.xlsx` (Upright, one per Pacific day) | Sep 7 never downloaded; Sep 15 saved twice (`(4)`). |
+| `ebay_transactions_<from>_<to>.csv` (weekly) | A re-download (`(1)`) overlapping two weeks; one row with `#VALUE!` amounts and one dated Sep 31. Payout rows carry the real daily payout. A refund of an **August** order. |
+| `amazon_daterange_<from>_<to>.csv` | Sep 21-22 (Pacific) not downloaded. Transfer rows carry the real settlements (Sep 1-14, Sep 15-28). A refund of an **August** order. |
+| `bank_activity_2026-09.csv` | Operating account: Debit/Credit columns, running balance. eBay deposits that land on a weekend or Labor Day are combined into one deposit (several payouts). One deposit nobody can explain (Sep 17, $412.37). Payroll and a service charge as noise. Payouts after Sep 25 are still in transit on Sep 30. |
+
+Payout model (a simplification, stated so nobody mistakes it for fact): eBay pays daily for the Eastern day, Amazon settles every 14 days, ShopGoodwill pays weekly on Monday; money reaches the bank 2-4 days later on business days. Net = merchandise + shipping (+ handling for ShopGoodwill) - marketplace fees; tax is remitted by the marketplace.
