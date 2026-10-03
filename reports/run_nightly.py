@@ -6,12 +6,14 @@ or cron would call it after staff drop the day's exports into the inbox.
     python -m reports.run_nightly --scenario day_ebay_missing [--open] [--pace 0.5]
 
 Steps: check the inbox -> engine (parse, clean) -> pulse (calculate) -> render (HTML, CSV, email).
-By default the engine and pulse steps are simulated from the scenario's answer key, and the log
-says so. --real runs `python -m engine run` and `python -m recon.pulse` instead; use it once the
-engine reports per-source status (P-V4), otherwise every source shows as missing.
+Runs the real pipeline: `python -m engine run` (Victor) then `python -m recon.pulse` (Dani), each
+scenario in its own folder `out/<scenario>/`, emptied first, so one scenario's pulse files never
+serve as another's "prior day". --simulated is a fallback for a live demo if something breaks:
+it builds the pulse from the scenario's answer key instead, and the log says SIMULATED.
 """
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -65,7 +67,8 @@ def main(argv=None):
     global PACE
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--scenario", required=True, help="sample under data/sample/ (day_clean, day_refund, ...)")
-    ap.add_argument("--real", action="store_true", help="run the real engine and pulse commands")
+    ap.add_argument("--simulated", action="store_true", help="fallback: pulse from the answer key, no engine")
+    ap.add_argument("--real", action="store_true", help=argparse.SUPPRESS)  # old flag; real is the default now
     ap.add_argument("--open", action="store_true", help="open the page in the browser when done")
     ap.add_argument("--pace", type=float, default=0.0, help="seconds between log lines, for live demos")
     args = ap.parse_args(argv)
@@ -76,21 +79,23 @@ def main(argv=None):
     day = key["business_date"]
     if not day:
         raise SystemExit("pick a day_* scenario (the nightly run covers one business day)")
-    out = ROOT / "out"
+    out = ROOT / "out" / args.scenario
+    shutil.rmtree(out, ignore_errors=True)
+    rel = out.relative_to(ROOT).as_posix()
     started = time.perf_counter()
     print(f"\n== Goodwill Michiana nightly pulse - business date {day} ==\n")
 
     check_inbox(inbox)
 
-    if args.real:
-        log("Engine: parse, clean, dedupe -> out/transactions.csv", 2)
+    if not args.simulated:
+        log(f"Engine: parse, clean, dedupe -> {rel}/transactions.csv", 2)
         run(ENGINE_CMD, inbox=inbox, out=out, date=day)
-        log(f"Pulse: revenue, orders, customers by marketplace -> out/pulse/{day}.json", 3)
+        log(f"Pulse: revenue, orders, customers by marketplace -> {rel}/pulse/{day}.json", 3)
         run(PULSE_CMD, date=day, out=out)
         p = json.loads((out / "pulse" / f"{day}.json").read_text(encoding="utf-8"))
     else:
-        log("Engine: SIMULATED (sample answer key; --real runs engine/)", 2)
-        log(f"Pulse: SIMULATED -> out/pulse/{day}.json (--real runs recon.pulse)", 3)
+        log("Engine: SIMULATED (fallback; pulse built from the sample answer key)", 2)
+        log(f"Pulse: SIMULATED -> {rel}/pulse/{day}.json", 3)
         p = mock_pulse.build(args.scenario)[-1]
         (out / "pulse").mkdir(parents=True, exist_ok=True)
         (out / "pulse" / f"{day}.json").write_text(json.dumps(p, indent=2) + "\n", encoding="utf-8")

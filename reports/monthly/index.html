@@ -54,6 +54,7 @@ a { color:var(--accent); }
     <div>
       <h1 id="title">Monthly dashboard</h1>
       <p id="subtitle">Goodwill Michiana e-commerce</p>
+      <p><a id="scorecard" href="#">COO scorecard for this month</a></p>
     </div>
     <label>Month <select id="month"></select></label>
   </header>
@@ -171,6 +172,7 @@ async function load(month) {
     renderKpis(data);
     renderTable(data);
     document.getElementById("notes").textContent = data.notes.join(" ");
+    document.getElementById("scorecard").href = `${month}-scorecard.html`;
     history.replaceState(null, "", `?month=${month}`);
   } catch (err) {
     showError(`Could not load ${month}.json (${err.message}). Run: python -m reports.monthly --month ${month}`);

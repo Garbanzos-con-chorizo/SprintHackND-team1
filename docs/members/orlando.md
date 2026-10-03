@@ -5,6 +5,8 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 **Last updated:** 2026-10-03 · **Branch:** o/phase1-data (merged to main)
 
 ## Done
+- Demo on the real pipeline: `run_nightly` runs engine + recon.pulse by default (`--simulated` = stage fallback), each scenario in `out/<scenario>/`. Demo script uses Goodwill's formats (`gw_*`): real output matches the answer keys.
+- Weekly dashboard (`reports/weekly.py`) and Monthly COO scorecard (`reports/monthly.py` -> `<month>-scorecard.html`, `-kpis.csv`): same five KPI groups from `reports/kpi.py`; internal data from `reports/mock_api.py`, badged "Simulated internal data".
 - O2 messy month: `data/sample/messy_month/` (September: missing and duplicate files, overlapping download, malformed rows, prior-month refunds, payouts, bank file with a many-to-one deposit, an unmatched deposit and in-transit payouts) with a `close` answer key. Engine matches its eBay and Amazon month revenue exactly. Proposed BC CSV schemas (General Journal, AR invoice) in Dani's requests.
 - Goodwill-format samples: `data/sample/gw_*` with Upright `paid_orders_*.xlsx` (Pacific, one row per order) and Cash Monkey `orders2023-*.xlsx` (UTC, one line per unit), answer keys, `run_nightly` recognizes them. Request for parsers + per-source timezone is in `docs/members/victor.md`.
 - Integrated with main: renderer, mock and CSV follow Dani's `docs/contracts/pulse.md` v1 (renders both `pulse.sample*.json`). `run_nightly --real` runs `engine run` + `recon.pulse`; Victor's parsers read all sample inboxes and match `expected.json` to the cent for day_clean (SG, eBay, Amazon).

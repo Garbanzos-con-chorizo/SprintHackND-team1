@@ -1,72 +1,73 @@
 # Demo script: Nightly Pulse (P-O5)
 
-Presenter: Orlando. Target: about 90 seconds, inside the 2-3 minute demo in `docs/PROBLEM.md#demo`. Three days, one take each.
+Presenter: Orlando. Target: about 90 seconds, inside the 2-3 minute demo in `docs/PROBLEM.md#demo`. Three nights, one take each, **on the real pipeline**: Victor's engine parses the files, Dani's pulse calculates, our renderer publishes. Nothing is precomputed.
+
+The inboxes hold Goodwill's two nightly reports in their real tools' layouts: **Upright "Paid orders"** (ShopGoodwill; Pacific time, one row per order) and **Cash Monkey "Orders Report"** (eBay and Amazon; UTC, one line per unit), as `.xlsx` like the emailed attachments.
 
 ## Before you present (5 min)
-1. Regenerate everything so the numbers below match:
+1. Regenerate and rehearse once, so the numbers below match:
    ```
    python data/generate.py
-   python -m reports.run_nightly --scenario day_clean
-   python -m reports.run_nightly --scenario day_refund
-   python -m reports.run_nightly --scenario day_ebay_missing
-   python -m reports.run_nightly --scenario day_duplicates
+   python -m reports.run_nightly --scenario gw_day_clean
+   python -m reports.run_nightly --scenario gw_day_cashmonkey_missing
+   python -m reports.run_nightly --scenario gw_day_duplicates
    ```
+   Each run uses its own folder (`out/<scenario>/`), so the order doesn't matter and no run borrows another's "prior day".
 2. Open a terminal with a large font, in the repo root, and clear it.
-3. Have `reports/pulse/2026-10-01.html`, `2026-10-03.html` and `2026-10-04.html` ready in browser tabs as a fallback.
-4. Close everything else. Zoom the browser to 110-125% so the back row can read the numbers.
+3. Have `reports/pulse/2026-10-01.html`, `2026-10-03.html` and `2026-10-04.html` open in browser tabs as a fallback.
+4. Close everything else. Zoom the browser to 110-125%.
 
 Numbers to expect (synthetic data):
 
-| Day | Summary line |
+| Night | Summary line |
 |---|---|
 | Thu Oct 1 | Revenue up 7.1% vs Wednesday; ShopGoodwill strongest (52% of revenue). |
-| Sat Oct 3 | Revenue up 91.4% vs Friday on comparable marketplaces; ShopGoodwill strongest (87% of revenue); eBay file missing. |
-| Sun Oct 4 | Revenue down 14.3% vs Saturday; ShopGoodwill strongest (66% of revenue); 46 duplicate rows removed. |
+| Sat Oct 3 | Revenue up 89.3% vs Friday on comparable marketplaces; Amazon file missing; eBay file missing. |
+| Sun Oct 4 | Revenue down 14.3% vs Saturday; ShopGoodwill strongest (66% of revenue); 149 duplicate rows removed. |
 
-## 1. Clean day: the baseline (about 30 s)
-**Do:** run `python -m reports.run_nightly --scenario day_clean --open --pace 0.4`.
-
-**Say:**
-> "Every day the marketplace reports arrive as emailed Excel files. Amanda told us we can assume an API delivers them, so for the demo this folder stands in for that API: whatever lands here is today's mail. Three files, three formats, three time zones."
->
-> *(point at the log)* "E-commerce closes at 9 PM Pacific, midnight Eastern, so this runs after midnight. It checks which files arrived, cleans them, puts every order on the right Eastern day, calculates, and publishes. Under a second."
->
-> *(page opens)* "This is the nightly pulse. The first line is written for a manager who reads one sentence: revenue up 7% versus Wednesday, ShopGoodwill is the strongest channel. Below it, revenue, orders and customers for each marketplace, and the enterprise total."
-
-**Point at:** the summary line, the green change badges, the definitions at the bottom.
-> "And every number says what it means. Revenue is net of refunds, without shipping or tax; fees are shown separately. No guessing which spreadsheet rule was used."
-
-## 2. Missing file: it doesn't lie (about 30 s)
-**Do:** run `python -m reports.run_nightly --scenario day_ebay_missing --open`.
+## 1. Clean night: the baseline (about 30 s)
+**Do:** `python -m reports.run_nightly --scenario gw_day_clean --open --pace 0.4`
 
 **Say:**
-> "Now a real morning: someone forgot the eBay download." *(point at the log line `ebay MISSING`)* "The run catches it before anyone opens the report."
+> "Every night Goodwill gets two reports by email: Upright for ShopGoodwill, Cash Monkey for eBay and Amazon. Amanda told us to assume an API sends them; this folder is where they land. Two tools, two time zones: Upright in Pacific, Cash Monkey in UTC."
 >
-> *(page)* "A spreadsheet would show eBay at zero dollars and revenue looks like it fell off a cliff. Here eBay says 'No data: file not received', in red, and the banner says the total is partial."
+> *(point at the log)* "E-commerce closes at 9 PM Pacific, midnight Eastern, so this runs after midnight. It checks what arrived, parses both files, puts every order on the right Eastern day, calculates, and publishes. Under a second, on the real engine."
 >
-> "And the comparison with Friday only uses the marketplaces we have on both days, ShopGoodwill and Amazon. A missing file never looks like a bad sales day."
+> *(page opens)* "This is the nightly pulse. One sentence for the manager: revenue up 7% versus Wednesday, ShopGoodwill strongest. Below it, revenue, orders and customers per marketplace, and the e-commerce total."
 
-**If asked about the +91%:** "That's like-for-like ShopGoodwill and Amazon; Saturday auctions close high in this sample. With real data the point is the same: we compare only what we have on both days."
+**Point at:** the summary line, the change badges, the definitions at the bottom.
+> "Every number says what it means: revenue is net of refunds, without shipping or tax; fees are separate; customers are counted the way your staff count them today, one per order."
+
+## 2. Missing report: it doesn't lie (about 30 s)
+**Do:** `python -m reports.run_nightly --scenario gw_day_cashmonkey_missing --open`
+
+**Say:**
+> "Now a bad night: the Cash Monkey email never came." *(point at `ebay MISSING`, `amazon MISSING` in the log)* "The run sees it before anyone opens the report."
+>
+> *(page)* "A spreadsheet would show eBay and Amazon at zero and revenue falling off a cliff. Here they say 'No data: file not received', in red, and the banner says the total is partial."
+>
+> "The comparison with Friday uses only what we have on both days, ShopGoodwill. A missing report never looks like a bad sales day."
+
+**If asked about the +89%:** "That's ShopGoodwill alone, Friday to Saturday; auctions close high on Saturday in this sample. The point holds with real data: we compare like with like."
 
 ## 3. Duplicates: the cleaning you don't see (about 25 s)
-**Do:** run `python -m reports.run_nightly --scenario day_duplicates --open`.
+**Do:** `python -m reports.run_nightly --scenario gw_day_duplicates --open`
 
 **Say:**
-> "Last one. eBay was downloaded twice with overlapping dates, which happens all the time, and one Amazon line was pasted twice. Added up by hand, that inflates revenue."
+> "Last one. Someone saved the Upright report twice; you can see the '(4)' in the file name, exactly like the screenshot in Goodwill's own walkthrough. Added up by hand, ShopGoodwill doubles."
 >
-> *(point at summary)* "The system found 46 duplicate rows and counted each order once. It says so in the summary and in the data-quality note, so the person reading it knows the data was cleaned and how."
+> *(point at the summary)* "The engine found 149 duplicate rows and counted each order once, and it tells you so. Cash Monkey lists one line per unit, so a two-item order has two lines; those are not duplicates, and it keeps them."
 >
-> "The same run also writes a CSV for Excel or Power BI and an email-ready copy, so this can land in an inbox every morning."
+> "The same run writes a CSV for Excel and an email-ready copy, so this lands in an inbox every morning."
 
 ## Close (about 5 s)
-> "Three exports in, one trustworthy page out, every night, with no formulas to maintain."
+> "Two reports in, one trustworthy page out, every night, with no formulas to maintain."
 
-## Be honest about (say it if asked, and it's on the closing slide)
-- All data is synthetic; column layouts are modeled on public eBay and Amazon reports, and ShopGoodwill's is a guess until Amanda sends a sample.
-- Ingestion is simulated: the `inbox/` folder stands in for the emailed Excel reports and the API Amanda said we can assume (decision 004). We built no email reader or API client.
-- `run_nightly` runs on demand; a real deployment would trigger it after midnight Eastern (e-commerce closes 9 PM Pacific), from the API delivery or Windows Task Scheduler.
-- The day boundary is midnight Eastern. It is verified for exports whose timestamps carry a zone; plain timestamps are assumed Eastern until per-source time zones are added.
-- The engine and pulse steps show "SIMULATED" in the default run. `--real` runs them for real, and the engine already matches the sample answer keys on 112 of 112 marketplace-days, but until per-source status (P-V4) lands every source shows as missing. **Re-record with `--real` once P-V4 is merged.**
+## Be honest about (say it if asked; it's on the closing slide)
+- **All data is synthetic.** Upright's columns come from the screenshot in Goodwill's walkthrough (three truncated headers guessed); Cash Monkey's columns are guesses, because the walkthrough never shows the file. A real file of each replaces the guesses with a column rename.
+- **Ingestion stands in for the API** Amanda said we can assume (decisions 004, 005): reports are dropped in the inbox folder. The Upright API request is a stub until the API is documented.
+- **`run_nightly` runs on demand.** In production Windows Task Scheduler or cron calls it just after midnight Eastern (decision 005).
+- **Fallback:** `--simulated` builds the pulse from the answer key if the live run fails on stage; the log then says SIMULATED. Don't use it for the recording.
 
 ## If something breaks live
 Switch to the pre-opened browser tabs and keep talking; the story is the same. Never debug on stage.
