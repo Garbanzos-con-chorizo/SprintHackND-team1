@@ -12,6 +12,8 @@ import shutil
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
+from openpyxl import load_workbook
+
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = ROOT / "data" / "sample"
 MARKETPLACES = ["shopgoodwill", "amazon", "ebay", "other"]
@@ -73,7 +75,7 @@ def enterprise(markets):
 
 
 def count_duplicates(inbox):
-    """Identical sale/refund lines across the inbox's CSVs (what dedupe would drop)."""
+    """Identical order lines across the inbox's files (what dedupe would drop)."""
     seen, dups = set(), 0
     for f in sorted(inbox.glob("*.csv")):
         for line in f.read_text(encoding="utf-8-sig").splitlines():
@@ -81,6 +83,12 @@ def count_duplicates(inbox):
                 continue
             dups += line in seen
             seen.add(line)
+    for f in sorted(inbox.glob("*.xlsx")):  # e.g. the same Upright report saved twice
+        rows = [r for r in load_workbook(f, read_only=True).active.iter_rows(values_only=True)
+                if sum(v is not None for v in r) >= 5][1:]  # skip title rows and the header
+        for r in rows:
+            dups += r in seen
+            seen.add(r)
     return dups
 
 

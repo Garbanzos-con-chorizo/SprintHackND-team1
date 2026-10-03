@@ -25,6 +25,22 @@ data/sample/<scenario>/expected.json -> what a correct pipeline should report
 
 Day scenarios cover the business date and the day before, so the day-over-day delta can be computed.
 
+### Goodwill's real report tools (`gw_*`)
+The scenarios above imitate the seller-portal reports. Goodwill's nightly numbers come from two tools instead (`docs/contracts/source-formats.md`), delivered as emailed Excel files (decision 004). These scenarios use them:
+
+| Scenario | Business date | Files | What's in it |
+|---|---|---|---|
+| `gw_day_clean` | 2026-10-01 | `paid_orders_09-29-2026_10-01-2026.xlsx` (Upright), `orders2023-20261002-001512-96170.xlsx` (Cash Monkey) | Normal night. |
+| `gw_day_cashmonkey_missing` | 2026-10-03 | Upright only | eBay and Amazon both missing, never $0. |
+| `gw_day_duplicates` | 2026-10-04 | Upright twice (`... (4).xlsx`, as on the deck's title bar) | Every ShopGoodwill order appears twice. |
+
+| Tool | Feeds | Layout |
+|---|---|---|
+| Upright "Paid orders" | ShopGoodwill | Header in row 1. One row per order. `Payment Date` is a plain timestamp in **Pacific** (the report's timezone setting). `Total` = `Subtotal` + `Shipping Charged` + `Handling` + `Tax Total`; revenue = `Subtotal`. Columns from the deck screenshot; `Secondary Order ID`, `Payment Date`, `Shipping Discount` are guesses for truncated headers. |
+| Cash Monkey "Orders Report" | eBay (`eBay`), Amazon (`Amazon-MF`) | Header in row 1. **One line per unit**: a multi-item order repeats its `Order ID`; shipping and fees are pro-rated per unit. `Order Date` is a plain timestamp in **UTC**. No buyer column. **Every column name is a guess**: the deck never shows the file. |
+
+Reports are pulled at 00:15 Eastern, after e-commerce closes at 9 PM Pacific. Upright is filtered by Pacific dates, Cash Monkey by UTC dates, with ranges wide enough to cover both Eastern days. No refunds: they are a separate download in both tools. Customers are counted by **order** for all three marketplaces: that is what staff do with Upright today, and Cash Monkey has no buyer id.
+
 ## Format quirks the parsers must handle
 | Source | File | Quirks |
 |---|---|---|

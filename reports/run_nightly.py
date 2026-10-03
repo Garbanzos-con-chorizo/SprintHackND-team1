@@ -23,7 +23,10 @@ from reports import mock_pulse, pulse as renderer
 
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = ROOT / "data" / "sample"
-EXPECTED_SOURCES = {"shopgoodwill": ("shopgoodwill", "sg_"), "ebay": ("ebay",), "amazon": ("amazon",)}
+# Filename prefixes per marketplace: the seller-portal samples, then Goodwill's tools
+# (Upright "paid_orders_*" for ShopGoodwill, Cash Monkey "orders2023-*" for eBay and Amazon).
+EXPECTED_SOURCES = {"shopgoodwill": ("shopgoodwill", "sg_", "paid_orders"), "ebay": ("ebay", "orders2023"),
+                    "amazon": ("amazon", "orders2023")}
 # Real commands, used once the modules are merged (integration task I1).
 ENGINE_CMD = ["-m", "engine", "run", "--inbox", "{inbox}", "--out", "{out}", "--date", "{date}"]
 PULSE_CMD = ["-m", "recon.pulse", "--date", "{date}", "--in-dir", "{out}"]

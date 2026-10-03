@@ -1,0 +1,97 @@
+{
+  "scenario": "gw_day_clean",
+  "business_date": "2026-10-01",
+  "definitions": {
+    "business_date": "order (or refund) timestamp converted to America/New_York, date part",
+    "revenue_cents": "item subtotal of sales minus refunds; excludes shipping, tax and fees",
+    "fees_cents": "marketplace fees on sales, reported separately (refunds carry no fee in this data)",
+    "orders": "distinct order ids among sales",
+    "customers": "distinct buyer usernames; Amazon has no buyer id so it counts orders",
+    "enterprise.customers": "sum of per-marketplace counts (buyers can't be matched across marketplaces)",
+    "status": "ok = rows for that day, stale = file present but no rows that day, missing = no file"
+  },
+  "days": {
+    "2026-09-30": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 141500,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 141500,
+        "orders": 42,
+        "customers": 42,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 56177,
+        "refunds_cents": 0,
+        "fees_cents": 8609,
+        "revenue_cents": 56177,
+        "orders": 23,
+        "customers": 23,
+        "customer_basis": "order"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 24990,
+        "refunds_cents": 0,
+        "fees_cents": 6148,
+        "revenue_cents": 24990,
+        "orders": 10,
+        "customers": 10,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 222667,
+        "refunds_cents": 0,
+        "revenue_cents": 222667,
+        "fees_cents": 14757,
+        "orders": 75,
+        "customers": 75
+      }
+    },
+    "2026-10-01": {
+      "shopgoodwill": {
+        "status": "ok",
+        "sales_cents": 125100,
+        "refunds_cents": 0,
+        "fees_cents": 0,
+        "revenue_cents": 125100,
+        "orders": 35,
+        "customers": 35,
+        "customer_basis": "order"
+      },
+      "ebay": {
+        "status": "ok",
+        "sales_cents": 70074,
+        "refunds_cents": 0,
+        "fees_cents": 10858,
+        "revenue_cents": 70074,
+        "orders": 26,
+        "customers": 26,
+        "customer_basis": "order"
+      },
+      "amazon": {
+        "status": "ok",
+        "sales_cents": 43378,
+        "refunds_cents": 0,
+        "fees_cents": 11785,
+        "revenue_cents": 43378,
+        "orders": 18,
+        "customers": 18,
+        "customer_basis": "order"
+      },
+      "enterprise": {
+        "sales_cents": 238552,
+        "refunds_cents": 0,
+        "revenue_cents": 238552,
+        "fees_cents": 22643,
+        "orders": 79,
+        "customers": 79
+      }
+    }
+  },
+  "mess": "Goodwill's two nightly files: Upright (ShopGoodwill) and Cash Monkey (eBay, Amazon). Plain timestamps: Upright in Pacific, Cash Monkey in UTC.",
+  "formats": "Upright Paid orders (.xlsx, Pacific, one row per order) and Cash Monkey Orders Report (.xlsx, UTC, one line per unit); see data/README.md"
+}

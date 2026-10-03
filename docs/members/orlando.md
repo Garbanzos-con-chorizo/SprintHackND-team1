@@ -5,6 +5,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 **Last updated:** 2026-10-03 · **Branch:** o/phase1-data (merged to main)
 
 ## Done
+- Goodwill-format samples: `data/sample/gw_*` with Upright `paid_orders_*.xlsx` (Pacific, one row per order) and Cash Monkey `orders2023-*.xlsx` (UTC, one line per unit), answer keys, `run_nightly` recognizes them. Request for parsers + per-source timezone is in `docs/members/victor.md`.
 - Integrated with main: renderer, mock and CSV follow Dani's `docs/contracts/pulse.md` v1 (renders both `pulse.sample*.json`). `run_nightly --real` runs `engine run` + `recon.pulse`; Victor's parsers read all sample inboxes and match `expected.json` to the cent for day_clean (SG, eBay, Amazon).
 - O1 (first pass) + P-O1: synthetic exports for ShopGoodwill (.xlsx), eBay, Amazon in `data/sample/<scenario>/inbox/`, five scenarios (clean month, clean day, refund day, eBay missing, duplicates), each with an `expected.json` answer key. Format notes in `data/README.md`.
 - P-O4: print CSS, `<date>.email.html` (inline-styled tables for Outlook), `python -m reports.run_nightly --scenario <day_*>` (logged end-to-end run; engine and pulse simulated until merged). P-O5: `docs/pitch/demo_script_pulse.md`.
@@ -18,7 +19,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - 0.4 Amanda office hours (3-5 PM): real sample exports first, then pulse questions 5-12, then MUST 1-4.
 
 ## Blocked / needs from others
-- Victor: P-V4 (per-source status). Until then `run_nightly --real` shows every source as missing, so the demo uses the default simulated mode.
+- Victor: Upright and Cash Monkey parsers and per-source timezone (request in his file); P-V4 (per-source status). Until then `run_nightly --real` shows every source as missing, so the demo uses the default simulated mode.
 - Victor (contract question, `transaction.md`): Amazon's report has **one row per item**, so a 2-item order gives two `Order` rows with the same order id. `txn_id = amazon:<order>:sale` makes them collide and dedupe would drop real revenue. Suggest either summing item rows per order before dedupe, or adding the sku/line to `txn_id`. A real duplicate (identical line pasted twice) is in `day_duplicates`.
 - Victor: refunds in the sample count on the day they are **issued** (`business_date` of a refund = refund date, not original order date). Please confirm in the contract.
 

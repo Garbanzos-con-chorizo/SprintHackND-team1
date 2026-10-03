@@ -264,6 +264,22 @@ def write_amazon(path, events, start, end, rng, dup_row=False):
     return events
 
 
+def save_xlsx(wb, path):
+    """Save with pinned timestamps so reruns give byte-identical files."""
+    fixed = datetime(2026, 10, 3, 6, 0, 0)
+    wb.properties.created = wb.properties.modified = fixed
+    wb.properties.creator = "synthetic"
+    buf = io.BytesIO()
+    wb.save(buf)
+    with zipfile.ZipFile(io.BytesIO(buf.getvalue())) as src, zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as dst:
+        for info in src.infolist():
+            data = src.read(info.filename)
+            if info.filename == "docProps/core.xml":  # openpyxl overwrites "modified" with now() on save
+                data = re.sub(rb"(<dcterms:modified[^>]*>)[^<]*", rb"\g<1>2026-10-03T06:00:00Z", data)
+            dst.writestr(zipfile.ZipInfo(info.filename, fixed.timetuple()[:6]), data,
+                         compress_type=zipfile.ZIP_DEFLATED)
+
+
 def write_shopgoodwill(path, events, generated, rng):
     wb = Workbook()
     ws = wb.active
@@ -288,25 +304,72 @@ def write_shopgoodwill(path, events, generated, rng):
             ws.cell(row, 6).number_format = "m/d/yyyy h:mm AM/PM"
         for c in (7, 8, 9, 10):
             ws.cell(row, c).number_format = '"$"#,##0.00'
-    fixed = datetime(2026, 10, 3, 6, 0, 0)  # keep bytes reproducible
-    wb.properties.created = wb.properties.modified = fixed
-    wb.properties.creator = "synthetic"
-    buf = io.BytesIO()
-    wb.save(buf)
-    # openpyxl stamps zip entries with the current time; pin them so reruns give identical files.
-    with zipfile.ZipFile(io.BytesIO(buf.getvalue())) as src,             zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as dst:
-        for info in src.infolist():
-            data = src.read(info.filename)
-            if info.filename == "docProps/core.xml":  # openpyxl overwrites "modified" with now() on save
-                data = re.sub(rb"(<dcterms:modified[^>]*>)[^<]*", rb"\g<1>2026-10-03T06:00:00Z", data)
-            dst.writestr(zipfile.ZipInfo(info.filename, fixed.timetuple()[:6]), data,
-                         compress_type=zipfile.ZIP_DEFLATED)
+    save_xlsx(wb, path)
     return events
+
+
+# ---------------------------------------------------------------- Goodwill's real report tools
+# Layouts from docs/contracts/source-formats.md (read off the SprintHack deck). Upright columns are
+# the ones visible in the slide 26 screenshot; names marked GUESS were truncated or not shown.
+# Cash Monkey's columns are never shown in the deck: every one of them is a GUESS.
+UTC = ZoneInfo("UTC")
+UPRIGHT_COLS = ["Upright Order ID", "Channel", "Channel Order ID", "Secondary Order ID",  # GUESS: truncated
+                "Channel Buyer", "Order Items", "Payment Date",  # GUESS: truncated "Payment ..."
+                "Payment Type", "Total", "Subtotal", "Shipping Charged", "Shipping Discount",  # GUESS
+                "Handling", "Tax Total", "Donation", "Currency", "Final Value Fee"]
+CASHMONKEY_COLS = ["Order Date", "Account", "Channel", "Order ID", "SKU", "Title", "Quantity",  # all GUESS
+                   "Item Price", "Shipping", "Market Fees", "Net Revenue", "Cost", "Profit", "Currency"]
+CM_CHANNEL = {"ebay": "eBay", "amazon": "Amazon-MF"}
+
+
+def asof_window(events, sources, start, end, tz, asof):
+    """Orders a report run at `asof` for report-timezone dates [start, end] would contain (no refunds)."""
+    return sorted((e for e in events if isinstance(e, Order) and e.source in sources
+                   and start <= e.placed.astimezone(tz).date() <= end and e.placed <= asof), key=when)
+
+
+def write_upright(path, orders):
+    """Upright "Paid orders": one row per order, header in row 1, times in the report's zone (Pacific)."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Sheet1"
+    ws.append(UPRIGHT_COLS)
+    for o in orders:
+        r = random.Random(o.order_id)  # same order -> same values in every download
+        handling, tax = 300, round(o.subtotal * 0.07)
+        ws.append([24224000 + int(o.order_id[3:]) % 100000, "Shopgoodwill", int(o.order_id[3:]), None,
+                   o.buyer, len(o.items), o.placed.astimezone(PT).replace(tzinfo=None),
+                   r.choice(["CreditCard", "CreditCard", "PayPal", "ApplePay"]),
+                   (o.subtotal + o.shipping_cents + handling + tax) / 100, o.subtotal / 100,
+                   o.shipping_cents / 100, 0.0, handling / 100, tax / 100, 0.0, "USD", 0.0])
+        ws.cell(ws.max_row, 7).number_format = "m/d/yyyy h:mm:ss AM/PM"
+        for c in (9, 10, 11, 12, 13, 14, 15, 17):
+            ws.cell(ws.max_row, c).number_format = "0.00"
+    save_xlsx(wb, path)
+    return orders
+
+
+def write_cashmonkey(path, orders):
+    """Cash Monkey "Orders Report": one line per unit, fees and shipping pro-rated per unit, UTC dates."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "orders"
+    ws.append(CASHMONKEY_COLS)
+    for o in orders:
+        ship_each = o.shipping_cents // len(o.items)
+        for it in o.items:
+            ws.append([o.placed.astimezone(UTC).replace(tzinfo=None), "276 - Goodwill Michiana",
+                       CM_CHANNEL[o.source], o.order_id, it.sku, it.title, 1, it.price_cents / 100,
+                       ship_each / 100, it.fee_cents / 100, (it.price_cents + ship_each - it.fee_cents) / 100,
+                       None, None, "USD"])  # cost and profit: "where available", not for donated goods
+            ws.cell(ws.max_row, 1).number_format = "yyyy-mm-dd hh:mm:ss"
+    save_xlsx(wb, path)
+    return orders
 
 
 # ---------------------------------------------------------------- answer key
 
-def expected(scenario, exported, business_date, dates):
+def expected(scenario, exported, business_date, dates, basis=None):
     """What a correct pipeline should report, computed from exactly the rows exported."""
     days = {}
     for d in dates:
@@ -316,6 +379,7 @@ def expected(scenario, exported, business_date, dates):
             if src not in exported:
                 day[src] = {"status": "missing"}
                 continue
+            by_order = (basis or {}).get(src, "order" if src == "amazon" else "buyer") == "order"
             sales_ids, cust, m = set(), set(), {"sales_cents": 0, "refunds_cents": 0, "fees_cents": 0}
             for e in exported[src]:
                 if when(e).date() != d:  # business day = ET date
@@ -326,11 +390,11 @@ def expected(scenario, exported, business_date, dates):
                     m["sales_cents"] += e.subtotal
                     m["fees_cents"] += e.fee
                     sales_ids.add(e.order_id)
-                    cust.add(e.buyer or e.order_id)
+                    cust.add(e.order_id if by_order else e.buyer or e.order_id)
             rows = m["sales_cents"] or m["refunds_cents"] or sales_ids
             day[src] = {"status": "ok" if rows else "stale", **m,
                         "revenue_cents": m["sales_cents"] + m["refunds_cents"], "orders": len(sales_ids),
-                        "customers": len(cust), "customer_basis": "order" if src == "amazon" else "buyer"}
+                        "customers": len(cust), "customer_basis": "order" if by_order else "buyer"}
             for k in total:
                 total[k] += day[src][k]
         day["enterprise"] = total
@@ -385,6 +449,39 @@ def scenario(name, start, end, business_date, rng, events, skip=(), ebay_redownl
     return key
 
 
+def goodwill_scenario(name, business_date, events, skip=(), upright_twice=False, note=""):
+    """Nightly inbox as Goodwill receives it: Upright (ShopGoodwill) + Cash Monkey (eBay, Amazon), .xlsx.
+
+    Reports are pulled at 00:15 Eastern, after e-commerce closes (9 PM Pacific). Upright is filtered by
+    Pacific dates, Cash Monkey by UTC dates; both ranges are wide enough to cover the two Eastern days.
+    """
+    d = business_date
+    asof = datetime(d.year, d.month, d.day, tzinfo=ET) + timedelta(days=1, minutes=15)
+    inbox = OUT / name / "inbox"
+    inbox.mkdir(parents=True)
+    exported = {}
+    if "upright" not in skip:
+        s, e = d - timedelta(days=2), d
+        fname = f"paid_orders_{s:%m-%d-%Y}_{e:%m-%d-%Y}"
+        orders = write_upright(inbox / f"{fname}.xlsx", asof_window(events, {"shopgoodwill"}, s, e, PT, asof))
+        if upright_twice:  # the deck's title bar shows "paid_orders_... (4)": the same report saved again
+            write_upright(inbox / f"{fname} (4).xlsx", orders)
+        exported["shopgoodwill"] = orders
+    if "cashmonkey" not in skip:
+        orders = write_cashmonkey(inbox / f"orders2023-{asof:%Y%m%d}-001512-96170.xlsx",
+                                  asof_window(events, {"ebay", "amazon"}, d - timedelta(days=1), d + timedelta(days=1), UTC, asof))
+        exported["ebay"] = [o for o in orders if o.source == "ebay"]
+        exported["amazon"] = [o for o in orders if o.source == "amazon"]
+    # Staff count Upright rows (orders); Cash Monkey shows no buyer column, so orders there too.
+    key = expected(name, exported, d, [d - timedelta(days=1), d],
+                   basis={"shopgoodwill": "order", "ebay": "order", "amazon": "order"})
+    key["mess"] = note
+    key["formats"] = "Upright Paid orders (.xlsx, Pacific, one row per order) and Cash Monkey Orders Report " \
+                     "(.xlsx, UTC, one line per unit); see data/README.md"
+    (OUT / name / "expected.json").write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
+    return key
+
+
 def main():
     rng = random.Random(SEED)
     orders, refunds = build_world(rng)
@@ -409,6 +506,16 @@ def main():
                  note="eBay downloaded twice with overlapping ranges (second file 'ebay_transactions_2026-10-04 (1).csv'"
                       " covers Oct 2-4). One Amazon line pasted twice. Amazon also has multi-item orders "
                       "(several rows, same order id) that are NOT duplicates."),
+    ]
+    keys += [
+        goodwill_scenario("gw_day_clean", d(2026, 10, 1), events,
+                          note="Goodwill's two nightly files: Upright (ShopGoodwill) and Cash Monkey (eBay, Amazon). "
+                               "Plain timestamps: Upright in Pacific, Cash Monkey in UTC."),
+        goodwill_scenario("gw_day_cashmonkey_missing", d(2026, 10, 3), events, skip={"cashmonkey"},
+                          note="No Cash Monkey file: eBay and Amazon must both show as missing, never $0."),
+        goodwill_scenario("gw_day_duplicates", d(2026, 10, 4), events, upright_twice=True,
+                          note="The Upright report saved twice ('... (4).xlsx'): every ShopGoodwill order appears twice. "
+                               "Cash Monkey multi-unit orders repeat the order id on purpose and are NOT duplicates."),
     ]
     for k in keys:
         bd = k["business_date"]
