@@ -1,8 +1,9 @@
-# 004 — Assume an Upright API with email delivery; run once a day
+# 005 — Assume an Upright API with email delivery; run once a day
 
 - **Date / author:** 2026-10-03, Victor, after the office-hours meeting with Amanda
 - **Status:** accepted by the team in the meeting; schedule time still to confirm
 - **Supersedes in part:** `003-portal-acquisition.md` (the browser and discovery parts)
+- **Complements:** `004-data-acquisition-and-timing.md` (Orlando, Amanda's answers). Where the two differ on run time, 004's "after midnight Eastern" is the accepted default (option C below).
 
 ## Context
 Amanda told us to **assume an API exists for Upright**, that the report can be **emailed** from it, and that it arrives as **Excel** (we can turn it into CSV if CSV isn't offered). Our earlier plan (003) allowed for browser automation because we couldn't tell whether a download could be replayed over HTTP. With an API assumed, that is no longer needed.
@@ -16,18 +17,17 @@ Amanda told us to **assume an API exists for Upright**, that the report can be *
 6. **The engine runs once a day, at a fixed time**, so the e-commerce pulse is produced at the same moment the brick-and-mortar report goes out (B&M sends at 1:00 PM and 10:00 PM ET). Today `python -m reports.run_nightly` stands in for the scheduler and must be disclosed as a stand-in; in production Windows Task Scheduler or cron would call it. See "Schedule" below.
 
 ## Schedule
-E-commerce reports **finalize at 9:00 PM PT, which is 12:00 AM ET**, every day of the year (PT and ET change clocks together). So a business day is complete only after midnight ET.
+E-commerce reports **finalize at 9:00 PM PT, which is 12:00 AM ET**, every day of the year (PT and ET change clocks together). So a business day is complete only after midnight ET. Brick-and-mortar sends at 1:00 PM and 10:00 PM ET but is out of scope; its 10 PM report lands before a run after midnight, so one nightly run could cover it later.
 
-That conflicts with a 10:00 PM ET run: at 10 PM ET the current day is two hours short of final. Two coherent options:
-
-| Option | Run time | Reports | Fits "same time as B&M" | Day complete |
+| Option | Run time | Reports | Day complete | Notes |
 |---|---|---|---|---|
-| **A (recommended)** | **1:00 PM ET** | the **previous** Eastern day | yes, B&M's 1 PM send | yes |
-| B | 10:00 PM ET | the **current** Eastern day so far | yes, B&M's 10 PM send | **no, 2 hours short** |
+| A | 1:00 PM ET | the **previous** Eastern day | yes | coincides with B&M's 1 PM send, but it is a next-day report, not "nightly" |
+| B | 10:00 PM ET | the **current** day so far | **no, 2 hours short** | coincides with B&M's 10 PM send |
+| **C (default)** | **just after 12:00 AM ET** (for example 12:30 AM) | the **day that just ended** | **yes** | nightly; B&M's 10 PM report is already in; matches decision 004 |
 
-We assume **option A** and keep the time a setting, because the daily pulse then always reports a finished day. If staff want the report the same evening, option B shows a partial day and the report must say so. **To confirm with Amanda:** which run time she wants, and whether "nightly" means the evening of the day or the morning after.
+**Default: option C**, because it is the accepted decision 004 ("the nightly run happens after midnight Eastern") and it always reports a finished day. The exact time is configuration, not engine code; the engine takes the business date as `--date` and doesn't care when it runs. **To confirm with Amanda:** the run time she wants, and whether she reads the report the next morning or needs it earlier.
 
-The one time value lives in the scheduler call (`reports/run_nightly.py` is Orlando's; the schedule entry is configuration, not engine code). The engine takes the business date as `--date` and does not care when it runs.
+`python -m reports.run_nightly` (Orlando) stands in for the scheduler. In production Windows Task Scheduler or cron would call it, or the API delivery would trigger it. Disclose it as a stand-in.
 
 ## Consequences
 - We no longer prepare for a login screen, so no discovery step is needed; documenting the API is what's missing.

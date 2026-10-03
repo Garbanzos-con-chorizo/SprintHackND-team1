@@ -36,7 +36,7 @@ Inference, not stated in the deck: that the nightly eBay and Amazon numbers come
 2. The nightly **eBay and Amazon** numbers probably come from one Cash Monkey file with a `Channel` column, not two seller-portal reports. If so, one parser splits by channel; the sample set should be one multi-channel `orders2023-*.csv`.
 3. Dates arrive in **different timezones per source** (Upright: chosen by the user, Pacific by default; Cash Monkey: UTC). The day boundary must be a per-source setting.
 4. Customer count today = rows, so `customer_basis = order` is the faithful default for ShopGoodwill, not `buyer`.
-5. Acquisition is **asynchronous** on Upright (generate, then it is emailed). With the API assumed (decision 004) we only request the report; it arrives in the inbox by email, so nothing needs to poll.
+5. Acquisition is **asynchronous** on Upright (generate, then it is emailed). With the API assumed (decision 005) we only request the report; it arrives in the inbox by email, so nothing needs to poll.
 
 ## How to make the synthetic files as close as possible
 - Follow this document, and mark every guessed column in the generator as a guess.

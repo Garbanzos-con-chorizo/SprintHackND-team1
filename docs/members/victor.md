@@ -12,8 +12,8 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 
 - V1 scaffold in `engine/` (branch `victor/v1-scaffold`): `python -m engine run` writes valid empty `transactions.csv`, `source_status.json` (all sources `missing`) and `warnings.json`; 2 tests pass. No parsers yet.
 
-- Acquisition: `python -m engine fetch` runs scrapers and logs to `out/fetch_log.json`. After the Oct 3 meeting (Amanda: assume an Upright API that emails Excel) the browser backend was removed; Upright is an API stub; reports arrive by email into the inbox. Decisions 003 (superseded in part) and 004.
-- Cleanup branch `victor/api-email-cleanup`: removed `engine/scrapers/browser.py`, `requirements-browser.txt` and the Playwright test; wrote decision 004 (API + email, daily run, schedule options) and updated `docs/ASSUMPTIONS.md`. 81 tests pass.
+- Acquisition: `python -m engine fetch` runs scrapers and logs to `out/fetch_log.json`. After the Oct 3 meeting (Amanda: assume an Upright API that emails Excel) the browser backend was removed; Upright is an API stub; reports arrive by email into the inbox. Decisions 003 (superseded in part), 004 (Orlando: Amanda's answers) and 005 (mine: API, email delivery, run schedule).
+- Cleanup branch `victor/api-email-cleanup`: removed `engine/scrapers/browser.py`, `requirements-browser.txt` and the Playwright test; wrote decision 005 (API + email, run schedule options) and updated `docs/ASSUMPTIONS.md`. 81 tests pass.
 - P-V4 (branch `victor/p-v4-source-status`): `source_status.json` is now real, keyed by marketplace (`ok` / `stale` / `missing`), built from the files read and the rows for the day (`engine/status.py`). Verified end to end: `python -m engine.tools.make_sample --scenario messy_day --check --pulse` runs the engine and Dani's `recon.pulse` and compares the pulse to the answer key. 91 tests pass.
 - Out of scope by decision: brick and mortar, an Excel-to-CSV converter (the engine reads .xlsx directly), a 'late' state.
 

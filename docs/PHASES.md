@@ -14,7 +14,7 @@ Contract first: **0.1** (`transaction.md`, Victor) and **P0** (`pulse.md`, Dani)
 
 | Person | Tasks |
 |---|---|
-| **Victor** | 0.1 transaction schema (phase 1 scope), V1 scaffold, V2 parser base and source detection, **A1 acquisition** (added: `engine fetch` and an Upright API stub; reports arrive by email into the inbox, decision 004; file drop stays the fallback), V3 parsers for **ShopGoodwill, eBay, Amazon**, V6 validation and cleaning, V9 pipeline runner (parse, clean, write output files; no rules step yet), P-V1 marketplace tagging, P-V2 customer identity, P-V3 day boundary, P-V4 source status, P-V5 dedupe |
+| **Victor** | 0.1 transaction schema (phase 1 scope), V1 scaffold, V2 parser base and source detection, **A1 acquisition** (added: `engine fetch` and an Upright API stub; reports arrive by email into the inbox, decisions 004 and 005; file drop stays the fallback), V3 parsers for **ShopGoodwill, eBay, Amazon**, V6 validation and cleaning, V9 pipeline runner (parse, clean, write output files; no rules step yet), P-V1 marketplace tagging, P-V2 customer identity, P-V3 day boundary, P-V4 source status, P-V5 dedupe |
 | **Dani** | P0 pulse contract, D1 mock canonical input, P-D1 revenue calculator, P-D2 aggregation and totals, P-D3 day-over-day delta, P-D4 pulse JSON and `pulse --date` CLI, P-D5 tests |
 | **Orlando** | 0.4 Amanda office hours (pulse questions 5-12 first), O1 sample exports for ShopGoodwill, Amazon, eBay (clean month), P-O1 pulse sample days, P-O2 HTML render, P-O3 summary line, P-O4 delivery, P-O5 pulse demo script, 0.5/0.6 shared setup |
 

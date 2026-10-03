@@ -25,11 +25,11 @@ Our brief is broad and we have no real Goodwill files yet, so we decided early t
 ## 3. How the data gets in (acquisition)
 | # | Assumption | Why | Confidence |
 |---|---|---|---|
-| 3.1 | **An API exists for Upright** and can generate the Paid orders report; Upright then **emails it as an Excel attachment**. | Amanda told us to assume this (office hours, 2026-10-03). The deck agrees: "generate; email delivery" (slides 7-9, 38). | **from Amanda** (`docs/decisions/004-api-email-delivery-and-daily-run.md`) |
+| 3.1 | **An API exists for Upright** and can generate the Paid orders report; Upright then **emails it as an Excel attachment**. | Amanda told us to assume this (office hours, 2026-10-03). The deck agrees: "generate; email delivery" (slides 7-9, 38). | **from Amanda** (`docs/decisions/005-api-email-delivery-and-run-schedule.md`) |
 | 3.2 | We **do not know the API's endpoint or fields**, so the Upright client is a stub that says "not configured" instead of pretending. | Nobody has seen the API. Inventing it would be an overclaim. | decision |
 | 3.3 | **The email arrives in a folder**: an email rule saves the attachment into `inbox/`, and the engine reads the folder. Reading a live mailbox is a later step that needs Goodwill's approval. | Lightest bridge, no mailbox credentials needed, same code path as a manual drop. | decision |
 | 3.4 | **Excel is read directly; there is no Excel-to-CSV step.** The engine writes the CSV (and two JSON files) that Dani's code reads. | A converter would add a step with no benefit. Amanda said converting to CSV is fine if CSV isn't offered, so we remain compatible either way. | decision |
-| 3.5 | **Browser automation was removed.** | With an API assumed there is no login screen to automate; the dependency and its code were dead weight. | decision (`004`) |
+| 3.5 | **Browser automation was removed.** | With an API assumed there is no login screen to automate; the dependency and its code were dead weight. | decision (`005`) |
 | 3.6 | **File drop stays as the fallback** for any source whose API or email isn't set up. | A demo must not depend on an integration we can't test. | decision |
 | 3.7 | **An ERP drop is a CSV or Excel file** and works only if a parser exists for its columns. | No ERP details were given. | default |
 | 3.8 | The **mock scraper is a stub**: it is handed the records a scraper would extract and runs them through the same parser as a file. No login, network, paging or retries. | It demonstrates the pluggable design without touching a live site. | decision (`engine/ingest/scraper_adapter.py`) |
@@ -41,7 +41,7 @@ Our brief is broad and we have no real Goodwill files yet, so we decided early t
 |---|---|---|---|
 | 3b.1 | **The pipeline runs once a day at a fixed time**, so the e-commerce pulse is produced at the same moment the brick-and-mortar report goes out. | Staff get both reports together; one run is simplest to explain and to operate. | from the meeting |
 | 3b.2 | **E-commerce reports finalize at 9:00 PM PT = 12:00 AM ET**, every day of the year. A business day is complete only after midnight ET. | From the meeting. PT and ET change clocks together, so the offset never moves. | from the meeting |
-| 3b.3 | **Default run time: 1:00 PM ET, reporting the previous Eastern day.** | It matches B&M's 1 PM send and always reports a finished day. A 10:00 PM ET run (B&M's other send) would report a day that is still 2 hours short of final. | assumption, **to confirm with Amanda** |
+| 3b.3 | **Default run time: just after 12:00 AM ET, reporting the day that just ended.** | The e-commerce day is final only after midnight ET, and B&M's 10 PM report is already in by then. Matches decision 004. Alternatives (1 PM next-day, or 10 PM partial day) are in decision 005. | assumption, **time to confirm with Amanda** |
 | 3b.4 | **`python -m reports.run_nightly` stands in for the scheduler** and runs once when called. Windows Task Scheduler or cron would call it in production. We disclose it as a stand-in, not a real scheduler. | A real scheduler needs a server we don't have for the demo. | decision (Orlando's O4) |
 | 3b.5 | **No "late" state.** A report that hasn't arrived by the run is shown as "no data" and the next run picks it up. | With one run a day, "late" and "missing" look the same to the reader, and a separate state would need a contract change for no gain. | decision |
 
