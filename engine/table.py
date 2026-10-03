@@ -10,6 +10,9 @@ from pathlib import Path
 
 SUPPORTED_SUFFIXES = {".csv", ".tsv", ".txt", ".xlsx"}
 
+# Cell text that exports use to mean "nothing here" (eBay writes '--').
+EMPTY_MARKERS = {"", "--"}
+
 
 class UnreadableFile(Exception):
     """The file could not be read as a table at all."""
@@ -35,8 +38,10 @@ class Table:
         by_norm = {norm(h): h for h in self.header}
         for alias in aliases:
             col = by_norm.get(norm(alias))
-            if col is not None and str(row.get(col, "")).strip() != "":
-                return str(row[col]).strip()
+            if col is not None:
+                text = str(row.get(col, "")).strip()
+                if text not in EMPTY_MARKERS:
+                    return text
         return ""
 
 

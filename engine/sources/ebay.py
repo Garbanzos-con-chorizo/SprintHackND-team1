@@ -1,8 +1,8 @@
 """eBay Seller Hub exports: the Orders report and the Transaction report.
 
-COLUMN NAMES ARE UNVERIFIED GUESSES from how eBay lays these reports out; we have no real sample
-yet. When a real file arrives, correct the aliases below (nothing else needs to change) and update
-the sample test. The Transaction report has a Type column (Order / Refund); the Orders report doesn't.
+Checked against the team's synthetic Transaction report (modeled on eBay's public layout), not a real
+Goodwill file. Preamble lines, '--' empty cells, Payout rows, BOM and CRLF are handled. When a real
+file arrives, correct the aliases below (nothing else needs to change). The Transaction report has a Type column (Order / Refund); the Orders report doesn't.
 """
 from ..parsers import register
 from ._common import OrderReportParser
@@ -21,4 +21,5 @@ class Ebay(OrderReportParser):
     fees = ("Final Value Fee - fixed", "Final Value Fee - variable", "Final Value Fee", "Regulatory operating fee")
     buyer = ("Buyer username", "Buyer ID")
     row_type = ("Type", "Transaction type")
+    skip_types = ("payout",)
     currency = ("Currency", "Transaction currency")

@@ -4,7 +4,7 @@ These implement the "messy becomes clean" table in docs/contracts/transaction.md
 """
 import hashlib
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from zoneinfo import ZoneInfo
 
@@ -38,6 +38,10 @@ def parse_money(value) -> int:
     except InvalidOperation as exc:
         raise ValueError(f"not an amount: {value!r}") from exc
 
+
+# US zone abbreviations as they appear in export text (hours from UTC, summer or standard as named).
+_ZONE_OFFSETS = {"PDT": -7, "PST": -8, "MDT": -6, "MST": -7, "CDT": -5, "CST": -6,
+                 "EDT": -4, "EST": -5, "UTC": 0, "GMT": 0}
 
 _MONTHS = {m: i for i, m in enumerate(
     ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], start=1)}
@@ -73,9 +77,23 @@ def parse_business_date(value, tz: str = TIMEZONE) -> str:
         y += 2000 if y < 100 else 0
         return date(y, int(m[1]), int(m[2])).isoformat()
 
-    m = re.match(r"^([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})", text)  # Oct 2, 2026
+    # Oct 2, 2026   or   Oct 2, 2026 9:33:00 PM PDT  (a zone name means: convert to the business zone)
+    m = re.match(r"^([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})"
+                 r"(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp][Mm])?\s*([A-Za-z]{2,4})?)?\s*$", text)
     if m and m[1].lower() in _MONTHS:
-        return date(int(m[3]), _MONTHS[m[1].lower()], int(m[2])).isoformat()
+        y, mo, d = int(m[3]), _MONTHS[m[1].lower()], int(m[2])
+        if m[4] is None:
+            return date(y, mo, d).isoformat()
+        hour, minute, second = int(m[4]), int(m[5]), int(m[6] or 0)
+        if m[7]:
+            hour = hour % 12 + (12 if m[7].lower() == "pm" else 0)
+        dt = datetime(y, mo, d, hour, minute, second)
+        abbr = (m[8] or "").upper()
+        if abbr:
+            if abbr not in _ZONE_OFFSETS:
+                raise ValueError(f"unknown time zone {abbr!r} in {value!r}")
+            dt = dt.replace(tzinfo=timezone(timedelta(hours=_ZONE_OFFSETS[abbr]))).astimezone(zone)
+        return dt.date().isoformat()
 
     m = re.match(r"^(\d{1,2})[- ]([A-Za-z]{3})[a-z]*[- ,]+(\d{2}|\d{4})", text)  # 2-Oct-26
     if m and m[2].lower() in _MONTHS:

@@ -1,7 +1,7 @@
 """ShopGoodwill seller orders export.
 
-COLUMN NAMES ARE UNVERIFIED GUESSES: nothing in the brief or deck shows this export, so these are
-the most likely names. ShopGoodwill pays out one amount per item (no marketplace fee column is
+COLUMN NAMES ARE STILL GUESSES: nothing in the brief or deck shows this export. They match the team's
+synthetic export (Orlando's guess, 3 title rows, 'Order #', 'Close Date', 'Winning Bid'), not a real file. ShopGoodwill pays out one amount per item (no marketplace fee column is
 assumed). Correct the aliases below when a real file arrives; nothing else needs to change.
 """
 from ..parsers import register
@@ -13,7 +13,7 @@ class ShopGoodwill(OrderReportParser):
     source = "shopgoodwill"
     marketplace = "shopgoodwill"
     filename_patterns = (r"shop.?goodwill", r"\bsgw?\b", r"sg_")
-    required_columns = (("order id", "order number", "invoice number", "invoice"),)
+    required_columns = (("order id", "order number", "order", "invoice number", "invoice"),)  # 'Order #' normalizes to 'order'
 
     def detect(self, table):
         # Its columns are generic ("Order ID", "Amount"), so columns alone must never claim a file:
@@ -21,8 +21,8 @@ class ShopGoodwill(OrderReportParser):
         score = super().detect(table)
         return score if score >= 3 else 0
 
-    order_id = ("Order ID", "Order number", "Invoice number", "Invoice")
-    date = ("Paid date", "Closing date", "Date sold", "Order date", "Date")
+    order_id = ("Order #", "Order ID", "Order number", "Invoice number", "Invoice")
+    date = ("Close Date", "Paid date", "Closing date", "Date sold", "Order date", "Date")
     gross = ("Winning bid", "Final price", "Item total", "Item price", "Amount")
     buyer = ("Buyer ID", "Bidder", "Winner", "Buyer")
     refund_amount = ("Refund amount", "Refunded")

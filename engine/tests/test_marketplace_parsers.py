@@ -136,3 +136,76 @@ def test_missing_required_column_rejects_file_with_warning(tmp_path):
     rows, warnings = run_inbox(tmp_path, {"ebay_x.csv": "Order number,Buyer username,Foo\n1,a,b\n"})
     assert rows == []
     assert [w["kind"] for w in warnings] == ["missing_column"]
+
+
+# --- Layouts seen in the team's sample exports (data/sample on the o/phase1-data branch) ---
+
+EBAY_TXN_REPORT = (
+    '﻿"Transaction report"\r\n"Date range: Oct 1, 2026 - Oct 2, 2026"\r\n"All amounts in USD"\r\n\r\n'
+    '"Transaction creation date","Type","Order number","Buyer username","Item subtotal",'
+    '"Final Value Fee - fixed","Final Value Fee - variable","Gross transaction amount","Payout currency"\r\n'
+    '"Oct 1, 2026","Order","25-1","happydeals","33.99","-0.30","-5.30","42.36","USD"\r\n'
+    '"Oct 2, 2026","Refund","25-1","happydeals","-24.99","--","--","-32.73","USD"\r\n'
+    '"Oct 1, 2026","Payout","--","--","--","--","--","-441.65","USD"\r\n'
+)
+
+AMAZON_DATE_RANGE = (
+    '"Includes Amazon Marketplace, Fulfillment by Amazon (FBA), and Amazon Webstore transactions"\n'
+    '"Date range: Oct 1, 2026 12:00:00 AM PDT - Oct 2, 2026 11:59:59 PM PDT"\n\n'
+    '"date/time","settlement id","type","order id","sku","product sales","selling fees","total"\n'
+    '"Oct 1, 2026 9:33:00 PM PDT","1","Order","111-1","BK-1","14.49","-4.57","13.91"\n'
+    '"Oct 1, 2026 9:33:00 PM PDT","1","Order","111-1","BK-2","1,000.00","-4.57","13.91"\n'
+    '"Oct 2, 2026 9:12:44 AM PDT","1","Transfer","","","0","0","-1,052.64"\n'
+)
+
+
+def test_ebay_transaction_report_layout(tmp_path):
+    rows, warnings = run_inbox(tmp_path, {"ebay_transactions_2026-10-02.csv": EBAY_TXN_REPORT.replace("\r\n", "\n")})
+    assert warnings == []  # '--' is empty, Payout is skipped silently
+    got = {r["txn_id"]: (r["gross_cents"], r["fee_cents"], r["business_date"]) for r in rows}
+    assert got == {
+        "ebay:25-1:sale": ("3399", "560", "2026-10-01"),      # Item subtotal, not the shipping-inclusive gross
+        "ebay:25-1:refund": ("-2499", "0", "2026-10-02"),     # refunds count on the day issued
+    }
+
+
+def test_ebay_report_with_bom_and_crlf_bytes(tmp_path):
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    (inbox / "ebay_transactions_2026-10-02.csv").write_bytes(EBAY_TXN_REPORT.encode("utf-8"))
+    run(inbox, tmp_path / "out", "2026-10-02")
+    with open(tmp_path / "out" / "transactions.csv", newline="", encoding="utf-8") as f:
+        assert len(list(csv.DictReader(f))) == 2
+
+
+def test_amazon_date_range_pacific_time_items_and_transfer(tmp_path):
+    rows, warnings = run_inbox(tmp_path, {"amazon_daterange_2026-10-02.csv": AMAZON_DATE_RANGE})
+    assert warnings == []  # Transfer row skipped silently
+    assert len(rows) == 1
+    r = rows[0]
+    assert r["business_date"] == "2026-10-02"        # 9:33 PM PDT Oct 1 is 12:33 AM EDT Oct 2
+    assert r["gross_cents"] == "101449"              # two items of one order summed, thousands separator read
+    assert r["fee_cents"] == "914"
+    assert (r["customer_id"], r["customer_basis"]) == ("", "order")
+
+
+def test_shopgoodwill_xlsx_with_title_rows_order_hash_and_mixed_dates(tmp_path):
+    from datetime import datetime as dt
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Orders"
+    ws.append(["ShopGoodwill.com - Seller Order Export"])
+    ws.append(["Generated: 10/3/2026 6:05 AM"])
+    ws.append([])
+    ws.append(["Order #", "Item #", "Buyer", "Close Date", "Winning Bid", "Shipping", "Order Total", "Payment Status"])
+    ws.append(["SG-1", "1", "rustyhound", "10/1/26 12:02 AM", 39, 10.99, 51.99, "Paid"])
+    ws.append(["SG-2", "2", "sunnybear", dt(2026, 10, 1, 3, 22, 9), "$27.00", 10.99, 39.99, "Paid"])
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    wb.save(inbox / "ShopGoodwill_Orders_2026-10-01.xlsx")
+    run(inbox, tmp_path / "out", "2026-10-01")
+    with open(tmp_path / "out" / "transactions.csv", newline="", encoding="utf-8") as f:
+        got = {r["order_id"]: (r["gross_cents"], r["business_date"]) for r in csv.DictReader(f)}
+    assert got == {"SG-1": ("3900", "2026-10-01"), "SG-2": ("2700", "2026-10-01")}

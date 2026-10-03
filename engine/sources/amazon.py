@@ -1,7 +1,9 @@
 """Amazon Seller Central exports: the Orders report and the Payments transaction report.
 
-COLUMN NAMES ARE UNVERIFIED GUESSES from how Amazon lays these reports out; we have no real sample
-yet. When a real file arrives, correct the aliases below (nothing else needs to change). Amazon only
+Checked against the team's synthetic Date Range report (modeled on Amazon's public layout), not a real
+Goodwill file. Timestamps carry a zone name (PDT) and are converted to Eastern; Transfer rows are
+skipped; one row per item, so a multi-item order is summed into one row. When a real file arrives,
+correct the aliases below (nothing else needs to change). Amazon only
 exposes a buyer email in some reports; it is hashed before it reaches customer_id. The Payments
 report lists fees as negative numbers; they are stored as positive costs.
 """
@@ -22,4 +24,5 @@ class Amazon(OrderReportParser):
     fees = ("selling fees", "referral fee", "fba fees", "other transaction fees")
     buyer = ("buyer-email", "buyer email")
     row_type = ("type", "transaction type")
+    skip_types = ("transfer",)
     currency = ("currency",)

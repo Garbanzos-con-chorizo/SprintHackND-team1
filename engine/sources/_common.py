@@ -18,6 +18,7 @@ class OrderReportParser(Parser):
     refund_amount: tuple[str, ...] = ()  # a column holding the refunded amount, if the report has one
     row_type: tuple[str, ...] = ()       # a column saying what the row is (e.g. Order / Refund)
     refund_words: tuple[str, ...] = ("refund", "return", "reversal")
+    skip_types: tuple[str, ...] = ()     # row_type values to ignore silently (e.g. payout, transfer)
     currency: tuple[str, ...] = ()       # optional; anything but USD is rejected
 
     def parse(self, table: Table) -> ParseResult:
@@ -36,6 +37,10 @@ class OrderReportParser(Parser):
                 result.warn(table, row_no, "duplicate", "identical to an earlier row in this file")
                 continue
             seen.add(identity)
+
+            kind_text = table.get(row, *self.row_type).lower() if self.row_type else ""
+            if any(w in kind_text for w in self.skip_types):
+                continue  # payouts, transfers: money movement, not sales (the close uses them, the pulse doesn't)
 
             order_id = table.get(row, *self.order_id)
             if not order_id:
@@ -59,7 +64,6 @@ class OrderReportParser(Parser):
                 result.warn(table, row_no, "bad_amount", str(exc))
                 continue
 
-            kind_text = table.get(row, *self.row_type).lower() if self.row_type else ""
             is_refund_row = any(w in kind_text for w in self.refund_words) or gross < 0
             events = []
             if is_refund_row:
