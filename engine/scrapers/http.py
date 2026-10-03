@@ -1,7 +1,6 @@
-"""HTTP backend: a cookie-keeping session on the standard library (the 'curl' approach).
+"""HTTP client for portal APIs: a cookie-keeping session on the standard library, no extra dependency.
 
-Use when the report request can be replayed with the login cookie. Find it with the browser's
-network tab ('Copy as cURL'), then reproduce that request here.
+Used to call a portal's API (request or download a report). Pass an Authorization header for token APIs.
 """
 import http.cookiejar
 import urllib.error

@@ -2,55 +2,17 @@
 import argparse
 from pathlib import Path
 
-from .contract import EXPECTED_SOURCES
-from .dedupe import dedupe_rows
-from .parsers import Ambiguous, NoMatch, Parser, detect_source, load_sources
-from .table import SUPPORTED_SUFFIXES, UnreadableFile, read_table
+from .ingest import EmailAttachmentAdapter, ingest
+from .parsers import Parser
+from .status import build_source_status
 from .writer import now_local, write_outputs
 
 
-def _inbox_files(inbox: Path) -> list[Path]:
-    if not inbox.is_dir():
-        return []
-    return sorted(
-        p for p in inbox.rglob("*")
-        if p.is_file() and p.suffix.lower() in SUPPORTED_SUFFIXES
-        and not p.name.startswith(("~$", "."))  # Excel lock files, hidden files
-    )
-
-
-def _file_warning(name: str, kind: str, reason: str) -> dict:
-    return {"source_file": name, "source_row": 0, "kind": kind, "reason": reason}
-
-
 def run(inbox: Path, out: Path, business_date: str, parsers: list[Parser] | None = None) -> None:
-    parsers = load_sources() if parsers is None else parsers
-    rows: list[dict] = []
-    warnings: list[dict] = []
+    batch = ingest([EmailAttachmentAdapter(inbox, parsers)], business_date)
+    rows, warnings = batch.rows, batch.warnings
 
-    for path in _inbox_files(inbox):
-        try:
-            table = read_table(path)
-            parser = detect_source(table, parsers)
-        except UnreadableFile as exc:
-            warnings.append(_file_warning(path.name, "unparseable", str(exc)))
-            continue
-        except (NoMatch, Ambiguous) as exc:
-            warnings.append(_file_warning(path.name, "unparseable", str(exc)))
-            continue
-        result = parser.parse(table)
-        rows.extend(result.rows)
-        warnings.extend(result.warnings)
-
-    rows, duplicate_warnings = dedupe_rows(rows)
-    warnings.extend(duplicate_warnings)
-
-    # Per-source status is P-V4. Until then every expected source reports `missing`, never $0.
-    source_status = {
-        "generated_at": now_local().isoformat(),
-        "business_date": business_date,
-        "sources": {s: {"status": "missing", "files": [], "rows": 0} for s in EXPECTED_SOURCES},
-    }
+    source_status = build_source_status(business_date, now_local().isoformat(), batch.files, rows)
     write_outputs(out, rows=rows, source_status=source_status, warnings=warnings)
 
 

@@ -6,13 +6,12 @@ decorated with @register_scraper. Nothing else changes: the `fetch` command disc
     @register_scraper
     class MyPortal(Scraper):
         source = "myportal"                       # becomes the file name prefix in inbox/
-        env_keys = ("MYPORTAL_USER", "MYPORTAL_PASSWORD")
+        env_keys = ("MYPORTAL_URL", "MYPORTAL_TOKEN")
 
         def fetch(self, business_date, dest_dir, env):
-            http = HttpSession(base_url="https://...")        # or: with browser_session() as page:
-            http.post("/login", {"user": env["MYPORTAL_USER"], "password": env["MYPORTAL_PASSWORD"]})
-            return [http.download("/reports/paid?date=" + business_date,
-                                  self.target(dest_dir, business_date, ".csv"))]
+            api = HttpSession(base_url=env["MYPORTAL_URL"], headers={"Authorization": "Bearer " + env["MYPORTAL_TOKEN"]})
+            return [api.download("/reports/paid?date=" + business_date,
+                                 self.target(dest_dir, business_date, ".csv"))]
 
 A scraper only gets the file into inbox/. Reading it is the job of a Parser in engine/sources/.
 """
@@ -50,7 +49,7 @@ def register_scraper(cls: type[Scraper]) -> type[Scraper]:
     return cls
 
 
-_INFRASTRUCTURE = {"base", "http", "browser", "env", "runner"}  # modules that are not portals
+_INFRASTRUCTURE = {"base", "http", "env", "runner"}  # modules that are not portals
 
 
 def load_scrapers() -> list[Scraper]:

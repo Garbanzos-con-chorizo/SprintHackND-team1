@@ -47,55 +47,86 @@ _MONTHS = {m: i for i, m in enumerate(
     ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], start=1)}
 
 
-def parse_business_date(value, tz: str = TIMEZONE) -> str:
+def _finish(y, mo, d, clock, tzinfo, zone, assume_tz):
+    """Turn parsed pieces into the business date. `clock` is (h, m, s) or None."""
+    if clock is None:
+        return date(y, mo, d).isoformat()
+    dt = datetime(y, mo, d, *clock)
+    if tzinfo is not None:
+        dt = dt.replace(tzinfo=tzinfo)
+    elif assume_tz:
+        dt = dt.replace(tzinfo=ZoneInfo(assume_tz))
+    else:
+        return dt.date().isoformat()  # naive time: already in business-local terms
+    return dt.astimezone(zone).date().isoformat()
+
+
+def _clock(h, m, s, ampm):
+    if h is None:
+        return None
+    h = int(h)
+    if ampm:
+        h = h % 12 + (12 if ampm.lower() == "pm" else 0)
+    return (h, int(m), int(s or 0))
+
+
+def _zone_abbr(abbr: str, value):
+    if not abbr:
+        return None
+    abbr = abbr.upper()
+    if abbr not in _ZONE_OFFSETS:
+        raise ValueError(f"unknown time zone {abbr!r} in {value!r}")
+    return timezone(timedelta(hours=_ZONE_OFFSETS[abbr]))
+
+
+def parse_business_date(value, tz: str = TIMEZONE, assume_tz: str | None = None) -> str:
     """Any common date/datetime text or object -> 'YYYY-MM-DD' in the business timezone. Raises ValueError.
 
-    Datetimes with an offset are converted to the business timezone; naive ones are taken as already
-    local. Slash dates are read US-style (month first), the way Goodwill's exports are written.
+    A time with an explicit offset or zone name is converted to the business timezone. A time with none
+    is taken as already local, unless the source is known to write another zone: pass that as
+    `assume_tz` (Cash Monkey writes UTC). Slash dates are read US-style (month first).
     """
     zone = ZoneInfo(tz)
     if isinstance(value, datetime):
-        dt = value.astimezone(zone) if value.tzinfo else value
-        return dt.date().isoformat()
+        if value.tzinfo:
+            return value.astimezone(zone).date().isoformat()
+        return _finish(value.year, value.month, value.day, (value.hour, value.minute, value.second),
+                       None, zone, assume_tz)
     if isinstance(value, date):
         return value.isoformat()
     text = str(value).strip()
     if not text:
         raise ValueError("empty date")
 
-    m = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](.*))?$", text)
+    m = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ]+(\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?\s*"
+                 r"(Z|[+-]\d{2}:?\d{2}|[A-Za-z]{2,4})?)?$", text)
     if m:
-        y, mo, d, rest = int(m[1]), int(m[2]), int(m[3]), m[4]
-        if rest and re.search(r"(Z|[+-]\d{2}:?\d{2})$", rest.strip()):
-            dt = datetime.fromisoformat(text.replace("Z", "+00:00").replace(" ", "T", 1))
-            return dt.astimezone(zone).date().isoformat()
-        return date(y, mo, d).isoformat()
+        tzinfo = None
+        if m[7]:
+            if m[7] == "Z":
+                tzinfo = timezone.utc
+            elif m[7][0] in "+-":
+                sign = -1 if m[7][0] == "-" else 1
+                digits = m[7][1:].replace(":", "")
+                tzinfo = timezone(sign * timedelta(hours=int(digits[:2]), minutes=int(digits[2:])))
+            else:
+                tzinfo = _zone_abbr(m[7], value)
+        return _finish(int(m[1]), int(m[2]), int(m[3]), _clock(m[4], m[5], m[6], None), tzinfo, zone, assume_tz)
 
-    m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{2}|\d{4})(?:\s|$)", text)
+    m = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{2}|\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp][Mm])?\s*([A-Za-z]{2,4})?)?$", text)
     if m:
         y = int(m[3])
         y += 2000 if y < 100 else 0
-        return date(y, int(m[1]), int(m[2])).isoformat()
+        return _finish(y, int(m[1]), int(m[2]), _clock(m[4], m[5], m[6], m[7]), _zone_abbr(m[8], value), zone, assume_tz)
 
-    # Oct 2, 2026   or   Oct 2, 2026 9:33:00 PM PDT  (a zone name means: convert to the business zone)
+    # Oct 2, 2026   or   Oct 2, 2026 9:33:00 PM PDT
     m = re.match(r"^([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})"
                  r"(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp][Mm])?\s*([A-Za-z]{2,4})?)?\s*$", text)
     if m and m[1].lower() in _MONTHS:
-        y, mo, d = int(m[3]), _MONTHS[m[1].lower()], int(m[2])
-        if m[4] is None:
-            return date(y, mo, d).isoformat()
-        hour, minute, second = int(m[4]), int(m[5]), int(m[6] or 0)
-        if m[7]:
-            hour = hour % 12 + (12 if m[7].lower() == "pm" else 0)
-        dt = datetime(y, mo, d, hour, minute, second)
-        abbr = (m[8] or "").upper()
-        if abbr:
-            if abbr not in _ZONE_OFFSETS:
-                raise ValueError(f"unknown time zone {abbr!r} in {value!r}")
-            dt = dt.replace(tzinfo=timezone(timedelta(hours=_ZONE_OFFSETS[abbr]))).astimezone(zone)
-        return dt.date().isoformat()
+        return _finish(int(m[3]), _MONTHS[m[1].lower()], int(m[2]), _clock(m[4], m[5], m[6], m[7]),
+                       _zone_abbr(m[8], value), zone, assume_tz)
 
-    m = re.match(r"^(\d{1,2})[- ]([A-Za-z]{3})[a-z]*[- ,]+(\d{2}|\d{4})", text)  # 2-Oct-26
+    m = re.match(r"^(\d{1,2})[- ]([A-Za-z]{3})[a-z]*[- ,]+(\d{2}|\d{4})$", text)  # 2-Oct-26
     if m and m[2].lower() in _MONTHS:
         y = int(m[3])
         y += 2000 if y < 100 else 0

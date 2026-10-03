@@ -1,0 +1,8 @@
+[
+  {"Transaction creation date": "Oct 2, 2026", "Type": "Order", "Order number": "88-0001", "Buyer username": "scrapebuyer1",
+   "Item subtotal": "19.99", "Final Value Fee - fixed": "-0.30", "Final Value Fee - variable": "-2.60"},
+  {"Transaction creation date": "Oct 2, 2026", "Type": "Order", "Order number": "88-0002", "Buyer username": "scrapebuyer2",
+   "Item subtotal": "45.00", "Final Value Fee - fixed": "-0.30", "Final Value Fee - variable": "-5.85"},
+  {"Transaction creation date": "Oct 2, 2026", "Type": "Refund", "Order number": "88-0002", "Buyer username": "scrapebuyer2",
+   "Item subtotal": "-45.00", "Final Value Fee - fixed": "--", "Final Value Fee - variable": "--"}
+]

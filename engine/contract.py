@@ -17,8 +17,9 @@ COLUMNS = [
     "source_row",
 ]
 
-# Sources the pulse expects a file from each day (keys of source_status.json).
-EXPECTED_SOURCES = ["shopgoodwill", "amazon", "ebay"]
+# Marketplaces the pulse expects data for each day (keys of source_status.json). `other` is not
+# listed: it appears only on a day it has rows, otherwise the pulse treats it as not configured.
+EXPECTED_MARKETPLACES = ["shopgoodwill", "amazon", "ebay"]
 
 WARNING_KINDS = [
     "duplicate",
