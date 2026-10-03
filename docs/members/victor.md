@@ -13,7 +13,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - V1 scaffold in `engine/` (branch `victor/v1-scaffold`): `python -m engine run` writes valid empty `transactions.csv`, `source_status.json` (all sources `missing`) and `warnings.json`; 2 tests pass. No parsers yet.
 
 ## In progress
-- Nothing; V2 is next once V1 is merged
+- Nothing; V3 parsers next
 
 ## Blocked / needs from others
 - Dani: write `docs/contracts/pulse.md` (P0); confirm or change the pulse JSON shape proposed in `docs/HANDOFFS.md`
@@ -22,7 +22,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 
 ## Next (phase 1, in order)
 1. ~~V1 scaffold~~ done
-2. V2 parser base interface and source detection
+2. ~~V2 parser base interface and source detection~~ done (branch `victor/v2-parsers`, stacked on V1). To add a source: one module in `engine/sources/`, see `engine/parsers.py` docstring
 3. V3 parsers: ShopGoodwill, eBay, Amazon
 4. V6 cleaning and warnings, P-V5 dedupe, P-V3 day boundary
 5. P-V1 marketplace tagging, P-V2 customer identity
