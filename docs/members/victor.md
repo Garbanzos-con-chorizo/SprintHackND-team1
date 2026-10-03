@@ -12,11 +12,14 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 
 - V1 scaffold in `engine/` (branch `victor/v1-scaffold`): `python -m engine run` writes valid empty `transactions.csv`, `source_status.json` (all sources `missing`) and `warnings.json`; 2 tests pass. No parsers yet.
 
+- Portal acquisition skeleton (branch `victor/scraper-skeleton`, stacked on V2): `python -m engine fetch` runs one scraper per portal (HTTP or browser backend), saves reports to `inbox/`, logs to `out/fetch_log.json`. Upright is a skeleton only (no URLs/selectors known). Decision 003 proposed.
+
 ## In progress
-- Nothing; V3 parsers next
+- Nothing; waiting on portal access to record the real flows, then V3 parsers
 
 ## Blocked / needs from others
 - Dani: write `docs/contracts/pulse.md` (P0); confirm or change the pulse JSON shape proposed in `docs/HANDOFFS.md`
+- Anyone who can log in to the portals: run the discovery step in `docs/decisions/003-portal-acquisition.md` (network tab: is the report one replayable request?), starting with Upright (deck slides 21-26) and Cash Monkey (27-30)
 - Orlando: sample exports (O1, P-O1) so parsers match real column names; until then I code against hand-made rows
 - Team: confirm `transaction.md` (task 0.6) and pick the engine language (V1)
 

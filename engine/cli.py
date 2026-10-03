@@ -57,9 +57,32 @@ def main(argv: list[str] | None = None) -> int:
     run_p.add_argument("--inbox", type=Path, default=Path("inbox"))
     run_p.add_argument("--out", type=Path, default=Path("out"))
     run_p.add_argument("--date", default=None, help="business date YYYY-MM-DD (default: today, Eastern)")
+    fetch_p = sub.add_parser("fetch", help="download reports from the portals into inbox/")
+    fetch_p.add_argument("--inbox", type=Path, default=Path("inbox"))
+    fetch_p.add_argument("--out", type=Path, default=Path("out"))
+    fetch_p.add_argument("--date", default=None, help="business date YYYY-MM-DD (default: today, Eastern)")
+    fetch_p.add_argument("--source", default=None, help="only this source, e.g. upright")
     args = parser.parse_args(argv)
 
     business_date = args.date or now_local().date().isoformat()
+    if args.command == "fetch":
+        return fetch(args.inbox, args.out, business_date, args.source)
     run(args.inbox, args.out, business_date)
     print(f"engine: wrote {args.out}/ for {business_date}")
     return 0
+
+
+def fetch(inbox: Path, out: Path, business_date: str, only: str | None = None,
+          scrapers=None, env: dict | None = None) -> int:
+    from .scrapers.base import load_scrapers
+    from .scrapers.env import load_env
+    from .scrapers.runner import run_scrapers, write_log
+
+    scrapers = load_scrapers() if scrapers is None else scrapers
+    log = run_scrapers(scrapers, business_date, inbox, load_env() if env is None else env, only)
+    write_log(out, log)
+    for source, entry in log["sources"].items():
+        detail = f" ({entry['detail']})" if entry["detail"] else ""
+        print(f"fetch {source}: {entry['status']}{detail}")
+    # Exit non-zero only for real failures; 'not_configured' is expected until a portal is set up.
+    return 1 if any(e["status"] == "failed" for e in log["sources"].values()) else 0
