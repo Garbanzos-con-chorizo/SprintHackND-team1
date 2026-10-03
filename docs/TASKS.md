@@ -81,3 +81,52 @@ Split across three people by lane. Sizes: **S** < 30 min, **M** 30-90 min, **L**
 4. D10 review UI (show the exceptions as a plain report)
 
 Do not cut: the rules engine (V7), reconciliation (D2), the balanced BC journal (D6-D8), and the clean-plus-messy demo (O1-O2, O8). They're the proof of "automates the rules, not just the downloads".
+
+---
+
+## Nightly pulse breakdown (Part 1)
+Splits the pulse across all three lanes. **Supersedes O3 and O4** above (O3 is now P-D2 and P-O2, O4 is P-O4). Source of the definitions is `docs/roadmap.md`; open definitions are tracked in `docs/OFFICE_HOURS.md` and default to the assumption listed until Amanda answers.
+
+Defaults until confirmed: revenue = net of refunds, fees shown separately; customer count = unique buyers, falling back to order count where a source has no buyer id (labelled on the report); day = order date in Eastern time.
+
+### Contract first (30 min, all three)
+| ID | Task | Owner | Size | Needs |
+|----|------|-------|------|-------|
+| P0 | Write `docs/contracts/pulse.md`: the pulse JSON, per marketplace `{revenue, orders, customers, customer_basis, status}` plus enterprise totals, delta vs prior day, and per-source status (`ok`, `missing`, `stale`) | Dani | S | 0.1 |
+
+### Victor: data feeding the pulse
+| ID | Task | Size | Needs |
+|----|------|------|-------|
+| P-V1 | Marketplace tagging in the engine: every transaction gets `marketplace` in {ShopGoodwill, Amazon, eBay, Other}; mapping for Cash Monkey, Upright, Books lives in config | S | V3 |
+| P-V2 | Customer identity per source: unique buyer id where exposed, otherwise order id with `customer_basis = orders` | M | V3 |
+| P-V3 | Day-boundary logic: assign each transaction to a business day (timezone and cutoff in config) | S | 0.1 |
+| P-V4 | Source status detection: for each expected source on a given day report `ok`, `missing` (no file) or `stale` (file with no rows for that day); feeds the pulse | M | V9 |
+| P-V5 | Dedupe on order id across overlapping exports so re-downloads don't double count | S | V6 |
+
+### Dani: pulse calculation
+| ID | Task | Size | Needs |
+|----|------|------|-------|
+| P-D1 | Revenue calculator: gross, refunds, net per marketplace, with fees reported separately | M | P0, 0.1 |
+| P-D2 | Aggregation: customers (with basis), orders, enterprise totals; totals must equal the sum of rows and ignore `missing` sources without showing them as $0 | M | P-D1 |
+| P-D3 | Day-over-day delta per marketplace and enterprise (guard against a missing or zero prior day) | S | P-D2 |
+| P-D4 | Write the pulse JSON to the contract; CLI `pulse --date YYYY-MM-DD` | S | P-D3 |
+| P-D5 | Tests: clean day, day with refunds, day with a missing source, duplicate rows, zero-revenue marketplace | M | P-D4, P-O1 |
+
+### Orlando: pulse data, rendering and delivery
+| ID | Task | Size | Needs |
+|----|------|------|------|
+| P-O1 | Pulse sample days in the synthetic data: clean day, day with a refund, day with eBay file missing, day with duplicate rows | M | O1 |
+| P-O2 | Render the pulse as an HTML page from the pulse JSON: four marketplace rows, enterprise total, delta column, clear "no data" state for missing sources, definitions footnote | M | P0 |
+| P-O3 | One-line summary at the top ("Revenue up 4%, eBay strongest"), templated first; LLM wording optional | S | P-O2 |
+| P-O4 | Delivery: PDF or email-ready HTML export; a command or folder watcher that stands in for the nightly scheduler (disclose that it is not a real scheduler) | M | P-O2 |
+| P-O5 | Pulse section of the demo script: clean day, then the messy day with a missing file and duplicates | S | P-O1 |
+
+### Order of work
+`P0 -> (P-V1..P-V3 | P-D1..P-D3 | P-O1, P-O2 in parallel) -> P-V4, P-D4 -> P-O3, P-O4 -> P-D5 -> demo`. Until the engine lands, Dani and Orlando use mocked canonical rows and mocked pulse JSON.
+
+### Cut order inside the pulse
+1. P-O3 summary line
+2. P-O4 PDF/email (show the HTML only)
+3. P-D3 delta
+
+Do not cut: the missing-data state (P-V4, P-O2) and the stated definitions. They are the messy-input proof and the "we understand your real limits" proof.
