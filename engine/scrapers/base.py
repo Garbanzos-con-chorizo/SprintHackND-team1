@@ -1,0 +1,63 @@
+"""Scraper interface and registry.
+
+To automate a new portal, drop one module in engine/scrapers/ with a Scraper subclass
+decorated with @register_scraper. Nothing else changes: the `fetch` command discovers it.
+
+    @register_scraper
+    class MyPortal(Scraper):
+        source = "myportal"                       # becomes the file name prefix in inbox/
+        env_keys = ("MYPORTAL_USER", "MYPORTAL_PASSWORD")
+
+        def fetch(self, business_date, dest_dir, env):
+            http = HttpSession(base_url="https://...")        # or: with browser_session() as page:
+            http.post("/login", {"user": env["MYPORTAL_USER"], "password": env["MYPORTAL_PASSWORD"]})
+            return [http.download("/reports/paid?date=" + business_date,
+                                  self.target(dest_dir, business_date, ".csv"))]
+
+A scraper only gets the file into inbox/. Reading it is the job of a Parser in engine/sources/.
+"""
+import importlib
+import pkgutil
+from pathlib import Path
+
+
+class NotConfigured(Exception):
+    """The scraper exists but is not usable yet (missing credentials, URLs or selectors)."""
+
+
+class Scraper:
+    source: str = ""                 # file name prefix and key in out/fetch_log.json
+    env_keys: tuple[str, ...] = ()   # environment variables this scraper needs (credentials, base URL)
+
+    def fetch(self, business_date: str, dest_dir: Path, env: dict[str, str]) -> list[Path]:
+        """Download the report(s) for `business_date` (YYYY-MM-DD) into dest_dir; return the paths."""
+        raise NotImplementedError
+
+    def target(self, dest_dir: Path, business_date: str, suffix: str) -> Path:
+        """Standard file name so parser detection by file name keeps working: <source>_<date><suffix>."""
+        return dest_dir / f"{self.source}_{business_date}{suffix}"
+
+
+_REGISTRY: list[type[Scraper]] = []
+
+
+def register_scraper(cls: type[Scraper]) -> type[Scraper]:
+    if not cls.source:
+        raise ValueError(f"{cls.__name__} must set `source`")
+    if any(c.source == cls.source for c in _REGISTRY):
+        raise ValueError(f"scraper for {cls.source!r} is already registered")
+    _REGISTRY.append(cls)
+    return cls
+
+
+_INFRASTRUCTURE = {"base", "http", "browser", "env", "runner"}  # modules that are not portals
+
+
+def load_scrapers() -> list[Scraper]:
+    """Import every portal module in engine/scrapers/ (which registers it) and instantiate all."""
+    import engine.scrapers as pkg
+
+    for mod in pkgutil.iter_modules(pkg.__path__):
+        if mod.name not in _INFRASTRUCTURE:
+            importlib.import_module(f"{pkg.__name__}.{mod.name}")
+    return [cls() for cls in _REGISTRY]
