@@ -1,7 +1,8 @@
 """python -m recon.pulse --date YYYY-MM-DD"""
 import argparse
+import json
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from . import calc, io
@@ -29,10 +30,9 @@ def main(argv=None):
     if dropped:
         print(f"pulse: dropped {dropped} repeated txn_id row(s)", file=sys.stderr)
 
-    try:
-        calc.build_pulse(rows, source_status, warnings, business_date)
-    except NotImplementedError as e:
-        print(f"pulse: read {len(rows)} rows for {business_date}, but {e}", file=sys.stderr)
-        return 2
-    # P-D4: write <out-dir>/<date>.json and latest.json
+    generated_at = datetime.now().astimezone().isoformat(timespec="seconds")
+    pulse = calc.build_pulse(rows, source_status, warnings, business_date, generated_at)
+    # P-D4: write <out-dir>/<date>.json and latest.json instead of printing
+    json.dump(pulse, sys.stdout, indent=2)
+    print()
     return 0
