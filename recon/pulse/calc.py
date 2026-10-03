@@ -1,4 +1,6 @@
 """Pulse numbers from clean rows. Pure functions, integer cents, no file access."""
+from datetime import date, timedelta
+
 from .io import MARKETPLACES
 
 NUMBERS = ("gross_cents", "refunds_cents", "revenue_cents", "fees_cents", "orders", "customers")
@@ -70,7 +72,7 @@ def marketplace_statuses(rows, source_status, business_date):
 
 
 def day_summary(rows, source_status, business_date):
-    """The `marketplaces` and `enterprise` objects for one day, without deltas."""
+    """The `marketplaces` and `enterprise` objects for one day, before deltas."""
     statuses = marketplace_statuses(rows, source_status, business_date)
     marketplaces = {}
     for m in MARKETPLACES:
@@ -100,12 +102,61 @@ def data_quality(warnings):
     return {"warnings_total": len(warnings), "by_kind": by_kind}
 
 
-def build_pulse(rows, source_status, warnings, business_date, generated_at=None):
+def _delta(current, prior, prior_date, comparable, reason_if_not):
+    """One delta object. `current` and `prior` are marketplace or enterprise dicts; `prior` is None if no data."""
+    delta = {
+        "prior_date": prior_date,
+        "prior_revenue_cents": prior["revenue_cents"] if prior else None,
+        "prior_customers": prior["customers"] if prior else None,
+        "revenue_cents": None,
+        "revenue_pct": None,
+        "customers": None,
+        "reason": reason_if_not,
+    }
+    if comparable:
+        change = current["revenue_cents"] - prior["revenue_cents"]
+        delta["revenue_cents"] = change
+        delta["customers"] = current["customers"] - prior["customers"]
+        if prior["revenue_cents"] > 0:
+            delta["revenue_pct"] = round(100 * change / prior["revenue_cents"], 1)
+            delta["reason"] = None
+        else:
+            delta["reason"] = "prior_zero"
+    return delta
+
+
+def add_deltas(marketplaces, enterprise, prior_marketplaces, prior_enterprise, prior_date):
+    """Attach the day-over-day `delta` objects in place (P-D3)."""
+    for m, current in marketplaces.items():
+        prior = prior_marketplaces.get(m)
+        prior = prior if prior and prior.get("status") == "ok" else None
+        if current["status"] != "ok":
+            current["delta"] = _delta(None, prior, prior_date, False, "current_not_ok")
+        else:
+            current["delta"] = _delta(current, prior, prior_date, bool(prior), "prior_unavailable")
+
+    prior = prior_enterprise if prior_enterprise.get("included") else None
+    if not prior:
+        enterprise["delta"] = _delta(None, None, prior_date, False, "prior_unavailable")
+    else:
+        # totals over different sets of marketplaces are not comparable
+        same = enterprise["included"] == prior["included"]
+        enterprise["delta"] = _delta(enterprise, prior, prior_date, same, "coverage_changed")
+
+
+def build_pulse(rows, source_status, warnings, business_date, generated_at=None, prior_pulse=None):
     """The pulse dict for one day, shaped as docs/contracts/pulse.md.
 
-    Not yet to contract: the `delta` objects are missing until P-D3.
+    `prior_pulse` is the prior day's pulse file if there is one; otherwise the
+    prior day is recomputed from `rows`.
     """
     marketplaces, enterprise = day_summary(rows, source_status, business_date)
+    prior_date = (date.fromisoformat(business_date) - timedelta(days=1)).isoformat()
+    if prior_pulse and prior_pulse.get("business_date") == prior_date:
+        prior_marketplaces, prior_enterprise = prior_pulse["marketplaces"], prior_pulse["enterprise"]
+    else:
+        prior_marketplaces, prior_enterprise = day_summary(rows, source_status, prior_date)
+    add_deltas(marketplaces, enterprise, prior_marketplaces, prior_enterprise, prior_date)
     return {
         "schema_version": 1,
         "business_date": business_date,

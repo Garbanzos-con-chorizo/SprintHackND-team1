@@ -1,6 +1,8 @@
-"""Read the engine's output files (docs/contracts/transaction.md)."""
+"""Read the engine's output files (docs/contracts/transaction.md) and write the pulse files."""
 import csv
 import json
+import re
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -73,3 +75,21 @@ def load_source_status(path):
 def load_warnings(path):
     """warnings.json as a list, or None if the file is absent."""
     return _load_json(path)
+
+
+def load_pulse(path):
+    """A pulse file written earlier, or None if the file is absent."""
+    return _load_json(path)
+
+
+def write_pulse(out_dir, pulse):
+    """Write <out_dir>/<business_date>.json and refresh latest.json. Returns the dated path."""
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    target = out_dir / f"{pulse['business_date']}.json"
+    with open(target, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(pulse, f, indent=2)
+        f.write("\n")
+    dated = [p for p in out_dir.glob("*.json") if re.fullmatch(r"\d{4}-\d{2}-\d{2}", p.stem)]
+    shutil.copyfile(max(dated, key=lambda p: p.stem), out_dir / "latest.json")
+    return target

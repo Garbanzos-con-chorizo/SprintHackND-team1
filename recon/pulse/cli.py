@@ -1,8 +1,7 @@
 """python -m recon.pulse --date YYYY-MM-DD"""
 import argparse
-import json
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from . import calc, io
@@ -30,9 +29,18 @@ def main(argv=None):
     if dropped:
         print(f"pulse: dropped {dropped} repeated txn_id row(s)", file=sys.stderr)
 
+    out_dir = args.out_dir or args.in_dir / "pulse"
+    prior_date = (date.fromisoformat(business_date) - timedelta(days=1)).isoformat()
+    try:
+        prior_pulse = io.load_pulse(out_dir / f"{prior_date}.json")
+    except (OSError, ValueError):
+        prior_pulse = None  # unreadable prior file: recompute from the rows instead
+
     generated_at = datetime.now().astimezone().isoformat(timespec="seconds")
-    pulse = calc.build_pulse(rows, source_status, warnings, business_date, generated_at)
-    # P-D4: write <out-dir>/<date>.json and latest.json instead of printing
-    json.dump(pulse, sys.stdout, indent=2)
-    print()
+    pulse = calc.build_pulse(rows, source_status, warnings, business_date, generated_at, prior_pulse)
+
+    target = io.write_pulse(out_dir, pulse)
+    e = pulse["enterprise"]
+    left_out = ", ".join(f"{x['marketplace']} {x['status']}" for x in e["excluded"]) or "none"
+    print(f"pulse: wrote {target} (revenue {e['revenue_cents'] / 100:.2f} USD, no data: {left_out})")
     return 0

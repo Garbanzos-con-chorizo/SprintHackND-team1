@@ -11,11 +11,28 @@ DAY = "2026-10-02"
 NULLS = dict.fromkeys(calc.NUMBERS) | {"customer_basis": None}
 
 
-def pulse_for(scenario, business_date=DAY, with_status=True):
+def pulse_for(scenario, business_date=DAY, with_status=True, deltas=False, prior_pulse=None):
     folder = FIXTURES / scenario
     rows, _ = io.load_transactions(folder / "transactions.csv")
     status = io.load_source_status(folder / "source_status.json") if with_status else None
-    return calc.build_pulse(rows, status, io.load_warnings(folder / "warnings.json"), business_date)
+    warnings = io.load_warnings(folder / "warnings.json")
+    pulse = calc.build_pulse(rows, status, warnings, business_date, prior_pulse=prior_pulse)
+    if not deltas:
+        for section in (*pulse["marketplaces"].values(), pulse["enterprise"]):
+            del section["delta"]
+    return pulse
+
+
+def delta(prior_revenue, prior_customers, revenue, pct, customers, reason=None):
+    return {
+        "prior_date": "2026-10-01",
+        "prior_revenue_cents": prior_revenue,
+        "prior_customers": prior_customers,
+        "revenue_cents": revenue,
+        "revenue_pct": pct,
+        "customers": customers,
+        "reason": reason,
+    }
 
 
 def numbers(gross, refunds, fees, orders, customers, basis):
@@ -120,18 +137,72 @@ class StatusWithoutAMatchingFile(unittest.TestCase):
         self.assertIsNone(calc.data_quality(None))
 
 
-class MatchesThePublishedMock(unittest.TestCase):
-    def test_contract_sample(self):
+class Deltas(unittest.TestCase):
+    def test_clean_day_against_prior_day_rows(self):
+        pulse = pulse_for("clean_day", deltas=True)
+        m = pulse["marketplaces"]
+        self.assertEqual(m["shopgoodwill"]["delta"], delta(19000, 1, 1900, 10.0, 1))
+        self.assertEqual(m["amazon"]["delta"], delta(5200, 2, -402, -7.7, 0))
+        self.assertEqual(m["ebay"]["delta"], delta(1600, 1, 2849, 178.1, 1))
+        self.assertEqual(m["other"]["delta"], delta(None, None, None, None, None, "current_not_ok"))
+        self.assertEqual(pulse["enterprise"]["delta"], delta(25800, 4, 4347, 16.8, 2))
+
+    def test_no_prior_day(self):
+        pulse = pulse_for("zero_revenue", deltas=True)
+        unavailable = delta(None, None, None, None, None, "prior_unavailable")
+        self.assertEqual(pulse["marketplaces"]["ebay"]["delta"], unavailable)
+        self.assertEqual(pulse["enterprise"]["delta"], unavailable)
+
+    def test_missing_today_keeps_the_prior_figure(self):
+        pulse = pulse_for("missing_source", deltas=True)
+        m = pulse["marketplaces"]
+        self.assertEqual(m["amazon"]["delta"], delta(5200, 2, None, None, None, "current_not_ok"))
+        self.assertEqual(m["shopgoodwill"]["delta"], delta(None, None, None, None, None, "prior_unavailable"))
+        # today only ShopGoodwill reports, the day before only Amazon
+        self.assertEqual(pulse["enterprise"]["delta"], delta(5200, 2, None, None, None, "coverage_changed"))
+
+    def test_prior_zero_gives_amounts_but_no_percent(self):
+        prior = pulse_for("zero_revenue")
+        prior["business_date"] = "2026-10-01"
+        pulse = pulse_for("clean_day", deltas=True, prior_pulse=prior)
+        self.assertEqual(pulse["marketplaces"]["ebay"]["delta"], delta(0, 1, 4449, None, 1, "prior_zero"))
+        self.assertEqual(pulse["marketplaces"]["amazon"]["delta"], delta(4798, 2, 0, 0.0, 0))
+
+    def test_prior_pulse_for_the_wrong_day_is_ignored(self):
+        wrong_day = pulse_for("zero_revenue")  # dated 2026-10-02, not the prior day
+        pulse = pulse_for("clean_day", deltas=True, prior_pulse=wrong_day)
+        self.assertEqual(pulse["marketplaces"]["ebay"]["delta"], delta(1600, 1, 2849, 178.1, 1))
+
+
+class MatchesThePublishedMocks(unittest.TestCase):
+    """The calculator reproduces docs/contracts/examples/pulse.sample*.json in full."""
+
+    PRIOR = {
+        "business_date": "2026-10-01",
+        "marketplaces": {
+            "shopgoodwill": {"status": "ok", "revenue_cents": 19000, "customers": 2},
+            "amazon": {"status": "ok", "revenue_cents": 5200, "customers": 3},
+            "ebay": {"status": "ok", "revenue_cents": 1600, "customers": 1},
+            "other": {"status": "not_configured", "revenue_cents": None, "customers": None},
+        },
+        "enterprise": {"revenue_cents": 25800, "customers": 6, "included": ["shopgoodwill", "amazon", "ebay"]},
+    }
+
+    def check(self, mock_name, ebay_status, warnings):
         rows, _ = io.load_transactions(EXAMPLES / "transactions.sample.csv")
-        status = {"business_date": DAY, "sources": {s: {"status": "ok"} for s in ("shopgoodwill", "amazon", "ebay")}}
-        pulse = calc.build_pulse(rows, status, [], DAY)
-        mock = json.loads((EXAMPLES / "pulse.sample.json").read_text(encoding="utf-8"))
-        for section in (pulse["marketplaces"], {"enterprise": pulse["enterprise"]}):
-            for name, got in section.items():
-                want = mock["marketplaces"][name] if name != "enterprise" else mock["enterprise"]
-                self.assertEqual(got, {k: v for k, v in want.items() if k != "delta"}, name)
-        self.assertEqual(pulse["definitions"], mock["definitions"])
-        self.assertEqual(pulse["data_quality"], mock["data_quality"])
+        sources = {"shopgoodwill": {"status": "ok"}, "amazon": {"status": "ok"}, "ebay": {"status": ebay_status}}
+        status = {"business_date": DAY, "sources": sources}
+        mock = json.loads((EXAMPLES / mock_name).read_text(encoding="utf-8"))
+        pulse = calc.build_pulse(rows, status, warnings, DAY, mock["generated_at"], self.PRIOR)
+        self.assertEqual(pulse, mock)
+        self.assertEqual(list(pulse["marketplaces"]), list(mock["marketplaces"]))
+
+    def test_clean_sample(self):
+        self.check("pulse.sample.json", "ok", [])
+
+    def test_missing_sample(self):
+        warnings = [{"kind": "duplicate"}, {"kind": "duplicate"}, {"kind": "bad_date"}]
+        self.check("pulse.sample.missing.json", "missing", warnings)
 
 
 if __name__ == "__main__":
