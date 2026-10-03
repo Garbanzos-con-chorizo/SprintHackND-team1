@@ -1,7 +1,7 @@
 # 003 — Acquire reports by automating the portals, with HTTP or browser per portal
 
 - **Date / author:** 2026-10-03, Victor
-- **Status:** proposed (Dani and Orlando to accept or object in the PR)
+- **Status:** superseded in part by `004-api-email-delivery-and-daily-run.md`. The browser backend and the discovery step below were dropped after Amanda told us to assume an Upright API with emailed reports. The scraper interface, `fetch` command and HTTP client remain.
 - **Changes:** the "file-drop, no scraping" line in `docs/roadmap.md` and `docs/PROBLEM.md`. File drop stays as the fallback.
 
 ## Context

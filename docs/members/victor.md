@@ -12,7 +12,9 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 
 - V1 scaffold in `engine/` (branch `victor/v1-scaffold`): `python -m engine run` writes valid empty `transactions.csv`, `source_status.json` (all sources `missing`) and `warnings.json`; 2 tests pass. No parsers yet.
 
-- Portal acquisition skeleton (branch `victor/scraper-skeleton`, stacked on V2): `python -m engine fetch` runs one scraper per portal (HTTP or browser backend), saves reports to `inbox/`, logs to `out/fetch_log.json`. Upright is a skeleton only (no URLs/selectors known). Decision 003 proposed.
+- Acquisition: `python -m engine fetch` runs scrapers and logs to `out/fetch_log.json`. After the Oct 3 meeting (Amanda: assume an Upright API that emails Excel) the browser backend was removed; Upright is an API stub; reports arrive by email into the inbox. Decisions 003 (superseded in part) and 004.
+- Cleanup branch `victor/api-email-cleanup`: removed `engine/scrapers/browser.py`, `requirements-browser.txt` and the Playwright test; wrote decision 004 (API + email, daily run, schedule options) and updated `docs/ASSUMPTIONS.md`. 81 tests pass.
+- Out of scope by decision: brick and mortar, an Excel-to-CSV converter (the engine reads .xlsx directly), a 'late' state.
 
 - V3 parsers (branch `victor/v3-parsers`, stacked on the scraper skeleton): ShopGoodwill, eBay, Amazon on a shared `OrderReportParser`; money/date cleaning in `engine/clean.py`; 56 tests pass. Checked against Orlando's synthetic samples (`data/sample/*`): 64 of 66 marketplace-days off at first, now all match except the overlapping eBay re-download, which needs P-V5. Column names are still not from real Goodwill files, and ShopGoodwill's layout is a guess on both sides. Not yet done: cross-file dedupe (P-V5), source status (P-V4), day cutoff config (P-V3 beyond timezone).
 

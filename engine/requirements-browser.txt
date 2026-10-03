@@ -1,3 +1,0 @@
-# Only for people who run browser scrapers (see engine/scrapers/browser.py).
-# After installing: python -m playwright install chromium
-playwright

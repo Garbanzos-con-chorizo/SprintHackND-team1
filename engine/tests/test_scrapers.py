@@ -6,7 +6,6 @@ import pytest
 
 from engine.cli import fetch
 from engine.scrapers.base import NotConfigured, Scraper, load_scrapers
-from engine.scrapers.browser import browser_session
 from engine.scrapers.env import load_env
 from engine.scrapers.http import HttpError, HttpSession
 from engine.scrapers.runner import run_scrapers
@@ -62,10 +61,10 @@ def test_fetch_command_writes_log_and_exit_code(tmp_path):
     assert fetch(tmp_path / "inbox", out, "2026-10-02", scrapers=[Boom()], env={}) == 1
 
 
-def test_builtin_scrapers_load_and_upright_skeleton_is_not_configured(tmp_path):
+def test_builtin_scrapers_load_and_upright_stub_is_not_configured(tmp_path):
     scrapers = load_scrapers()
     assert "upright" in {s.source for s in scrapers}
-    env = {"UPRIGHT_URL": "x", "UPRIGHT_USER": "u", "UPRIGHT_PASSWORD": "p"}
+    env = {"UPRIGHT_URL": "x", "UPRIGHT_TOKEN": "t"}
     log = run_scrapers(scrapers, "2026-10-02", tmp_path, env, only="upright")
     assert log["sources"]["upright"]["status"] == "not_configured"
 
@@ -113,13 +112,3 @@ def test_http_session_keeps_login_cookie_and_downloads(server, tmp_path):
     http.post("/login", {"user": "u"})
     dest = http.download("/report.csv", tmp_path / "x.csv")
     assert dest.read_text() == "Order ID,Total\n1,5\n"
-
-
-def test_browser_backend_gives_clear_error_when_playwright_missing(tmp_path, monkeypatch):
-    import sys
-
-    monkeypatch.setitem(sys.modules, "playwright", None)
-    monkeypatch.setitem(sys.modules, "playwright.sync_api", None)
-    with pytest.raises(NotConfigured, match="Playwright"):
-        with browser_session(tmp_path):
-            pass

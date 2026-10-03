@@ -10,6 +10,7 @@ Our brief is broad and we have no real Goodwill files yet, so we decided early t
 | 1.1 | The **nightly pulse is the first deliverable** and the month-end close is the real prize. We build the pulse end to end first. | It is the smallest piece that runs live in a demo, and its parsing and cleaning are reused by the close. | decision |
 | 1.2 | Output is a **Business Central-ready import file, not a live posting**. | We have no sandbox and no credentials. Overclaiming "integration" is penalized, so we say what is real. | decision |
 | 1.3 | All demo data is **synthetic and labelled so**. | No real data yet. Disclosure is a judging criterion. | decision |
+| 1.4 | **Brick and mortar is out of scope.** It is independent of the e-commerce work, so we ingest no B&M reports and the **enterprise total is the e-commerce total**. | Decided in the meeting; slide 31 also titles the total "Total e-commerce". | from the meeting |
 
 ## 2. Where the data comes from
 | # | Assumption | Why | Confidence |
@@ -24,14 +25,25 @@ Our brief is broad and we have no real Goodwill files yet, so we decided early t
 ## 3. How the data gets in (acquisition)
 | # | Assumption | Why | Confidence |
 |---|---|---|---|
-| 3.1 | We **automate what staff do by hand** (log in, run the report, download) per portal, and keep **file drop as the fallback**. | The deck's target is to automate downloads and rules. A scraper that is blocked or unfinished must not stop the demo. | decision (`docs/decisions/003-portal-acquisition.md`) |
-| 3.2 | Each portal uses **plain HTTP or a real browser, chosen after one discovery pass**. | We cannot tell from the deck whether a download is one replayable request or needs clicks, MFA or a login token. | decision |
-| 3.3 | Upright reports are **asynchronous**: generate, wait, download from "Past reports". | Slides 7-9 and 38 ("generate; email delivery"). | from the deck |
-| 3.4 | **Credentials come from the environment or an ignored `.env`**. No agent types them and nothing is committed. | Safety and the "no secrets in git" rule. | decision |
-| 3.5 | **"Email" means a folder**, not a mailbox connection: someone saves the attachment (or an email rule does) into `inbox/`. | Reading a live mailbox needs Goodwill IT approval we do not have. Slide 38 says Upright can email the report, so a folder rule is the lightest bridge. | decision (an IMAP adapter is the next step if IT allows) |
-| 3.6 | An **ERP drop is a CSV or Excel file** and works only if a parser exists for its columns. | No ERP details were given. | default |
-| 3.7 | The **mock scraper is a stub**: it is handed the records a scraper would extract and runs them through the same parser as a file. No login, network, paging or retries. | It demonstrates the pluggable design without touching a live site. | decision (`engine/ingest/scraper_adapter.py`) |
-| 3.8 | Supported inputs are **.csv, .tsv, .txt, .xlsx**. Legacy **.xls is reported as a warning, not read**. First sheet only. | Standard library plus `openpyxl`; a silent skip would hide a missing report. | decision |
+| 3.1 | **An API exists for Upright** and can generate the Paid orders report; Upright then **emails it as an Excel attachment**. | Amanda told us to assume this (office hours, 2026-10-03). The deck agrees: "generate; email delivery" (slides 7-9, 38). | **from Amanda** (`docs/decisions/004-api-email-delivery-and-daily-run.md`) |
+| 3.2 | We **do not know the API's endpoint or fields**, so the Upright client is a stub that says "not configured" instead of pretending. | Nobody has seen the API. Inventing it would be an overclaim. | decision |
+| 3.3 | **The email arrives in a folder**: an email rule saves the attachment into `inbox/`, and the engine reads the folder. Reading a live mailbox is a later step that needs Goodwill's approval. | Lightest bridge, no mailbox credentials needed, same code path as a manual drop. | decision |
+| 3.4 | **Excel is read directly; there is no Excel-to-CSV step.** The engine writes the CSV (and two JSON files) that Dani's code reads. | A converter would add a step with no benefit. Amanda said converting to CSV is fine if CSV isn't offered, so we remain compatible either way. | decision |
+| 3.5 | **Browser automation was removed.** | With an API assumed there is no login screen to automate; the dependency and its code were dead weight. | decision (`004`) |
+| 3.6 | **File drop stays as the fallback** for any source whose API or email isn't set up. | A demo must not depend on an integration we can't test. | decision |
+| 3.7 | **An ERP drop is a CSV or Excel file** and works only if a parser exists for its columns. | No ERP details were given. | default |
+| 3.8 | The **mock scraper is a stub**: it is handed the records a scraper would extract and runs them through the same parser as a file. No login, network, paging or retries. | It demonstrates the pluggable design without touching a live site. | decision (`engine/ingest/scraper_adapter.py`) |
+| 3.9 | Supported inputs are **.csv, .tsv, .txt, .xlsx**. Legacy **.xls is reported as a warning, not read**. First sheet only. | Standard library plus `openpyxl`; a silent skip would hide a missing report. | decision |
+| 3.10 | **Credentials come from the environment or an ignored `.env`.** No agent types them and nothing is committed. | Safety and the "no secrets in git" rule. | decision |
+
+## 3b. When it runs (schedule)
+| # | Assumption | Why | Confidence |
+|---|---|---|---|
+| 3b.1 | **The pipeline runs once a day at a fixed time**, so the e-commerce pulse is produced at the same moment the brick-and-mortar report goes out. | Staff get both reports together; one run is simplest to explain and to operate. | from the meeting |
+| 3b.2 | **E-commerce reports finalize at 9:00 PM PT = 12:00 AM ET**, every day of the year. A business day is complete only after midnight ET. | From the meeting. PT and ET change clocks together, so the offset never moves. | from the meeting |
+| 3b.3 | **Default run time: 1:00 PM ET, reporting the previous Eastern day.** | It matches B&M's 1 PM send and always reports a finished day. A 10:00 PM ET run (B&M's other send) would report a day that is still 2 hours short of final. | assumption, **to confirm with Amanda** |
+| 3b.4 | **`python -m reports.run_nightly` stands in for the scheduler** and runs once when called. Windows Task Scheduler or cron would call it in production. We disclose it as a stand-in, not a real scheduler. | A real scheduler needs a server we don't have for the demo. | decision (Orlando's O4) |
+| 3b.5 | **No "late" state.** A report that hasn't arrived by the run is shown as "no data" and the next run picks it up. | With one run a day, "late" and "missing" look the same to the reader, and a separate state would need a contract change for no gain. | decision |
 
 ## 4. What the numbers mean (definitions)
 Open questions for Amanda are in `docs/OFFICE_HOURS.md` and `docs/office-hours-victor.md`. Until answered:
@@ -73,5 +85,5 @@ Open questions for Amanda are in `docs/OFFICE_HOURS.md` and `docs/office-hours-v
 ## What would change the most
 1. **One real Cash Monkey CSV** replaces 2.2, 6.2 and 6.3 with facts.
 2. **One real Upright download** settles 2.5 and the Upright column names.
-3. **Amanda's answers** on revenue, the day boundary and customers settle section 4.
-4. **A read-only login or a HAR file** settles 3.2.
+3. **The Upright API documentation** replaces 3.1 and 3.2 with facts.
+4. **Amanda's answers** on revenue, the day boundary, customers and the run time (3b.3) settle sections 3b and 4.
