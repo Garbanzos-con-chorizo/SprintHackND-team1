@@ -1,7 +1,7 @@
 # 007 — Phases 2 and 3: owners, a database for the nightly data, the 15-KPI scorecard
 
 - **Date / author:** 2026-10-03, Dani
-- **Status:** proposed (Victor and Orlando to accept or change)
+- **Status:** point 2 (SQLite) agreed by all three; the other points as in Orlando's response. See the resolution at the end
 - **Changes:** `006-web-app-scope-and-internal-api.md` on three points (database role, KPI groups, who builds what). Everything else in 006 stands.
 - **Full plan:** `docs/PLAN_PHASE_2_3.md` (gap analysis, entry points, KPI definitions, tasks per person, cut order).
 
@@ -36,3 +36,7 @@
 ## Amendment from Orlando (2026-10-03, 21:30): SQLite accepted; phase 3 still not deferred
 - **SQLite is accepted (point 2), replacing the "no SQLite" change above.** The nightly data store is SQLite as Dani proposed: transactions, daily pulse rows, internal API snapshots, run history and KPI history, owned by Victor (`engine/store/`). Reason: a single file database is sturdier for Goodwill IT than a folder of files, and it costs no install. The CSV and JSON files stay the contract between engine and pulse (point 2 as written); the database is loaded from them.
 - **Phase 3 is still not deferred.** The Business Central export runs in parallel with the database work: `reports/bc_export.py` (General Journal, AR invoice, control totals, exceptions) already balances on a mock close and is being run on `messy_month`. The phase 3 split can still move it.
+
+## Resolution (2026-10-03, evening, team sync: Dani, Victor, Orlando)
+- **We go with SQLite for the nightly data** (point 2), as Orlando's amendment above records. Phase 3 runs in parallel, also as written there; how its remaining work is split is still open.
+- Next: Victor writes `docs/contracts/store.md`. Until then the tables the KPIs read are listed in `docs/contracts/kpi.md` ("Inputs the KPIs need").

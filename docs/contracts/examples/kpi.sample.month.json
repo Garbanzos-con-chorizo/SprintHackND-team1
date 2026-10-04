@@ -1,0 +1,669 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-01T00:20:00-04:00",
+  "currency": "USD",
+  "period": {
+    "type": "month",
+    "id": "2026-09",
+    "label": "September 2026",
+    "start": "2026-09-01",
+    "end": "2026-09-30",
+    "through": "2026-09-30",
+    "days": 30,
+    "complete": true
+  },
+  "prior_period": {
+    "id": "2026-08",
+    "label": "August 2026",
+    "start": "2026-08-01",
+    "through": "2026-08-31",
+    "days": 31,
+    "available": false
+  },
+  "coverage": {
+    "days_expected": 30,
+    "days_complete": 30,
+    "days_partial": 0,
+    "days_missing": 0,
+    "complete": true,
+    "by_marketplace": {
+      "shopgoodwill": 30,
+      "amazon": 30,
+      "ebay": 30
+    },
+    "gaps": []
+  },
+  "internal_data": {
+    "source": "mock",
+    "label": "Simulated internal data",
+    "as_of": "2026-09-30"
+  },
+  "areas": [
+    {
+      "id": "financial",
+      "name": "Financial"
+    },
+    {
+      "id": "productivity",
+      "name": "Productivity"
+    },
+    {
+      "id": "inventory",
+      "name": "Inventory"
+    },
+    {
+      "id": "sales",
+      "name": "Sales"
+    },
+    {
+      "id": "category_customer",
+      "name": "Category + Customer"
+    }
+  ],
+  "kpis": [
+    {
+      "id": "fin.revenue",
+      "area": "financial",
+      "name": "Total E-Commerce Revenue",
+      "kind": "scalar",
+      "unit": "cents",
+      "per": null,
+      "value": 7075396,
+      "rows": null,
+      "status": "ok",
+      "reason": null,
+      "note": null,
+      "basis": null,
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "no_prior_period"
+      },
+      "good_direction": "up",
+      "source": "files",
+      "simulated": false,
+      "definition": "Sales minus refunds, before marketplace fees. Excludes shipping and tax.",
+      "inputs": {
+        "gross_cents": 7084393,
+        "refunds_cents": -8997,
+        "fees_cents": 582033,
+        "orders": 2422
+      }
+    },
+    {
+      "id": "fin.revenue_growth",
+      "area": "financial",
+      "name": "Revenue Growth %",
+      "kind": "scalar",
+      "unit": "ratio",
+      "per": null,
+      "value": null,
+      "rows": null,
+      "status": "no_data",
+      "reason": "no_prior_period",
+      "note": "No data stored for August 2026.",
+      "basis": "prior_period",
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "current_no_data"
+      },
+      "good_direction": "up",
+      "source": "files",
+      "simulated": false,
+      "definition": "Change in revenue against the comparison period.",
+      "inputs": {
+        "revenue_cents": 7075396,
+        "prior_revenue_cents": null
+      }
+    },
+    {
+      "id": "fin.net_margin",
+      "area": "financial",
+      "name": "Net Margin %",
+      "kind": "scalar",
+      "unit": "ratio",
+      "per": null,
+      "value": 0.195,
+      "rows": null,
+      "status": "ok",
+      "reason": null,
+      "note": null,
+      "basis": null,
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "no_prior_period"
+      },
+      "good_direction": "up",
+      "source": "mixed",
+      "simulated": true,
+      "definition": "(Revenue - marketplace fees - cost of goods - net shipping cost - labor cost) / revenue.",
+      "inputs": {
+        "revenue_cents": 7075396,
+        "fees_cents": 582033,
+        "cogs_cents": 2088303,
+        "shipping_net_cost_cents": 318400,
+        "labor_cost_cents": 2707075,
+        "net_profit_cents": 1379585
+      }
+    },
+    {
+      "id": "prod.listings_created",
+      "area": "productivity",
+      "name": "Listings Created",
+      "kind": "scalar",
+      "unit": "count",
+      "per": null,
+      "value": 3534,
+      "rows": null,
+      "status": "ok",
+      "reason": null,
+      "note": null,
+      "basis": null,
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "no_prior_period"
+      },
+      "good_direction": "up",
+      "source": "internal",
+      "simulated": true,
+      "definition": "New listings created in the period, all marketplaces.",
+      "inputs": {
+        "by_marketplace": {
+          "shopgoodwill": 1903,
+          "amazon": 625,
+          "ebay": 1006
+        }
+      }
+    },
+    {
+      "id": "prod.revenue_per_labor_hour",
+      "area": "productivity",
+      "name": "Revenue per Labor Hour",
+      "kind": "scalar",
+      "unit": "cents",
+      "per": "labor hour",
+      "value": 4574,
+      "rows": null,
+      "status": "ok",
+      "reason": null,
+      "note": null,
+      "basis": null,
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "no_prior_period"
+      },
+      "good_direction": "up",
+      "source": "mixed",
+      "simulated": true,
+      "definition": "Revenue / e-commerce labor hours.",
+      "inputs": {
+        "revenue_cents": 7075396,
+        "labor_hours": 1546.9
+      }
+    },
+    {
+      "id": "prod.listings_per_employee",
+      "area": "productivity",
+      "name": "Listings per Employee",
+      "kind": "scalar",
+      "unit": "number",
+      "per": "employee",
+      "value": 372.0,
+      "rows": null,
+      "status": "ok",
+      "reason": null,
+      "note": null,
+      "basis": null,
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "no_prior_period"
+      },
+      "good_direction": "up",
+      "source": "internal",
+      "simulated": true,
+      "definition": "Listings created / average e-commerce employees (full-time equivalents).",
+      "inputs": {
+        "listings_created": 3534,
+        "employees": 9.5
+      }
+    },
+    {
+      "id": "inv.days_donation_to_listing",
+      "area": "inventory",
+      "name": "Days from Donation to Listing",
+      "kind": "scalar",
+      "unit": "days",
+      "per": null,
+      "value": 6.0,
+      "rows": null,
+      "status": "ok",
+      "reason": null,
+      "note": null,
+      "basis": null,
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "no_prior_period"
+      },
+      "good_direction": "down",
+      "source": "internal",
+      "simulated": true,
+      "definition": "Median days between donation and listing, for items listed in the period.",
+      "inputs": {
+        "items_listed": 3534
+      }
+    },
+    {
+      "id": "inv.unlisted_backlog",
+      "area": "inventory",
+      "name": "Unlisted Inventory Backlog",
+      "kind": "scalar",
+      "unit": "count",
+      "per": null,
+      "value": 8420,
+      "rows": null,
+      "status": "ok",
+      "reason": null,
+      "note": null,
+      "basis": null,
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "no_prior_period"
+      },
+      "good_direction": "down",
+      "source": "internal",
+      "simulated": true,
+      "definition": "Items sent to e-commerce and not yet listed, on the last day of the period.",
+      "inputs": {
+        "as_of": "2026-09-30"
+      }
+    },
+    {
+      "id": "inv.unsold_pct",
+      "area": "inventory",
+      "name": "Unsold Inventory %",
+      "kind": "scalar",
+      "unit": "ratio",
+      "per": null,
+      "value": 0.3203,
+      "rows": null,
+      "status": "ok",
+      "reason": null,
+      "note": null,
+      "basis": null,
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "no_prior_period"
+      },
+      "good_direction": "down",
+      "source": "internal",
+      "simulated": true,
+      "definition": "Active listings older than 30 days / active listings, on the last day of the period.",
+      "inputs": {
+        "as_of": "2026-09-30",
+        "active_listings": 2310,
+        "active_over_threshold": 740,
+        "threshold_days": 30
+      }
+    },
+    {
+      "id": "sales.asp",
+      "area": "sales",
+      "name": "Average Selling Price",
+      "kind": "scalar",
+      "unit": "cents",
+      "per": "order",
+      "value": 2921,
+      "rows": null,
+      "status": "ok",
+      "reason": null,
+      "note": "Per order, not per unit: the exports do not give unit counts yet.",
+      "basis": "per_order",
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "no_prior_period"
+      },
+      "good_direction": "up",
+      "source": "files",
+      "simulated": false,
+      "definition": "Revenue / orders (per order until unit counts are available).",
+      "inputs": {
+        "revenue_cents": 7075396,
+        "units": null,
+        "orders": 2422
+      }
+    },
+    {
+      "id": "sales.sell_through",
+      "area": "sales",
+      "name": "Sell-Through Rate",
+      "kind": "scalar",
+      "unit": "ratio",
+      "per": null,
+      "value": 0.6853,
+      "rows": null,
+      "status": "ok",
+      "reason": null,
+      "note": "Orders / listings created, until unit counts are available.",
+      "basis": "orders",
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "no_prior_period"
+      },
+      "good_direction": "up",
+      "source": "mixed",
+      "simulated": true,
+      "definition": "Orders / listings created in the period (a stand-in for units sold / units listed).",
+      "inputs": {
+        "units_sold": null,
+        "orders": 2422,
+        "units_listed": 3534
+      }
+    },
+    {
+      "id": "sales.sales_per_employee",
+      "area": "sales",
+      "name": "Sales per Employee",
+      "kind": "scalar",
+      "unit": "cents",
+      "per": "employee",
+      "value": 744779,
+      "rows": null,
+      "status": "ok",
+      "reason": null,
+      "note": null,
+      "basis": null,
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "no_prior_period"
+      },
+      "good_direction": "up",
+      "source": "mixed",
+      "simulated": true,
+      "definition": "Revenue / average e-commerce employees (full-time equivalents).",
+      "inputs": {
+        "revenue_cents": 7075396,
+        "employees": 9.5
+      }
+    },
+    {
+      "id": "cat.top_revenue",
+      "area": "category_customer",
+      "name": "Top 10 Categories by Revenue",
+      "kind": "ranking",
+      "unit": "cents",
+      "per": null,
+      "value": null,
+      "rows": [
+        {
+          "rank": 1,
+          "label": "Collectibles",
+          "value": 1202817,
+          "share": 0.17,
+          "ratio": null
+        },
+        {
+          "rank": 2,
+          "label": "Jewelry & Watches",
+          "value": 1061309,
+          "share": 0.15,
+          "ratio": null
+        },
+        {
+          "rank": 3,
+          "label": "Electronics",
+          "value": 919801,
+          "share": 0.13,
+          "ratio": null
+        },
+        {
+          "rank": 4,
+          "label": "Clothing & Shoes",
+          "value": 849047,
+          "share": 0.12,
+          "ratio": null
+        },
+        {
+          "rank": 5,
+          "label": "Books & Media",
+          "value": 778294,
+          "share": 0.11,
+          "ratio": null
+        },
+        {
+          "rank": 6,
+          "label": "Home & Kitchen",
+          "value": 636786,
+          "share": 0.09,
+          "ratio": null
+        },
+        {
+          "rank": 7,
+          "label": "Toys & Games",
+          "value": 495278,
+          "share": 0.07,
+          "ratio": null
+        },
+        {
+          "rank": 8,
+          "label": "Art & Antiques",
+          "value": 353770,
+          "share": 0.05,
+          "ratio": null
+        },
+        {
+          "rank": 9,
+          "label": "Musical Instruments",
+          "value": 283016,
+          "share": 0.04,
+          "ratio": null
+        },
+        {
+          "rank": 10,
+          "label": "Sporting Goods",
+          "value": 212262,
+          "share": 0.03,
+          "ratio": null
+        }
+      ],
+      "status": "ok",
+      "reason": null,
+      "note": null,
+      "basis": "internal_split",
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "not_applicable"
+      },
+      "good_direction": "up",
+      "source": "mixed",
+      "simulated": true,
+      "definition": "Revenue split by category using the internal sales-by-category shares, largest first.",
+      "inputs": {
+        "revenue_cents": 7075396,
+        "internal_sales_cents": 7012400,
+        "categories": 12,
+        "rest_cents": 283016
+      }
+    },
+    {
+      "id": "cat.top_margin",
+      "area": "category_customer",
+      "name": "Top 10 Categories by Margin",
+      "kind": "ranking",
+      "unit": "cents",
+      "per": null,
+      "value": null,
+      "rows": [
+        {
+          "rank": 1,
+          "label": "Collectibles",
+          "value": 938197,
+          "share": 0.1881,
+          "ratio": 0.78
+        },
+        {
+          "rank": 2,
+          "label": "Jewelry & Watches",
+          "value": 870273,
+          "share": 0.1745,
+          "ratio": 0.82
+        },
+        {
+          "rank": 3,
+          "label": "Clothing & Shoes",
+          "value": 594333,
+          "share": 0.1192,
+          "ratio": 0.7
+        },
+        {
+          "rank": 4,
+          "label": "Electronics",
+          "value": 570276,
+          "share": 0.1144,
+          "ratio": 0.62
+        },
+        {
+          "rank": 5,
+          "label": "Books & Media",
+          "value": 451410,
+          "share": 0.0905,
+          "ratio": 0.58
+        },
+        {
+          "rank": 6,
+          "label": "Home & Kitchen",
+          "value": 420279,
+          "share": 0.0843,
+          "ratio": 0.66
+        },
+        {
+          "rank": 7,
+          "label": "Toys & Games",
+          "value": 331837,
+          "share": 0.0665,
+          "ratio": 0.67
+        },
+        {
+          "rank": 8,
+          "label": "Art & Antiques",
+          "value": 283016,
+          "share": 0.0567,
+          "ratio": 0.8
+        },
+        {
+          "rank": 9,
+          "label": "Musical Instruments",
+          "value": 203771,
+          "share": 0.0409,
+          "ratio": 0.72
+        },
+        {
+          "rank": 10,
+          "label": "Sporting Goods",
+          "value": 137971,
+          "share": 0.0277,
+          "ratio": 0.65
+        }
+      ],
+      "status": "ok",
+      "reason": null,
+      "note": null,
+      "basis": "internal_split",
+      "covers": null,
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "not_applicable"
+      },
+      "good_direction": "up",
+      "source": "mixed",
+      "simulated": true,
+      "definition": "Category revenue minus category cost of goods, largest first, with margin as a share of category revenue.",
+      "inputs": {
+        "revenue_cents": 7075396,
+        "cogs_cents": 2088303,
+        "margin_cents": 4987093,
+        "categories": 12,
+        "rest_cents": 185730
+      }
+    },
+    {
+      "id": "cust.repeat_buyer_rate",
+      "area": "category_customer",
+      "name": "Repeat Buyer Rate",
+      "kind": "scalar",
+      "unit": "ratio",
+      "per": null,
+      "value": 0.1339,
+      "rows": null,
+      "status": "partial",
+      "reason": "no_buyer_ids",
+      "note": "ShopGoodwill and eBay only (82% of orders): Amazon gives no buyer id.",
+      "basis": null,
+      "covers": [
+        "shopgoodwill",
+        "ebay"
+      ],
+      "prior_value": null,
+      "delta": {
+        "value": null,
+        "pct": null,
+        "reason": "no_prior_period"
+      },
+      "good_direction": "up",
+      "source": "files",
+      "simulated": false,
+      "definition": "Buyers with two or more orders in the period / buyers, where the marketplace gives a buyer id.",
+      "inputs": {
+        "buyers": 1598,
+        "repeat_buyers": 214,
+        "orders_with_buyer_id": 1979,
+        "orders": 2422
+      }
+    }
+  ],
+  "definitions": {
+    "revenue": "Sales minus refunds, before marketplace fees. Excludes shipping and tax.",
+    "period": "Business days in Eastern time. Weeks run Monday to Sunday.",
+    "comparison": "The period before, over the same number of days.",
+    "simulated": "Numbers marked as simulated use a mock of Goodwill's internal systems, not Goodwill's real figures."
+  }
+}
