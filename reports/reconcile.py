@@ -1,11 +1,12 @@
 """Month-end reconciliation from the raw inbox: bank deposits matched to marketplace payouts (B1-B2).
 
-Reads one month's inbox and writes the close payload `reports.bc_export` takes
-(docs/contracts/close-payload.md). Everything below comes from the raw files:
+Runs the engine on one month's inbox and writes the close payload `reports.bc_export` takes
+(docs/contracts/close-payload.md). Everything below comes from the files the engine writes from that
+inbox (docs/contracts/close-inputs.md); this module parses no report itself:
   - month totals: sales, refunds and fees from the engine's transactions.csv (`python -m engine run`);
-  - bank credits: bank_activity_*.csv, each classified to a source by `Bank_Text` in bc_mapping.csv;
-  - payouts: eBay `Payout` rows and Amazon `Transfer` rows in their reports (ShopGoodwill has no payout
-    report in our files, so its deposits are matched to the source only);
+  - bank credits: the engine's bank.csv, each classified to a source by `Bank_Text` in bc_mapping.csv;
+  - payouts: the engine's payouts.csv (eBay `Payout` rows, Amazon `Transfer` rows). ShopGoodwill has no
+    payout report in our files, so each of its deposits is taken as a payout;
   - matching: a deposit pays one or more consecutive payouts of its source, paid at most 5 days before it;
   - payout windows: each payout is compared with what our files hold for the days it covers (the
     source's `Payout_Cutoff` and `Payout_Timezone` in bc_mapping.csv). A payout that paid more than the
@@ -47,59 +48,11 @@ EASTERN = "America/New_York"  # the zone of the engine's business_date
 WEEKDAYS = {"MON": 0, "TUE": 1, "WED": 2, "THU": 3, "FRI": 4, "SAT": 5, "SUN": 6}
 
 
-def cents(text):
-    """'1,234.50', '-469.47', '$84.00' -> integer cents. Empty -> 0."""
-    t = (text or "").replace(",", "").replace("$", "").strip()
-    if not t or t == "--":
-        return 0
-    sign = -1 if t.startswith("-") else 1
-    whole, _, frac = t.lstrip("-").partition(".")
-    return sign * (int(whole or 0) * 100 + int((frac + "00")[:2]))
-
-
 def money(c):
     return f"{'-' if c < 0 else ''}${abs(c) / 100:,.2f}"
 
 
-def report_rows(path, first_header):
-    """Rows of a marketplace report with preamble lines before its header (header starts with `first_header`)."""
-    lines = path.read_text(encoding="utf-8-sig").splitlines()
-    start = next(i for i, line in enumerate(lines) if line.startswith(f'"{first_header}"') or line.startswith(first_header))
-    return list(csv.DictReader(lines[start:]))
-
-
 # ---------------------------------------------------------------- inputs
-
-def read_bank(inbox, mapping):
-    credits = []
-    for f in sorted(inbox.glob("bank_activity_*.csv")):
-        for r in csv.DictReader(f.read_text(encoding="utf-8-sig").splitlines()):
-            amount = cents(r["Credit"])
-            if amount <= 0:
-                continue  # debits (payroll, fees) are not marketplace money
-            text = r["Description"].upper()
-            source = next((s for s, m in mapping.items() if m.get("Bank_Text") and m["Bank_Text"].upper() in text), None)
-            credits.append({"date": datetime.strptime(r["Posting Date"], "%m/%d/%Y").date(), "description": r["Description"],
-                            "amount_cents": amount, "source": source})
-    return credits
-
-
-def read_payouts(inbox):
-    """Payouts the marketplaces report, de-duplicated across overlapping downloads (one per source and day)."""
-    found = {}
-    for f in sorted(inbox.glob("ebay_transactions_*.csv")):
-        for r in report_rows(f, "Transaction creation date"):
-            if r["Type"] == "Payout":
-                d = datetime.strptime(r["Transaction creation date"], "%b %d, %Y").date()
-                found[("ebay", d)] = -cents(r["Net amount"])
-    for f in sorted(inbox.glob("amazon_daterange_*.csv")):
-        for r in report_rows(f, "date/time"):
-            if r["type"] == "Transfer":
-                d = datetime.strptime(r["date/time"].rsplit(" ", 1)[0], "%b %d, %Y %I:%M:%S %p").date()
-                found[("amazon", d)] = -cents(r["total"])
-    return [{"id": f"{src.upper()}-PAID-{d:%m%d}", "source": src, "paid": d, "amount_cents": a}
-            for (src, d), a in sorted(found.items(), key=lambda kv: (kv[0][1], kv[0][0]))]
-
 
 def run_engine(inbox, out, month_end):
     out.mkdir(parents=True, exist_ok=True)
@@ -110,6 +63,45 @@ def run_engine(inbox, out, month_end):
     rows = list(csv.DictReader(open(out / "transactions.csv", encoding="utf-8")))
     warnings = json.loads((out / "warnings.json").read_text(encoding="utf-8"))
     return rows, warnings
+
+
+def engine_csv(out, name):
+    """Rows of one of the files the engine writes for the close (docs/contracts/close-inputs.md)."""
+    path = out / name
+    if not path.exists():
+        raise SystemExit(f"{path} is missing: the engine writes it since close-inputs.md v0.1 (is engine/ up to date?)")
+    with open(path, encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def bank_credits(out, mapping):
+    """The bank's credits from the engine's bank.csv, each classified to a source by `Bank_Text` in
+    bc_mapping.csv (None when no rule matches). Debits (payroll, fees, carriers) are not marketplace money."""
+    credits = []
+    for r in engine_csv(out, "bank.csv"):
+        amount = int(r["amount_cents"])
+        if amount <= 0:
+            continue
+        text = r["description"].upper()
+        source = next((s for s, m in mapping.items() if m.get("Bank_Text") and m["Bank_Text"].upper() in text), None)
+        credits.append({"date": date.fromisoformat(r["posting_date"]), "description": r["description"],
+                        "amount_cents": amount, "source": source})
+    return credits
+
+
+def reported_payouts(out):
+    """The payouts the marketplaces report, from the engine's payouts.csv (one per marketplace and day,
+    already de-duplicated across overlapping downloads). A payout whose report states the period it
+    pays for keeps it (`period_from`, `period_to`)."""
+    payouts = []
+    for r in sorted(engine_csv(out, "payouts.csv"), key=lambda r: (r["paid_date"], r["marketplace"], r["payout_id"])):
+        again = r["payout_id"].partition("#")[2]  # a second payout on the same day is `...#2`
+        p = {"id": f"{r['marketplace'].upper()}-PAID-{r['paid_date'][5:7]}{r['paid_date'][8:]}" + (f"-{again}" if again else ""),
+             "source": r["marketplace"], "paid": date.fromisoformat(r["paid_date"]), "amount_cents": int(r["amount_cents"])}
+        if r.get("period_from") and r.get("period_to"):
+            p.update(period_from=date.fromisoformat(r["period_from"]), period_to=date.fromisoformat(r["period_to"]))
+        payouts.append(p)
+    return payouts
 
 
 def covered_days(inbox, prefix):
@@ -303,7 +295,7 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
     first, last = date(y, m, 1), date(y, m, calendar.monthrange(y, m)[1])
     in_month = lambda iso: first.isoformat() <= iso <= last.isoformat()
     rows, warnings = run_engine(inbox, engine_out, last)
-    deposits, payouts = match_deposits(read_bank(inbox, mapping), read_payouts(inbox))
+    deposits, payouts = match_deposits(bank_credits(engine_out, mapping), reported_payouts(engine_out))
     exceptions, stopgaps = [], []
 
     # Month totals per source from the engine (marketplace column). A marketplace with rows but no row in
@@ -374,8 +366,6 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
     for w in warnings:
         by_kind[w["kind"]].append(w)
     for kind, ws in sorted(by_kind.items()):
-        if kind == "unparseable":
-            ws = [w for w in ws if not w["source_file"].startswith("bank_activity")]  # read here, not by the engine
         if kind == "duplicate":
             files = sorted({w["source_file"] for w in ws})
             exceptions.append({"kind": "duplicate_rows", "source": "", "amount_cents": None, "effect": "info",

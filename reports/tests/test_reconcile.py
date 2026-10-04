@@ -1,15 +1,11 @@
 """Reconciliation from the raw messy-month inbox, checked against the answer key deposit by deposit
 and payout by payout, plus the payout-window rule on hand-made rows."""
-import csv
 import json
 import tempfile
 import unittest
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 from unittest import mock
-from zoneinfo import ZoneInfo
-
-import openpyxl
 
 from reports import bc_export as bc
 from reports import reconcile
@@ -27,9 +23,8 @@ class MessyMonthReconcileTest(unittest.TestCase):
         cls.payload = reconcile.build(SAMPLE / "inbox", "2026-09", bc.load_mapping(), Path(cls.tmp.name) / "engine",
                                       {"close": cls.key})
         cls.paid = {p["id"]: p["paid_date"] for p in cls.key["payouts"]}
-        with open(Path(cls.tmp.name) / "engine" / "transactions.csv", newline="", encoding="utf-8") as f:
-            rows = [r for r in csv.DictReader(f) if r["marketplace"] in ("amazon", "shopgoodwill")]
-        cls.engine_has_order_times = bool(rows) and all(r.get("occurred_at") for r in rows)
+        cls.amounts = {(e["kind"], e["source"]): e["amount_cents"] for e in cls.payload["exceptions"]
+                       if e["kind"] in ("payout_data_gap", "not_yet_paid_out")}
 
     @classmethod
     def tearDownClass(cls):
@@ -67,9 +62,7 @@ class MessyMonthReconcileTest(unittest.TestCase):
         self.assertEqual(len(key_transit), 4)
         self.assertEqual(got, paid_in_month)
         ebay_late = next(p for p in self.key["payouts"] if p["source"] == "ebay" and p["paid_date"] == "2026-10-01")
-        not_paid = next(e for e in self.payload["exceptions"]
-                        if e["kind"] == "not_yet_paid_out" and e["source"] == "ebay")
-        self.assertEqual(not_paid["amount_cents"], ebay_late["amount_cents"])
+        self.assertEqual(self.amounts[("not_yet_paid_out", "ebay")], ebay_late["amount_cents"])
 
     def test_missing_reports_and_prior_month_refunds_are_detected_from_the_files(self):
         kinds = [e["kind"] for e in self.payload["exceptions"]]
@@ -78,71 +71,15 @@ class MessyMonthReconcileTest(unittest.TestCase):
         self.assertIn("bad_amount", kinds)
         self.assertIn("bad_date", kinds)
 
-    def test_ebay_payouts_equal_the_answer_key_payout_by_payout(self):
-        # eBay pays by Eastern days, the engine's own day, so this is exact with or without order times.
-        mine = {p["activity_to"]: p for p in self.payload["payouts"] if p["source"] == "ebay"}
-        compared = 0
-        for k in self.key["payouts"]:
-            if k["source"] == "ebay" and k["activity_to"] in mine:
-                p = mine[k["activity_to"]]
-                self.assertEqual((p["files_net_cents"], p["gap_cents"]), (k["net_in_files_cents"], k["data_gap_cents"]), k["id"])
-                compared += 1
-        self.assertEqual(compared, 29)
-
-    def test_close_balances_and_says_which_sources_it_could_not_check_payout_by_payout(self):
-        journal, _, control, _ = bc.build(self.payload, bc.load_mapping())
-        self.assertEqual(bc.unbalanced(journal), {})
-        status = {r["Source"]: r["Status"] for r in control}
-        no_times = {e["source"] for e in self.payload["exceptions"] if e["kind"] == "no_order_times"}
-        if self.engine_has_order_times:
-            self.assertEqual(no_times, set())
-            self.assertEqual(status, {"eBay": "OPEN", "ShopGoodwill": "INCOMPLETE", "Amazon": "INCOMPLETE"})
-            self.assertEqual([r["Unexplained"] for r in control], [0, 0, 0])
-        else:
-            # Until the engine writes occurred_at (transaction.md v0.5), the two sources that pay by Pacific
-            # days keep the older check of the open balance as one figure, and the output says so.
-            self.assertEqual(no_times, {"amazon", "shopgoodwill"})
-            self.assertEqual(status, {"eBay": "OPEN", "ShopGoodwill": "OPEN", "Amazon": "UNEXPLAINED"})
-
-
-def order_times(inbox):
-    """The moment of every Amazon and ShopGoodwill order and refund, read from the raw reports here in the
-    test, apart from the engine: {(marketplace, order id, type): ISO 8601 with its offset}."""
-    pacific, offsets, times = ZoneInfo("America/Los_Angeles"), {"PDT": "-07:00", "PST": "-08:00"}, {}
-    for f in sorted(inbox.glob("paid_orders_*.xlsx")):
-        rows = list(openpyxl.load_workbook(f, read_only=True).active.iter_rows(values_only=True))
-        order_id, when = rows[0].index("Channel Order ID"), rows[0].index("Payment Date")
-        for r in rows[1:]:
-            times[("shopgoodwill", str(r[order_id]), "sale")] = r[when].replace(tzinfo=pacific).isoformat()
-    for f in sorted(inbox.glob("amazon_daterange_*.csv")):
-        for r in reconcile.report_rows(f, "date/time"):
-            if r["type"] in ("Order", "Refund"):
-                text, zone = r["date/time"].rsplit(" ", 1)
-                stamp = datetime.strptime(text, "%b %d, %Y %I:%M:%S %p").isoformat() + offsets[zone]
-                times.setdefault(("amazon", r["order id"], "sale" if r["type"] == "Order" else "refund"), stamp)
-    return times
-
-
-class MessyMonthWithOrderTimesTest(unittest.TestCase):
-    """The same month once every row carries the order's time (`occurred_at`): every payout window equals
-    the answer key, and nothing is netted. The times are added here from the raw files, so this holds
-    whether or not the engine writes the column yet."""
-
-    @classmethod
-    def setUpClass(cls):
-        cls.key = json.loads((SAMPLE / "expected.json").read_text(encoding="utf-8"))["close"]
-        times, run_engine = order_times(SAMPLE / "inbox"), reconcile.run_engine
-
-        def with_times(inbox, out, month_end):
-            rows, warnings = run_engine(inbox, out, month_end)
-            for r in rows:
-                r["occurred_at"] = times.get((r["marketplace"], r["order_id"], r["type"]), "")
-            return rows, warnings
-
-        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(reconcile, "run_engine", with_times):
-            cls.payload = reconcile.build(SAMPLE / "inbox", "2026-09", bc.load_mapping(), Path(tmp) / "engine")
-        cls.amounts = {(e["kind"], e["source"]): e["amount_cents"] for e in cls.payload["exceptions"]
-                       if e["kind"] in ("payout_data_gap", "not_yet_paid_out")}
+    def test_shopgoodwill_deposits_become_payouts_with_the_weekly_windows_of_the_answer_key(self):
+        # ShopGoodwill has no payout report in the files, so each of its deposits is a payout whose window
+        # comes from the cycle in bc_mapping.csv (weekly, through Sunday).
+        got = sorted((p["activity_from"], p["activity_to"], p["amount_cents"])
+                     for p in self.payload["payouts"] if p["source"] == "shopgoodwill")
+        expected = sorted((p["activity_from"], p["activity_to"], p["amount_cents"])
+                          for p in self.key["payouts"] if p["source"] == "shopgoodwill")
+        self.assertEqual(got, expected)
+        self.assertTrue(all(p["inferred"] for p in self.payload["payouts"] if p["source"] == "shopgoodwill"))
 
     def test_every_payout_window_equals_the_answer_key(self):
         mine = {(p["source"], p["activity_to"]): p for p in self.payload["payouts"]}
@@ -156,16 +93,6 @@ class MessyMonthWithOrderTimesTest(unittest.TestCase):
                              (k["activity_from"], k["net_in_files_cents"], k["data_gap_cents"]), k["id"])
             compared += 1
         self.assertEqual(compared, 35)
-
-    def test_shopgoodwill_deposits_become_payouts_with_the_weekly_windows_of_the_answer_key(self):
-        # ShopGoodwill has no payout report in the files, so each of its deposits is a payout whose window
-        # comes from the cycle in bc_mapping.csv (weekly, through Sunday).
-        got = sorted((p["activity_from"], p["activity_to"], p["amount_cents"])
-                     for p in self.payload["payouts"] if p["source"] == "shopgoodwill")
-        expected = sorted((p["activity_from"], p["activity_to"], p["amount_cents"])
-                          for p in self.key["payouts"] if p["source"] == "shopgoodwill")
-        self.assertEqual(got, expected)
-        self.assertTrue(all(p["inferred"] for p in self.payload["payouts"] if p["source"] == "shopgoodwill"))
 
     def test_the_226_78_is_two_amounts_and_shopgoodwill_hides_nothing(self):
         totals = self.key["marketplace_totals_from_files"]
@@ -189,6 +116,32 @@ class MessyMonthWithOrderTimesTest(unittest.TestCase):
         self.assertFalse(kinds & {"payout_mismatch", "no_order_times", "residual_unexplained"})
 
 
+class MessyMonthWithoutOrderTimesTest(unittest.TestCase):
+    """If the engine's rows carried no order time, the two sources that pay by Pacific days could not be
+    checked payout by payout: they fall back to the older check of the open balance as one figure, and the
+    output says so. (The engine writes `occurred_at` since transaction.md v0.5; this pins the fallback.)"""
+
+    def test_sources_that_pay_by_pacific_days_fall_back_and_say_so(self):
+        run_engine = reconcile.run_engine
+
+        def without_times(inbox, out, month_end):
+            rows, warnings = run_engine(inbox, out, month_end)
+            for r in rows:
+                r["occurred_at"] = ""
+            return rows, warnings
+
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(reconcile, "run_engine", without_times):
+            payload = reconcile.build(SAMPLE / "inbox", "2026-09", bc.load_mapping(), Path(tmp) / "engine")
+        journal, _, control, _ = bc.build(payload, bc.load_mapping())
+        self.assertEqual(bc.unbalanced(journal), {})
+        self.assertEqual({e["source"] for e in payload["exceptions"] if e["kind"] == "no_order_times"},
+                         {"amazon", "shopgoodwill"})
+        # eBay pays by Eastern days, the engine's own day: still checked payout by payout.
+        self.assertEqual({r["Source"]: r["Status"] for r in control},
+                         {"eBay": "OPEN", "ShopGoodwill": "OPEN", "Amazon": "UNEXPLAINED"})
+        self.assertEqual(sum("files_net_cents" in p for p in payload["payouts"]), 29)
+
+
 class UnmappedMarketplaceTest(unittest.TestCase):
     """A marketplace with rows but no row in bc_mapping.csv (Goodwill Books arrives as `other`) is never
     left out in silence: it reaches the export, which reports it and posts nothing for it."""
@@ -201,7 +154,11 @@ class UnmappedMarketplaceTest(unittest.TestCase):
         rows = [row("ebay", "E-1", 5000, 650), row("other", "B-1", 1899, 285)]
         with tempfile.TemporaryDirectory() as tmp, \
                 mock.patch.object(reconcile, "run_engine", return_value=(rows, [])):
-            payload = reconcile.build(Path(tmp), "2026-09", bc.load_mapping(), Path(tmp) / "engine")
+            engine = Path(tmp) / "engine"  # what the engine writes when no payout or bank line was reported
+            engine.mkdir()
+            (engine / "payouts.csv").write_text("payout_id,marketplace,paid_date,amount_cents,period_from,period_to\n")
+            (engine / "bank.csv").write_text("bank_txn_id,account,posting_date,description,amount_cents\n")
+            payload = reconcile.build(Path(tmp), "2026-09", bc.load_mapping(), engine)
         self.assertEqual(set(payload["sources"]), {"ebay", "other"})
         self.assertEqual(payload["origin"], "reconciled from the raw inbox")
         self.assertNotIn("mock", payload)
@@ -212,6 +169,42 @@ class UnmappedMarketplaceTest(unittest.TestCase):
         self.assertEqual(bc.unbalanced(journal), {})
         self.assertEqual([r["Source"] for r in control], ["eBay"])
         self.assertFalse(any("other" in str(line).lower() for line in journal + invoice))
+
+
+class EngineFilesTest(unittest.TestCase):
+    """The close reads the bank and the payouts from the engine's files (close-inputs.md), not from the
+    raw reports."""
+
+    def write(self, folder, name, text):
+        (folder / name).write_text(text, encoding="utf-8")
+
+    def test_bank_credits_are_classified_and_debits_left_out(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.write(Path(tmp), "bank.csv",
+                       "bank_txn_id,account,posting_date,description,amount_cents,balance_cents,source_file,source_row\n"
+                       "b:1,OPERATING,2026-09-04,EBAY COMMERCE INC DES:PAYOUT ID:0901,46947,,b.csv,1\n"
+                       "b:2,OPERATING,2026-09-15,ADP PAYROLL DES:PAYROLL,-1834211,,b.csv,2\n"
+                       "b:3,OPERATING,2026-09-17,REMOTE DEPOSIT CAPTURE REF 88213,41237,,b.csv,3\n")
+            credits = reconcile.bank_credits(Path(tmp), bc.load_mapping())
+        self.assertEqual([(c["date"], c["amount_cents"], c["source"]) for c in credits],
+                         [(D("2026-09-04"), 46947, "ebay"), (D("2026-09-17"), 41237, None)])
+
+    def test_payouts_keep_their_display_id_and_a_period_the_report_states(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.write(Path(tmp), "payouts.csv",
+                       "payout_id,marketplace,paid_date,amount_cents,period_from,period_to,source_file,source_row\n"
+                       "shopgoodwill:2026-09-14,shopgoodwill,2026-09-14,1531893,2026-09-07,2026-09-13,p.csv,2\n"
+                       "ebay:2026-09-02#2,ebay,2026-09-02,100,,,e.csv,9\n"
+                       "ebay:2026-09-02,ebay,2026-09-02,46947,,,e.csv,4\n")
+            payouts = reconcile.reported_payouts(Path(tmp))
+        self.assertEqual([p["id"] for p in payouts], ["EBAY-PAID-0902", "EBAY-PAID-0902-2", "SHOPGOODWILL-PAID-0914"])
+        self.assertEqual((payouts[2]["period_from"], payouts[2]["period_to"]), (D("2026-09-07"), D("2026-09-13")))
+        self.assertNotIn("period_from", payouts[0])
+
+    def test_a_missing_engine_file_stops_the_close_with_a_clear_message(self):
+        with tempfile.TemporaryDirectory() as tmp, self.assertRaises(SystemExit) as stop:
+            reconcile.reported_payouts(Path(tmp))
+        self.assertIn("payouts.csv is missing", str(stop.exception))
 
 
 class PayoutWindowTest(unittest.TestCase):
