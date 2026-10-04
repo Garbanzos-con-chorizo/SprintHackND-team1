@@ -2,12 +2,14 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 01:45 · **Branch:** victor/nightly-store
+**Last updated:** 2026-10-04 02:15 · **Branch:** victor/kpi-csv
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`
 **Decision 007:** agreed by all three, SQLite included (Orlando's amendment at 21:30, my response appended). Tripwire: if September isn't in the store by 10:00 Sunday, the KPIs read the files instead.
 
 ### Done
+- **V2.8** (branch `victor/kpi-csv`): `python -m engine.export kpi-csv (--kpi-file F | --period day|week|month) [--dest DIR]` writes `reports/scorecard/<type>-<id>.csv`, next to the scorecard page of the same name (for O2.6's download link). It's a long format: one row per KPI and one per category of the two top 10s, so Excel and Power BI need no reshaping. Money is in dollars, no data is blank (not 0), the simulated label is on every simulated row, and the period, area, pillar, status, note, prior value, change, source and definition are all there. It renders the KPI file and computes nothing. `run_scheduled` writes it after the monthly scorecard. 8 tests in `engine/tests/test_export_kpi_csv.py` (the four contract examples). On September from the store: 33 rows.
+- Also checked: a fresh copy of `main` with a new 3.13 venv runs backfill -> `recon.kpi` -> scorecard -> `run_nightly` in about 45 s with all suites passing, so Dani (or anyone) can run the full pipeline once `engine/requirements.txt` is installed.
 - **V2.11** (branch `victor/nightly-store`): `python -m reports.run_nightly --scenario <day>` now has 7 steps: inbox, engine, pulse, **store load, internal pull, KPIs** (day, week to date, month to date into `out/kpi/`), render. The store, internal and KPI steps don't stop the night: if one fails, the log says FAILED, the pulse page still renders, and the command exits 1. `--simulated` skips them. `gw_day_clean` runs in about 3 s. `run_scheduled` works unchanged. 3 tests in `reports/tests/test_run_nightly.py`.
 - **V2.6** (branch `victor/internal-pull`): `python -m engine.internal_api pull (--date D | --from D1 --to D2)` writes the snapshot into `internal_daily` (same rules as load: delete then insert, a failed pull changes nothing). `store backfill` now pulls each day after loading it, and `store status` shows internal coverage. 7 tests in `engine/tests/test_internal_pull.py`.
 - **Checkpoint 1 data side ready:** `python -m engine.store backfill --inbox data/sample/clean_month/inbox --from 2026-09-01 --to 2026-09-30` gives 30 of 30 days complete, the internal snapshot on 30 of 30 days (1,890 rows, 10 metrics, simulated), and category sales equal to revenue on every day. About 12 s.
@@ -26,8 +28,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 ### Next, in order (sizes S < 30 min, M 30-90 min)
 | ID | Task | Size | Target |
 |---|---|---|---|
-| V2.8 | `export kpi-csv` from the KPI file (against Dani's sample file) | S | |
-| V2.9 | `export pdf`: headless Edge prints Orlando's scorecard page (needs O2.4); goes to Orlando if late | M | |
+| V2.9 | `export pdf`: headless Edge prints `reports/scorecard/<type>-<id>.html` (O2.4 is done; Orlando checked it's one landscape page with `msedge --headless=new --no-pdf-header-footer --print-to-pdf`) | M | next |
 | V2.10 | Attach the PDF to Orlando's `email_gen.py` `.eml` (already writes drafts) | S | |
 | V2.7 | `units`, plus Orlando's `shipping_cents` / `handling_cents` (for `reports/reconcile.py`), in the parsers and `transaction.md` | S-M | after CP1 |
 | V2.12 | August sample for growth | M | cut first |
@@ -91,6 +92,7 @@ uv pip install -r engine/requirements.txt
 Then:
 ```
 python -m engine.internal_api pull --date 2026-09-14
+python -m engine.export kpi-csv --period month
 python -m engine run [--inbox inbox] [--out out] [--date YYYY-MM-DD]
 python -m pytest engine -q
 ```

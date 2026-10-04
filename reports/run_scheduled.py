@@ -95,6 +95,8 @@ def night(day):
             monthly.main(["--month", month])
             if (ROOT / "reports" / "scorecard" / f"month-{month}.html").exists():
                 built["monthly"] = month
+                # the same KPI file as one CSV for Excel / Power BI, next to the page (V2.8)
+                sh("engine.export", "kpi-csv", "--kpi-file", f"out/kpi/month-{month}.json")
         except SystemExit as e:
             print(f"    monthly: skipped ({e})")
         inbox = month_inbox(month)
