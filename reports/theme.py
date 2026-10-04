@@ -58,8 +58,15 @@ th, .label, .facts dt { font-size:var(--fs-label); font-weight:var(--fw-semi); l
 .topbar { position:sticky; top:0; z-index:30; background:rgba(255,255,255,.72); border-bottom:1px solid var(--line);
   -webkit-backdrop-filter:saturate(180%) blur(20px); backdrop-filter:saturate(180%) blur(20px); }
 .topbar > div { max-width:var(--page); margin:0 auto; padding:0 var(--sp-6); height:44px; display:flex; align-items:center; gap:10px; }
+.topbar .brand { display:flex; align-items:baseline; gap:10px; color:var(--ink); text-decoration:none; }
 .topbar b { font-size:13px; font-weight:var(--fw-semi); color:var(--accent); }
-.topbar span { font-size:13px; color:var(--muted); }
+.topbar .brand span { font-size:13px; color:var(--muted); }
+.topbar .grow { flex:1; }
+.tb-link { font-size:13px; color:var(--muted); }
+.home-btn { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 12px; border-radius:980px;
+  background:var(--accent); color:#fff; font-size:13px; font-weight:var(--fw-semi); }
+.home-btn:hover { text-decoration:none; filter:brightness(1.1); }
+.home-btn svg { width:14px; height:14px; }
 main { max-width:var(--page); margin:0 auto; padding:var(--sp-7) var(--sp-6) 56px; }
 header { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:var(--sp-1) var(--sp-6); margin-bottom:var(--sp-5); }
 header h1 { font-size:var(--fs-title); font-weight:var(--fw-bold); line-height:1.15; letter-spacing:-0.025em; }
@@ -248,7 +255,15 @@ document.addEventListener("keydown", function (e) {
 });
 </script>"""
 
-PAGE = Template("""<!doctype html>
+# Every page's shell. `root` is the way back to reports/ from the page: "../" for the pages in a
+# subfolder (pulse/, scorecard/, close/), "" for the home page and the site map. The top bar carries
+# the Home button and the site map link on every page.
+HOME_ICON = ('<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 7.4 8 2.8l5.5 4.6M4 6.3v6.9h3V9.6h2v3.6h3V6.3" '
+             'fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>')
+
+
+class Page:
+    TEMPLATE = Template("""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -257,7 +272,12 @@ PAGE = Template("""<!doctype html>
 <style>$css</style>
 </head>
 <body>
-<div class="topbar"><div><b>Goodwill Michiana</b><span>E-commerce reporting</span></div></div>
+<nav class="topbar" aria-label="Reports"><div>
+  <a class="brand" href="${root}index.html"><b>Goodwill Michiana</b><span>E-commerce reporting</span></a>
+  <span class="grow"></span>
+  <a class="tb-link" href="${root}map.html"$map_current>Site map</a>
+  <a class="home-btn" href="${root}index.html"$home_current>""" + HOME_ICON + """<span>Home</span></a>
+</div></nav>
 <main>
 $body
 </main>
@@ -265,6 +285,16 @@ $body
 </body>
 </html>
 """)
+
+    def substitute(self, title, css, body, root="../", current=""):
+        """`current` is "home" or "map" on those two pages (marks the top-bar link as the page you are on)."""
+        mark = ' aria-current="page"'
+        return self.TEMPLATE.substitute(title=title, css=css, body=body, root=root,
+                                        home_current=mark if current == "home" else "",
+                                        map_current=mark if current == "map" else "")
+
+
+PAGE = Page()
 
 INFO_ICON = ('<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" '
              'stroke-width="1.3"/><path d="M8 7.3v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>'

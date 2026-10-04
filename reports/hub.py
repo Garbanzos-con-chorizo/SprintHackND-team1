@@ -67,7 +67,7 @@ SUITE = [
     {"title": "COO scorecard (monthly)", "what": "Goodwill's 15 KPIs in five areas, from the KPI file.",
      "folder": "scorecard", "pattern": r"month-\d{4}-\d{2}", "period": lambda s: _month(s[6:]),
      "extras": lambda s: [(f"{s}.csv", "KPI table (CSV)"), (f"{s}.pdf", "PDF"), (f"{s}.json", "KPI file"),
-                          (f"../monthly/{s[6:]}.csv", "Daily CSV")],
+                          (f"../monthly/{s[6:]}.csv", "Daily CSV"), ("../monthly/index.html", "Daily dashboard")],
      "archive": ("index.html", "All scorecards"),
      "switch": [("day", "Day"), ("week", "Week to date"), ("month", "Month to date")],
      "build": "python -m recon.kpi --month 2026-09, then python -m reports.monthly --month 2026-09"},
@@ -135,7 +135,8 @@ def build(root=ROOT / "reports"):
             f'<div class="hub-grid">\n' + "\n".join(cards) + '\n</div>'
             f'<section class="foot">{note}<p>Red edge: the report flags missing data or partial totals.</p></section>')
     path = root / "index.html"
-    path.write_text(PAGE.substitute(title="E-commerce reports", css=CSS + HUB_CSS, body=body), encoding="utf-8")
+    path.write_text(PAGE.substitute(title="E-commerce reports", css=CSS + HUB_CSS, body=body, root="", current="home"),
+                    encoding="utf-8")
     return path
 
 
