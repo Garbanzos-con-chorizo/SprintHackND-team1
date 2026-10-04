@@ -21,8 +21,8 @@ internal API (mock)                                         ──> python -m en
 |---|---|---|
 | `python -m engine.store [--db PATH] init` | built | Creates the database from `schema.sql`. Safe on an existing database. |
 | `python -m engine.store [--db PATH] load --in-dir out [--date D] [--pulse-dir DIR]` | built | Loads one business date (rules below). `--date` defaults to the one in `source_status.json`; the pulse file defaults to `<in-dir>/pulse/<D>.json`. Exit 1 and nothing changed if an input is missing or wrong. |
-| `python -m engine.store backfill --inbox DIR --from D1 --to D2` | next (V2.4) | Runs engine, pulse, load and internal pull for each day of the range. |
-| `python -m engine.store status [--month M]` | next (V2.3) | Days present, missing and partial per marketplace. |
+| `python -m engine.store backfill --inbox DIR --from D1 --to D2 [--out out]` | built | Reads the inbox once, then for each day writes the engine files for that date (exactly what `engine run --date` writes), runs `recon.pulse` and loads the day. A failed day is listed and skipped; the others load; exit 1 if any day failed. The pulse files land in `<out>/pulse/`, the history Orlando's pages read. The internal pull joins each day with V2.6. |
+| `python -m engine.store status [--month M \| --from D1 --to D2]` | built | Per marketplace: days ok, missing, stale, unknown and not loaded, and revenue over the ok days ("no data" when none). Lists partial days (loaded, but an expected marketplace isn't ok) and days not loaded. Default: the latest month in the store. |
 
 ## Conventions (all tables)
 - Money: `INTEGER` cents. Dates: `TEXT 'YYYY-MM-DD'`, the Eastern business date. Timestamps: `TEXT`, ISO 8601 with offset.
@@ -75,5 +75,6 @@ How the store helps on the rubric. Every claim below is true of what we build; s
 - **Don't claim:** live Azure, multi-user access, or real internal data. The rubric's overclaim flag drops Working Evidence to level 1.
 
 ## Changelog
+- v0.3 (2026-10-03, Victor): `status` and `backfill` built.
 - v0.2 (2026-10-03, Victor): `init` and `load` built (`engine/store/`, tests in `engine/tests/test_store.py`). Wording: a re-run gives the same data, not the same file. Load's required and optional inputs are listed.
 - draft v0.1 (2026-10-03, Victor): initial, from `docs/PLAN_PHASE_2_3.md` section 6. Adds `warnings` and `v_daily` (not in the plan), `units` in `transactions`, and the delete-then-insert load rule.
