@@ -189,6 +189,31 @@ class MessyMonthWithOrderTimesTest(unittest.TestCase):
         self.assertFalse(kinds & {"payout_mismatch", "no_order_times", "residual_unexplained"})
 
 
+class UnmappedMarketplaceTest(unittest.TestCase):
+    """A marketplace with rows but no row in bc_mapping.csv (Goodwill Books arrives as `other`) is never
+    left out in silence: it reaches the export, which reports it and posts nothing for it."""
+
+    def test_rows_of_a_marketplace_without_a_mapping_row_become_an_exception(self):
+        def row(marketplace, order_id, gross, fee=0):
+            return {"marketplace": marketplace, "business_date": "2026-09-10", "type": "sale", "order_id": order_id,
+                    "gross_cents": str(gross), "fee_cents": str(fee), "shipping_cents": "0", "handling_cents": "0"}
+
+        rows = [row("ebay", "E-1", 5000, 650), row("other", "B-1", 1899, 285)]
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(reconcile, "run_engine", return_value=(rows, [])):
+            payload = reconcile.build(Path(tmp), "2026-09", bc.load_mapping(), Path(tmp) / "engine")
+        self.assertEqual(set(payload["sources"]), {"ebay", "other"})
+        self.assertEqual(payload["origin"], "reconciled from the raw inbox")
+        self.assertNotIn("mock", payload)
+
+        journal, invoice, control, exceptions = bc.build(payload, bc.load_mapping())
+        unmapped = [e for e in exceptions if e["kind"] == "unmapped_source"]
+        self.assertEqual([(e["source"], e["amount_cents"], e["effect"]) for e in unmapped], [("other", 1614, "not_posted")])
+        self.assertEqual(bc.unbalanced(journal), {})
+        self.assertEqual([r["Source"] for r in control], ["eBay"])
+        self.assertFalse(any("other" in str(line).lower() for line in journal + invoice))
+
+
 class PayoutWindowTest(unittest.TestCase):
     """The rule itself, on hand-made rows."""
 

@@ -69,7 +69,10 @@ A row's day in that calendar needs the order's time (`occurred_at`, `transaction
 | `residual_unexplained` | `info` | what the one-figure check could not accept |
 | `duplicate_rows`, `bad_amount`, `bad_date`, other engine warnings | `info` | rows the engine de-duplicated or rejected |
 
-Coming with tasks D3.2 and D3.3 of `docs/PLAN_PHASE_3.md`: the top-level field `mock` (it reads "reconciled from the raw inbox" on a real run) is renamed `origin`, and each exception gains `owner` and `action`.
+Two more things since tasks D3.2 and D3.3 of `docs/PLAN_PHASE_3.md`:
+- The top-level field `origin` says where the payload came from ("reconciled from the raw inbox", "built-in mock payload", "payload from the ... answer key"). Before v0.4 it was called `mock`, also on a real run; the export still reads the old name.
+- Every exception leaves the export with an `owner` and an `action`, the last two columns of `exceptions_<month>.csv`. They come from `reports/config/close_exceptions.csv`, one row per kind and a `*` row for any kind it does not list. **The owners are role names we made up** (Accounting, E-commerce, IT), not Goodwill's; a producer may set `owner` and `action` itself and the export keeps them.
+- A marketplace that has rows in the month but no row in `bc_mapping.csv` is in `sources` like any other, so the export reports it as `unmapped_source` instead of the close leaving it out.
 
 ## What the export guarantees
 - Each source posts through exactly one path from `bc_mapping.csv`: **Journal** (net receivable to a clearing account, sales / refunds / shipping / handling / fees to their accounts) or **Invoice** (one sales invoice to the source's customer, fees as a journal against the customer).

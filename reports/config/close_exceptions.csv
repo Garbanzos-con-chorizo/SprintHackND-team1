@@ -1,0 +1,17 @@
+Kind,Owner,Action
+in_transit,Accounting,None: it reaches the bank next month
+not_yet_paid_out,Accounting,None: the next payout covers it
+payout_data_gap,E-commerce,Download the missing report and run the close again
+prior_month_payout,Accounting,Match it against last month's open receivable
+payout_mismatch,Accounting,Compare the payout with the marketplace's statement before posting
+unmatched_deposit,Accounting,Identify the deposit; it stays out of the journal until then
+unmapped_source,Accounting,Add the source to bc_mapping.csv and run the close again
+deposit_payout_mismatch,Accounting,Check the payout report against the deposit
+missing_report,E-commerce,Download the report for those days and run the close again
+prior_month_refund,Accounting,Review last month's revenue for that order
+no_order_times,IT,The engine has to provide the order time (occurred_at)
+residual_unexplained,Accounting,Resolve before posting
+duplicate_rows,E-commerce,None: counted once
+bad_amount,E-commerce,Fix the row in the report or download it again
+bad_date,E-commerce,Fix the row in the report or download it again
+*,Accounting,Review before posting
