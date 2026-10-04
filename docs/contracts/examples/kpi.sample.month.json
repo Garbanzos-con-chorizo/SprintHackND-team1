@@ -93,6 +93,7 @@
       "per": null,
       "value": 7075396,
       "rows": null,
+      "parts": null,
       "status": "ok",
       "reason": null,
       "note": null,
@@ -125,6 +126,7 @@
       "per": null,
       "value": null,
       "rows": null,
+      "parts": null,
       "status": "no_data",
       "reason": "no_prior_period",
       "note": "No data stored for August 2026.",
@@ -155,6 +157,7 @@
       "per": null,
       "value": 0.195,
       "rows": null,
+      "parts": null,
       "status": "ok",
       "reason": null,
       "note": null,
@@ -189,6 +192,7 @@
       "per": null,
       "value": 3534,
       "rows": null,
+      "parts": null,
       "status": "ok",
       "reason": null,
       "note": null,
@@ -222,6 +226,7 @@
       "per": "labor hour",
       "value": 4574,
       "rows": null,
+      "parts": null,
       "status": "ok",
       "reason": null,
       "note": null,
@@ -252,6 +257,7 @@
       "per": "employee",
       "value": 372.0,
       "rows": null,
+      "parts": null,
       "status": "ok",
       "reason": null,
       "note": null,
@@ -282,6 +288,7 @@
       "per": null,
       "value": 6.0,
       "rows": null,
+      "parts": null,
       "status": "ok",
       "reason": null,
       "note": null,
@@ -311,6 +318,7 @@
       "per": null,
       "value": 8420,
       "rows": null,
+      "parts": null,
       "status": "ok",
       "reason": null,
       "note": null,
@@ -340,6 +348,7 @@
       "per": null,
       "value": 0.3203,
       "rows": null,
+      "parts": null,
       "status": "ok",
       "reason": null,
       "note": null,
@@ -369,13 +378,14 @@
       "name": "Average Selling Price",
       "kind": "scalar",
       "unit": "cents",
-      "per": "order",
-      "value": 2921,
+      "per": "unit",
+      "value": 2558,
       "rows": null,
+      "parts": null,
       "status": "ok",
       "reason": null,
-      "note": "Per order, not per unit: the exports do not give unit counts yet.",
-      "basis": "per_order",
+      "note": null,
+      "basis": "per_unit",
       "covers": null,
       "prior_value": null,
       "delta": {
@@ -386,10 +396,10 @@
       "good_direction": "up",
       "source": "files",
       "simulated": false,
-      "definition": "Revenue / orders (per order until unit counts are available).",
+      "definition": "Revenue / units sold.",
       "inputs": {
         "revenue_cents": 7075396,
-        "units": null,
+        "units": 2766,
         "orders": 2422
       }
     },
@@ -401,12 +411,28 @@
       "kind": "scalar",
       "unit": "ratio",
       "per": null,
-      "value": 0.6853,
+      "value": 0.7827,
       "rows": null,
+      "parts": [
+        {
+          "id": "listed_in_period",
+          "name": "Listed in the period",
+          "value": 0.7827,
+          "sold": 2766,
+          "available": 3534
+        },
+        {
+          "id": "left_from_earlier",
+          "name": "Left from earlier",
+          "value": null,
+          "sold": 0,
+          "available": null
+        }
+      ],
       "status": "ok",
       "reason": null,
-      "note": "Orders / listings created, until unit counts are available.",
-      "basis": "orders",
+      "note": "Assumes what was listed in the period sold first: 2,766 of the 2,766 units sold count against the 3,534 listed in the period, 0 against what was left from earlier (no stock count for the day before the period).",
+      "basis": "units",
       "covers": null,
       "prior_value": null,
       "delta": {
@@ -417,14 +443,12 @@
       "good_direction": "up",
       "source": "mixed",
       "simulated": true,
-      "definition": "Orders / listings created in the period (a stand-in for units sold / units listed).",
+      "definition": "Units sold / units listed, in the period.",
       "inputs": {
-        "units_sold": null,
+        "units_sold": 2766,
         "orders": 2422,
         "units_listed": 3534,
-        "from_period": 0.6853,
-        "from_earlier": 0.0,
-        "sold_from_earlier": 0
+        "opening_stock": null
       }
     },
     {
@@ -437,6 +461,7 @@
       "per": "employee",
       "value": 744779,
       "rows": null,
+      "parts": null,
       "status": "ok",
       "reason": null,
       "note": null,
@@ -538,6 +563,7 @@
           "ratio": null
         }
       ],
+      "parts": null,
       "status": "ok",
       "reason": null,
       "note": null,
@@ -641,6 +667,7 @@
           "ratio": 0.65
         }
       ],
+      "parts": null,
       "status": "ok",
       "reason": null,
       "note": null,
@@ -674,6 +701,7 @@
       "per": null,
       "value": 0.1339,
       "rows": null,
+      "parts": null,
       "status": "partial",
       "reason": "no_buyer_ids",
       "note": "ShopGoodwill and eBay only (82% of orders): Amazon gives no buyer id.",

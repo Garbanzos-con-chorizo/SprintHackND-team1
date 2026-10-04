@@ -156,7 +156,7 @@ def build_sample_db(path):
                 for i in range(row["orders"]):
                     order = f"{m}-{day}-{i}"
                     buyer = next(buyers) if m == "shopgoodwill" else f"eb-{day}-{i}" if m == "ebay" else ""
-                    sales.append((day, m, order, buyer))
+                    sales.append((day, m, order, buyer, 2 if i % 8 == 0 else 1))  # one order in eight has two units
 
         def every_day(metric, dimension, values):
             internal.extend((day, metric, dimension, value) for day, value in zip(days, values))
