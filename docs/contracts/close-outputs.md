@@ -1,7 +1,7 @@
 # Contract: close outputs (C3.3): the one-command close and what it leaves behind
 
 - **Owner:** Dani for phase 3 (decision 009). **Producer:** `python -m reports.close` (`reports/close.py`, task D3.7). **Consumers:** Victor's `reports/run_scheduled.py` (runs it on the 1st), `reports/hub.py` (the portal card) and `reports/email_gen.py` (the close email); the close page (`reports/close_report.py`, D3.8).
-- **Status:** draft v0.1. Built and checked on the messy month (`reports/tests/test_close.py`). The example below is a real run on `main` at 116b2c2.
+- **Status:** draft v0.1. Built and checked on the messy month (`reports/tests/test_close.py`). The example below is a real run on `main` at ab7eb6c.
 - **Plan:** `docs/PLAN_PHASE_3.md`, section 3 (D3.7) and section 4 (C3.3).
 
 ## The command
@@ -23,14 +23,14 @@ Run it from the repo root. It replaces the three commands `reports.reconcile`, `
 It prints one line per step of Goodwill's target close (their deck, slide 40), then where the evidence is, then one `posting:` line, which is always the last line of stdout:
 ```
 01 ACQUIRE           38 files from 1 inbox, gathered in out/close/2026-09/inbox
-02 ARCHIVE           inputs copied to out/archive/Accounting/Month End/2026/2026-09/Journal Entries/E-Commerce JEs/2026-10-04T01-17-04/inputs
+02 ARCHIVE           inputs copied to out/archive/Accounting/Month End/2026/2026-09/Journal Entries/E-Commerce JEs/2026-10-04T01-22-43/inputs
 03 ENRICH            2,357 rows for 2026-09-01 to 2026-09-30, each with its marketplace, source file and row (1 dated outside the month left out)
 04 APPLY RULES       23 deposits classified (19 matched to payouts), 31 payouts read, 16 exceptions
 05 CREATE BC OUTPUT  journal: 56 lines in 25 documents, every document sums to 0.00; invoices: 1 document(s), 3 lines
 06 POST + RECONCILE  eBay OPEN; Amazon INCOMPLETE; ShopGoodwill INCOMPLETE; 16 exceptions, needs review
    page     reports/close/2026-09.html
    status   out/close/2026-09/close_status_2026-09.json
-   history  out/close/2026-09/runs.csv (1 run)
+   history  out/close/2026-09/runs.csv (3 runs)
 posting: NOT POSTED (import files ready)
 ```
 The text is for people and may change. Programs read the **exit code** and the **status file**.
@@ -39,10 +39,10 @@ The text is for people and may change. Programs read the **exit code** and the *
 | Code | Meaning | What is on disk afterwards |
 |---|---|---|
 | 0 | Files written, **whatever the statuses**. A month with `INCOMPLETE` or `UNEXPLAINED` sources still exits 0: read `needs_review`. | Everything below. |
-| 1 | Refused. Before anything is touched: a bad `--month` or `--run-id`, a bad command line, an inbox that is not a folder or is given twice, no files, **two inboxes holding a file of the same name** (compared without case), a run id already in the archive, an unreadable `bc_mapping.csv`. After the inputs are archived: the engine run failed, or **a journal document does not sum to 0.00**. | In the first group, nothing at all. In the second, the gathered inbox, the archived `inputs/`, the engine folder and (for an unbalanced document) the payload; **no CSV, no page, no status file, no `runs.csv` line, no manifest**. Files of an earlier run of the same month stay as they were. |
+| 1 | Refused. Before anything is touched: a bad `--month` or `--run-id`, a bad command line, an inbox that is not a folder or is given twice, no files, **two inboxes holding a file of the same name** (compared without case), a run id already in the archive, an unreadable `bc_mapping.csv`. After the inputs are archived: the engine run failed, or **a journal document does not sum to 0.00**. | In the first group, nothing at all. In the second, the gathered inbox, the archived `inputs/`, the engine folder and (for an unbalanced document) the payload; **no CSV, no page, no status file, no `runs.csv` line, no manifest**. The CSVs, the page and the status file of an earlier run of the same month stay as they were. |
 | 2 | The four CSVs were written and **failed the read-back check**. Do not import them. | The four CSVs, the status file (`posting.problems` lists what failed, `needs_review` is true), the archive with its manifest and a `runs.csv` line with `exit_code` 2. **No page** is rendered: one left by an earlier run still shows that run. |
 
-A refused run leaves no status file of its own, so after a non-zero exit the status file may be an older run's: check the exit code first, then `run_id`.
+A refused run leaves no status file of its own, so after exit 1 the status file, if there is one, is an older run's: check the exit code first, then `run_id`.
 
 ## Files in `<out>/<month>/`
 | File | Written by | Notes |
@@ -73,7 +73,7 @@ The folder names are Goodwill's own (slide 39: "Accounting / Month End / year / 
 `manifest.json`, hashed from the archived copies:
 ```json
 {
-  "month": "2026-09", "run_id": "2026-10-04T01-17-04", "run_at": "2026-10-04T01:17:04-04:00",
+  "month": "2026-09", "run_id": "2026-10-04T01-22-43", "run_at": "2026-10-04T01:22:43-04:00",
   "inboxes": ["data/sample/messy_month/inbox"],
   "inputs": [
     { "name": "ebay_transactions_2026-09-15_2026-09-21.csv", "inbox": "data/sample/messy_month/inbox",
@@ -95,8 +95,8 @@ A real run of `python -m reports.close --inbox data/sample/messy_month/inbox --m
 ```json
 {
   "month": "2026-09",
-  "run_id": "2026-10-04T01-17-04",
-  "run_at": "2026-10-04T01:17:04-04:00",
+  "run_id": "2026-10-04T01-22-43",
+  "run_at": "2026-10-04T01:22:43-04:00",
   "inboxes": ["data/sample/messy_month/inbox"],
   "origin": "reconciled from the raw inbox",
   "sources": {
@@ -118,14 +118,14 @@ A real run of `python -m reports.close --inbox data/sample/messy_month/inbox --m
     "checks": ["every document sums to 0.00", "files read back and re-checked"],
     "problems": []
   },
-  "archive": "out/archive/Accounting/Month End/2026/2026-09/Journal Entries/E-Commerce JEs/2026-10-04T01-17-04"
+  "archive": "out/archive/Accounting/Month End/2026/2026-09/Journal Entries/E-Commerce JEs/2026-10-04T01-22-43"
 }
 ```
 | Field | Meaning |
 |---|---|
 | `month`, `run_id`, `run_at` | The month closed, the run's name, and when it started (local time with its offset). |
 | `inboxes` | The `--inbox` folders, relative to the repo when inside it, with forward slashes. |
-| `origin` | The payload's description of where it came from (`origin`, or `mock` until D3.2 renames it). |
+| `origin` | The payload's own description of where it came from (`origin` in `close-payload.md`; `mock` in a payload written before its v0.4). |
 | `sources` | One entry per posted source, keyed like `Source` in `bc_mapping.csv`. `status` is the control status of `close-payload.md` (`MISMATCH`, `UNEXPLAINED`, `INCOMPLETE`, `OPEN`, `RECONCILED`); `open_cents` and `unexplained_cents` are `Open Balance` and `Unexplained` of `control_totals_<month>.csv`. |
 | `journal` | `lines` and `documents` as counted from the file read back. `balanced` is false only on exit 2, when the read-back found a document that does not sum to 0.00. |
 | `invoices` | Sales invoice documents and their lines. |
