@@ -1,0 +1,131 @@
+{
+ "title": "Chorizo Power: Goodwill Reporting",
+ "theme": "plain",
+ "no_numbers": true,
+ "footer": "Chorizo Power · Goodwill Michiana · built on synthetic data",
+ "sections": [
+  {
+   "description": "Goodwill's problem in their words, and what we built",
+   "start": "problem"
+  },
+  {
+   "description": "The recorded take: pulse, close, scorecard",
+   "start": "demo"
+  },
+  {
+   "description": "Why it can be trusted, what is simulated, the ask",
+   "start": "checks"
+  }
+ ],
+ "slides": [
+  {
+   "id": "problem",
+   "layout": "quotes",
+   "title": "Goodwill builds three reports by hand.",
+   "quotes": [
+    {
+     "label": "Monthly",
+     "text": "From manual reporting to management visibility. A monthly E-Commerce dashboard should balance growth, profitability, productivity, inventory management and customer engagement."
+    },
+    {
+     "label": "Nightly",
+     "text": "A nightly report creates a daily pulse. Each nightly report should show both revenue and customer count by marketplace, followed by enterprise totals."
+    },
+    {
+     "label": "Month-end",
+     "text": "From manual month-end close to Business Central integration. The current close combines portal downloads, emailed reports, bank activity, spreadsheet rules and manual Business Central entries."
+    }
+   ],
+   "attribution": "Debie Coble, President and CEO, Goodwill Industries of Michiana",
+   "notes": "0:00-0:15. This is Goodwill's problem in their words: three reports, built by hand from six or more systems."
+  },
+  {
+   "id": "what",
+   "layout": "columns",
+   "title": "We automated all three, on synthetic data.",
+   "cols": [
+    {
+     "head": "Nightly pulse",
+     "text": "Revenue, customers by marketplace"
+    },
+    {
+     "head": "COO scorecard",
+     "text": "Their KPIs, five pillars"
+    },
+    {
+     "head": "Month-end close",
+     "text": "Business Central import files"
+    }
+   ],
+   "notes": "0:15-0:30. We automated all three. The data is synthetic, and we will show exactly what is real and what is simulated."
+  },
+  {
+   "id": "demo",
+   "layout": "statement",
+   "invert": true,
+   "title": "Here it is running.",
+   "sub": "One take. A clean input, then a messy one.",
+   "notes": "0:30-2:10. Switch to the terminal and the browser. Pulse, then the close, then the scorecard. One continuous recording; see narration.md."
+  },
+  {
+   "id": "checks",
+   "layout": "points",
+   "title": "It checks its own work.",
+   "points": [
+    "Matches totals to a separate answer key",
+    "Writes a journal only if it balances",
+    "Shows “no data,” not zero"
+   ],
+   "notes": "2:10-2:22. We never ask our own code whether it is right. The expected totals are computed from the generated orders, apart from the program. A journal that does not balance is never written. A missing report shows as missing, never as zero."
+  },
+  {
+   "id": "tools",
+   "layout": "flow",
+   "title": "It uses tools they already pay for.",
+   "steps": [
+    {
+     "head": "In",
+     "text": "Exports from their systems"
+    },
+    {
+     "head": "Out",
+     "text": "Excel-ready CSV, Business Central's columns"
+    },
+    {
+     "head": "Read",
+     "text": "Outlook drafts, a web page"
+    }
+   ],
+   "notes": "2:22-2:32. Their limit is tools they already pay for. Nothing new to buy: the inputs are the reports their systems already produce, the outputs open in Excel, in Business Central's own column order, and in Outlook as drafts."
+  },
+  {
+   "id": "real",
+   "layout": "columns",
+   "alt": true,
+   "title": "Here is what we simulated.",
+   "cols": [
+    {
+     "head": "Built",
+     "text": "Cleaning, checks, reports, import files"
+    },
+    {
+     "head": "Simulated",
+     "text": "All data, APIs, mailbox, most KPIs"
+    },
+    {
+     "head": "Not done",
+     "text": "Posting, real accounts, workbook rules"
+    }
+   ],
+   "notes": "2:32-2:48. Read it plainly. No real Goodwill file has been read. The provider APIs are assumed and simulated; a folder stands in for email and a command for the scheduler; the emails are unsent drafts. Eleven of the fifteen KPIs use simulated internal data and are badged. Nothing is posted: the import files have never been loaded into Business Central, the account numbers are placeholders except Dept 180 and the codes on their slide 38, and the rules are our reading of their deck, not their allocation workbook."
+  },
+  {
+   "id": "ask",
+   "layout": "statement",
+   "invert": true,
+   "title": "Send us one real month.",
+   "sub": "Its files and your allocation workbook. Then your accounts, and posting to Business Central.",
+   "notes": "2:48-3:00. Send us one real month of files and last month's allocation workbook, and we will run your close and compare our journal with yours, line by line. Then your chart of accounts, then posting through Business Central's API."
+  }
+ ]
+}

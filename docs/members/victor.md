@@ -2,7 +2,17 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 13:35 · **Branch:** none open; everything of mine is on `main` (the front end pass and the upload panel merged as #76 and #77)
+**Last updated:** 2026-10-04 13:35 · **Branch:** `victor/pitch-deck` (the pitch deck); everything else of mine is on `main`
+
+## Pitch deck and the take's narration: `victor/pitch-deck`, a proposal to Orlando
+- **What works:** `docs/pitch/deck-proposal/` holds new files only: `content.json` (seven slides in Orlando's format, team name Chorizo Power), `deck.html` (one offline file: arrows to move, F for full screen) and `narration.md` (the three-minute take: slides 1-3, then pulse, close and scorecard live, then slides 4-7; what to run, say and point at). Built from Orlando's v2 deck (`origin/o/skills-sdd`), which is not merged.
+- **How to build it:** `python docs/pitch/scripts/build_deck.py docs/pitch/deck-proposal/content.json --out <dir> --html docs/pitch/deck-proposal/deck.html` (Orlando's tool, only on his branch): 0 errors, 0 warnings. Each slide checked as a 1920x1080 screenshot in headless Chrome.
+- **Checked by runs on `main` (8f71775):** 480 tests pass. The take's close sequence gives 7 exceptions (tidy, all `OPEN`), 17 (messy: Amazon and ShopGoodwill `INCOMPLETE`, gaps −$743.10 and −$1,875.64, $412.37 held out), then 13 with the late reports added (all `OPEN`, about 5 s). The September scorecard shows $70,753.96 with 15 KPIs, 11 simulated and 1 partial.
+- **Known issues:**
+  - Orlando's `export_html.py` shows the last slide on every page (an inline `display:flex` beats `display:none`). `deck.html` here was built with a one-line fix to a scratch copy of it; the fix is in his inbox.
+  - His generator puts slide 1's quotes at 30 px, below the 32 px rule.
+  - The CLI close does not rebuild the Month-end Close list page; only the scheduled run and the panel do, so the take keeps `out/` from the scheduled run.
+- **Next:** Orlando takes or changes it; Dani confirms the close commands in the narration; dry run, record, Google Slides by 15:00.
 
 ## Front end: one look for every page (#76) and adding missing reports from the portal (#77): on `main`
 - **What works:** every page has the same top bar (Reports, Nightly pulse, Scorecards, Month-end close) with a "Synthetic sample data" label, and a footer that repeats it. Before, the portal, the pulse pages and the index pages had no such label. 16px base type, one card style, plain page titles. The portal has a revenue-by-night chart by marketplace (plain HTML, no script; a marketplace with no data is named, never drawn as zero), a note on what is synthetic, simulated and not posted, a "Previous month" link and a "Daily table" link. The scorecard's "Simulated internal data" badge is darker and on its own line, the two top-10 tables no longer overflow at 1280px, and the scorecard index lists periods by name. `reports/hub.py` writes `reports/close/index.html`.
