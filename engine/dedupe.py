@@ -44,6 +44,7 @@ def dedupe_bank(lines: list[dict]) -> tuple[list[dict], list[dict]]:
 # A row without the identifying value is never merged.
 _TABLE_IDS = {
     "ledger": ("ledger entry", lambda r: r["entry_no"]),
+    "statements": ("statement", lambda r: r["reference"] and (r["source"], r["reference"])),
 }
 
 

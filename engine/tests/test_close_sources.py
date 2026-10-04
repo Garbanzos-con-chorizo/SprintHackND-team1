@@ -122,3 +122,69 @@ def test_a_bad_ledger_row_is_a_warning_not_a_crash(tmp_path):
     assert [r["entry_no"] for r in read(tmp_path / "out" / "ledger.csv")] == ["1"]
     warnings = json.loads((tmp_path / "out" / "warnings.json").read_text(encoding="utf-8"))
     assert [(w["source_row"], w["kind"]) for w in warnings] == [(2, "bad_date"), (3, "bad_amount")]
+
+
+# ---------------------------------------------------------------- V3.7: carriers from the bank feed of account 0101
+
+def test_carrier_debits_in_the_0101_feed_equal_the_key(close_month):
+    inbox, out, key, _ = close_month
+    assert (inbox / f"bank_activity_0101_{MONTH}.csv").exists()
+    carriers = key["carriers"]
+    lines = [r for r in read(out / "bank.csv") if r["account"] == carriers["bank_account"] == "0101"]
+    assert len(lines) == carriers["lines"]
+    total = 0
+    for name in ("osm", "pb", "easypost"):
+        mine = [r for r in lines if carriers[name]["bank_text"] in r["description"].upper() and int(r["amount_cents"]) < 0]
+        assert -sum(int(r["amount_cents"]) for r in mine) == carriers[name]["cents"] > 0, name
+        assert len(mine) == carriers[name]["payments"], name
+        total += carriers[name]["cents"]
+    assert total == carriers["total_cents"]
+    # Lines that are no carrier's stay in the file: the close's rule leaves them out, the parser does not.
+    named = [t["bank_text"] for t in (carriers["osm"], carriers["pb"], carriers["easypost"])]
+    others = [r for r in lines if int(r["amount_cents"]) < 0 and not any(t in r["description"].upper() for t in named)]
+    assert len(others) == carriers["other_debits"] > 0
+    # The running balance is the bank's own check on the signs.
+    for before, after in zip(lines, lines[1:]):
+        assert int(before["balance_cents"]) + int(after["amount_cents"]) == int(after["balance_cents"])
+
+
+def test_both_bank_accounts_share_bank_csv(close_month, tmp_path):
+    inbox, _, _, _ = close_month
+    (tmp_path / "inbox").mkdir()
+    for name, text in ((f"bank_activity_0101_{MONTH}.csv", (inbox / f"bank_activity_0101_{MONTH}.csv").read_text(encoding="utf-8")),
+                       (f"bank_activity_{MONTH}.csv", "Posting Date,Description,Debit,Credit,Balance\n"
+                                                      "09/04/2026,EBAY COMMERCE INC DES:PAYOUT,,469.47,469.47\n")):
+        (tmp_path / "inbox" / name).write_text(text, encoding="utf-8")
+    run(tmp_path / "inbox", tmp_path / "out", "2026-09-30")
+    bank = read(tmp_path / "out" / "bank.csv")
+    assert {r["account"] for r in bank} == {"0101", "OPERATING"}
+    assert [r["amount_cents"] for r in bank if r["account"] == "OPERATING"] == ["46947"]
+
+
+# ---------------------------------------------------------------- V3.9: Goodwill Books statement
+
+def test_the_books_statement_equals_the_key_and_its_payment_is_in_the_bank_feed(close_month):
+    inbox, out, key, _ = close_month
+    books = key["goodwillbooks"]
+    assert (inbox / "goodwillbooks_statement_2026-08.csv").exists()  # named for the month it reports
+    statements = read(out / "statements.csv")
+    assert len(statements) == 1
+    st = statements[0]
+    assert st["source"] == "goodwillbooks"
+    for column in ("period_from", "period_to", "paid_date", "reference"):
+        assert st[column] == books[column], column
+    for column in ("sales_cents", "fees_cents", "net_cents"):
+        assert int(st[column]) == books[column], column
+    assert (st["period_from"], st["period_to"]) == ("2026-08-01", "2026-08-31")  # the prior month
+    assert st["paid_date"].startswith(MONTH)                                       # paid in the month closed
+    assert int(st["sales_cents"]) - int(st["fees_cents"]) == int(st["net_cents"]) > 0
+    credits = [r for r in read(out / "bank.csv") if r["account"] == books["bank_account"] and int(r["amount_cents"]) > 0]
+    assert [(r["posting_date"], int(r["amount_cents"])) for r in credits] == [(st["paid_date"], int(st["net_cents"]))]
+    assert books["bank_text"] in credits[0]["description"] and st["reference"] in credits[0]["description"]
+
+
+def test_a_statement_has_no_day_by_day_coverage(close_month):
+    _, out, _, _ = close_month
+    coverage = json.loads((out / "source_coverage.json").read_text(encoding="utf-8"))["sources"]
+    assert coverage["goodwillbooks_statement"]["days_missing"] is None
+    assert coverage["bank"]["days_missing"] == [] and coverage["bc_ledger"]["days_missing"] == []

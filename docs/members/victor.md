@@ -2,7 +2,7 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 · **Branch:** victor/v3-5-fedex-ledger
+**Last updated:** 2026-10-04 · **Branch:** victor/v3-7-9-bank-books
 
 ## Phase 3: decision 009, plan in `docs/PLAN_PHASE_3.md` (my tasks V3.1 to V3.10)
 ### Done
@@ -11,8 +11,9 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - **V3.3** (branch `victor/v3-3-source-coverage`): `engine run` also writes `source_coverage.json`. For each source it lists the files, the days each covers (from the name, else from its rows), the rows, whether a simulator wrote it, and the days of the month no file covers. `fetch --simulate` records its files in `<inbox>/_simulated.json`, which the engine reads. **On `messy_month`: Amazon missing 09-21 and 09-22, ShopGoodwill 09-07, eBay and the bank none; a simulated fetch reads `"simulated": true`.** 5 tests in `engine/tests/test_source_coverage.py`; `close-inputs.md` v0.2.
 - V3.1 (#54) and V3.2 (#56) are merged.
 - **V3.5** (branch `victor/v3-5-fedex-ledger`): `python -m engine fetch --simulate --close-month 2026-09 --inbox DIR --out DIR2` delivers the month-end sources as simulated APIs: provider classes with `cadence = "month_end"` in `engine/scrapers/`, records and answer keys in `close_simulation.py`. The first one is `bc_ledger`: a Business Central G/L entries export (layout ours) with FedEx charges on 40356 / 180 / V00122, three BNKDEPOSIT refunds, and five rows of another vendor, department or account. The engine writes every row to `ledger.csv`. **Charges $3,282.10 minus refunds $136.94 = $3,145.16 = `fedex.net_cents` in `expected_close_sources.json`**, by filter and sum on `ledger.csv`. `close-inputs.md` v0.3. 8 tests in `engine/tests/test_close_sources.py`.
+- **V3.7 + V3.9** (branch `victor/v3-7-9-bank-books`): two more simulated sources in `fetch --simulate --close-month`. `bank_0101` writes the month of the carriers' bank account (layout: our bank export plus an `Account` column): carrier debits, two debits that are no carrier's, a service charge, and the Goodwill Books payment as its only credit. The existing bank parser reads it, so `bank.csv` holds both accounts. `goodwillbooks` writes the prior month's payment statement, and a new parser writes it to `statements.csv`. **September: OSM $1,493.39, PB $1,026.45, EasyPost $444.27 equal `carriers.<name>.cents`; the statement's net $3,136.81 equals `goodwillbooks.net_cents` and the credit in `bank.csv`.** Until Dani's D3.13, her close lists that credit as an `unmatched_deposit`. `close-inputs.md` v0.4. 4 more tests in `engine/tests/test_close_sources.py`.
 ### Next
-- V3.7 and V3.9 (bank feed of account 0101, Goodwill Books statement), V3.8, V3.10, then V3.4.
+- V3.8, V3.10, then V3.4.
 - Decision 009: my response line is still open (C3.4), and so are my claim rows.
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`
