@@ -74,9 +74,10 @@ SUITE = [
     {"title": "Month-end close", "what": "Business Central import files, reconciliation and exceptions.",
      "folder": "close", "pattern": r"\d{4}-\d{2}", "period": _month,
      "extras": lambda s: [(f"{s}/general_journal_{s}.csv", "General Journal"), (f"{s}/ar_invoice_{s}.csv", "AR invoice"),
-                          (f"{s}/control_totals_{s}.csv", "Control totals"), (f"{s}/exceptions_{s}.csv", "Exceptions")],
+                          (f"{s}/control_totals_{s}.csv", "Control totals"), (f"{s}/exceptions_{s}.csv", "Exceptions"),
+                          (f"{s}/close_status_{s}.json", "Run status"), (f"{s}/runs.csv", "Run history")],
      "archive": None,
-     "build": "python -m reports.reconcile ..., reports.bc_export, reports.close_report --month 2026-09"},
+     "build": "python -m reports.close --inbox data/sample/messy_month/inbox --month 2026-09"},
 ]
 
 

@@ -1,10 +1,11 @@
-"""python -m engine.store init | load | status | backfill  (docs/contracts/store.md)"""
+"""python -m engine.store init | load | status | backfill | log-close  (docs/contracts/store.md)"""
 import argparse
 import json
 import sys
 from pathlib import Path
 
 from .backfill import backfill
+from .close_log import log_close
 from .db import connect, db_path
 from .load import LoadError, load_day
 from .status import format_status, latest_month, month_bounds, store_status
@@ -28,6 +29,11 @@ def main(argv: list[str] | None = None) -> int:
     back_p.add_argument("--from", dest="start", required=True, help="first business date YYYY-MM-DD")
     back_p.add_argument("--to", dest="end", required=True, help="last business date YYYY-MM-DD")
     back_p.add_argument("--out", type=Path, default=Path("out"), help="engine and pulse output folder (default: out)")
+    close_p = sub.add_parser("log-close", help="record a month-end close run (reports.close) in the runs log")
+    close_p.add_argument("--month", required=True, help="the month closed, YYYY-MM")
+    close_p.add_argument("--exit-code", type=int, required=True, help="what `python -m reports.close` exited with")
+    close_p.add_argument("--close-dir", type=Path, default=Path("out") / "close",
+                         help="the close's --out folder (default: out/close)")
     args = parser.parse_args(argv)
 
     conn = connect(args.db)
@@ -40,6 +46,11 @@ def main(argv: list[str] | None = None) -> int:
             return status(conn, args)
         if args.command == "backfill":
             return backfill_cmd(conn, args)
+        if args.command == "log-close":
+            row = log_close(conn, args.month, args.exit_code, args.close_dir)
+            print(f"store: close {args.month} logged as {row['result']} [{row['run_id']}]: {row['message']}"
+                  + (" (already logged)" if row.get("already_logged") else ""))
+            return 0
         day = args.date or default_date(args.in_dir)
         if not day:
             print("store: no --date given and no source_status.json to take it from", file=sys.stderr)
