@@ -83,5 +83,5 @@ Rules that hold for every KPI (they are in the contract; the tests pin them):
 - A whole month is compared with the whole month before, so 30 days can face 31.
 
 ## What is left
-1. D2.11, with Orlando: delete the math from `reports/kpi.py` once the page reads the KPI file.
+1. ~~D2.11: delete the math from `reports/kpi.py`~~ done (L6, 2026-10-04): the weekly page reads the KPI file; `reports/kpi.py` and `reports/mock_api.py` are gone.
 2. Apply Goodwill's answers to the open definitions (one constant each, top of `kpis.py`).
