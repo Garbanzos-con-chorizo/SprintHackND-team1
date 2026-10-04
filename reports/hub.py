@@ -14,29 +14,42 @@ from datetime import date, datetime
 from html import escape, unescape
 from pathlib import Path
 
-from reports import library
-from reports.pulse import CSS, DATA_LABEL, DATA_NOTE, PAGE, stamp
+from reports import charts, library
+from reports.pulse import CSS, DATA_LABEL, DATA_NOTE, PAGE, ast, notes, stamp
 
 ROOT = Path(__file__).resolve().parent.parent
 
 HUB_CSS = """
-.hub-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr)); gap:14px; margin:18px 0 0; }
-.hub-card { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--primary);
-  border-radius:var(--radius); padding:16px 20px; box-shadow:var(--shadow); }
-.hub-card.alert { border-left-color:var(--down); }
-.hub-card.empty { border-left-color:var(--line); }
-.hub-card .label { color:var(--primary); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
-.hub-card h2 { font-size:22px; margin:2px 0 8px; }
+/* One card per report, set well apart: a colored band names it, red when its latest page flags missing data. */
+.hub-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr)); gap:28px; margin:28px 0 0; }
+.hub-card { background:var(--card); border:1px solid #b9bcc2; border-radius:10px; overflow:hidden;
+  box-shadow:0 3px 10px rgba(35,31,32,.10); }
+.hub-card .band { display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--primary);
+  color:#fff; padding:9px 18px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.hub-card.alert .band { background:var(--down); }
+.hub-card.empty .band { background:var(--muted); }
+.hub-card .flagged { background:#fff; color:var(--down); border-radius:999px; padding:1px 10px; font-size:11px; white-space:nowrap; }
+.hub-card .in { padding:14px 18px 16px; }
+.hub-card h2 { font-size:22px; margin:0 0 6px; }
 .hub-card h2 a { color:var(--ink); }
-.hub-card .headline { margin:0 0 10px; font-weight:600; }
-.hub-card .links, .hub-card .built { font-size:14px; color:var(--muted); margin:4px 0 0; }
+.hub-card .headline { margin:0 0 12px; font-weight:600; }
+.hub-card .actions { margin:0; }
+.hub-card .links, .hub-card .built { font-size:14px; color:var(--muted); margin:8px 0 0; }
 .hub-card .links { line-height:1.8; }
+.hub-card details { margin-top:10px; font-size:14px; }
+.hub-card details summary { cursor:pointer; color:var(--primary); font-weight:600; }
+/* The two charts: revenue by night (wide) and the week's split by marketplace. */
+.charts { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(0,1fr); gap:20px; margin:18px 0 0; align-items:stretch; }
+@media (max-width:860px) { .charts { grid-template-columns:1fr; } }
+.chart { padding:14px 16px 12px; overflow:visible; }
+.chart h2.sec { margin:0 0 6px; }
+.chart .hint { margin:8px 0 0; font-size:13px; color:var(--muted); }
 /* Revenue by night: plain HTML columns, no script. A 2px gap in the card color separates the segments. */
-.trend-head { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 16px; margin-top:14px; }
+.trend-head { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 16px; }
 .trend-head h2.sec { margin:0 0 6px; }
 .legend { display:flex; flex-wrap:wrap; gap:4px 16px; font-size:13px; }
 .legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; }
-.trend { padding:14px 16px 10px; overflow:visible; }
+.trend { padding:14px 16px 12px; overflow:visible; }
 .plot { position:relative; margin:18px 0 0 56px; border-bottom:1px solid var(--muted); }
 .tick { position:absolute; left:0; right:0; border-top:1px solid #e6e6e8; }
 .tick span { position:absolute; right:100%; margin-right:8px; transform:translateY(-50%); font-size:12px;
@@ -52,14 +65,16 @@ HUB_CSS = """
 .xlabels div { flex:1; text-align:center; font-size:12px; line-height:1.35; color:var(--muted); padding:0 2px; }
 .xlabels b { display:block; color:var(--ink); font-weight:600; }
 .xlabels .gap { display:block; color:var(--down); font-weight:600; }
-.trend + .links { color:var(--muted); margin:6px 0 0; }
 @media print {
   .seg, .legend i { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   @page { size:letter portrait; margin:0.5in; }
-  .hub-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
-  .hub-card { padding:8px 10px; break-inside:avoid; }
+  .hub-grid { grid-template-columns:repeat(2,1fr); gap:10px; margin-top:10px; }
+  .hub-card { break-inside:avoid; box-shadow:none; }
+  .hub-card .band { padding:4px 10px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .hub-card .in { padding:6px 10px; }
   .hub-card h2 { font-size:12pt; }
-  .hub-card .links { display:none; }
+  .hub-card .links, .hub-card details { display:none; }
+  .charts { gap:10px; }
 }
 """
 
@@ -79,19 +94,21 @@ def _month(stem):
     return f"{date.fromisoformat(stem[:7] + '-01'):%B %Y}"
 
 
-# What the portal shows: folder, page name pattern, how to name the period, related files.
+# What the portal shows: folder, page name pattern, how to name the period, related files. The first two
+# files of a card are buttons; the rest sit under "More".
+BUTTONS = 2
 SUITE = [
-    {"title": "Daily report · nightly pulse", "what": "Revenue and customers by marketplace for the day that just ended.",
+    {"title": "Daily Report · Nightly Pulse", "what": "Revenue and customers by marketplace for the day that just ended.",
      "folder": "pulse", "pattern": r"\d{4}-\d{2}-\d{2}", "period": _long_day,
-     "extras": lambda s: [(f"{s}.csv", "CSV"), (f"{s}.email.html", "Email copy")],
+     "extras": lambda s: [(f"{s}.xlsx", "Full Day (Excel)"), (f"{s}.csv", "CSV"), (f"{s}.email.html", "Email copy")],
      "archive": ("index.html", "All days"),
      "build": "python -m reports.run_nightly --scenario gw_day_clean"},
-    {"title": "Weekly dashboard", "what": "The week's 15 KPIs in five areas, from the KPI file.",
+    {"title": "Weekly Dashboard", "what": "The week's 15 KPIs in five areas, from the KPI file.",
      "folder": "scorecard", "pattern": r"week-\d{4}-W\d{2}", "period": lambda s: _week(s[5:]),
      "extras": lambda s: [(f"{s}.csv", "KPI table (CSV)"), (f"{s}.pdf", "PDF"), (f"{s}.json", "KPI file")],
      "archive": ("index.html", "All scorecards"),
      "build": "python -m recon.kpi --week 2026-W38, then python -m reports.weekly --week 2026-W38"},
-    {"title": "COO scorecard (monthly)", "what": "Goodwill's 15 KPIs in five areas, from the KPI file.",
+    {"title": "COO Scorecard (Monthly)", "what": "Goodwill's 15 KPIs in five areas, from the KPI file.",
      "folder": "scorecard", "pattern": r"month-\d{4}-\d{2}", "period": lambda s: _month(s[6:]),
      "extras": lambda s: [(f"{s}.csv", "KPI table (CSV)"), (f"{s}.pdf", "PDF"), (f"{s}.json", "KPI file"),
                           (f"../monthly/{s[6:]}.csv", "Daily CSV"),
@@ -100,7 +117,7 @@ SUITE = [
      "switch": [("day", "Day"), ("week", "Week to date"), ("month", "Month to date")],
      "previous": "Previous month",
      "build": "python -m recon.kpi --month 2026-09, then python -m reports.monthly --month 2026-09"},
-    {"title": "Month-end close", "what": "Export files for Business Central, reconciliation and exceptions.",
+    {"title": "Month-End Close", "what": "Export files for Business Central, reconciliation and exceptions.",
      "folder": "close", "pattern": r"\d{4}-\d{2}", "period": _month,
      "extras": lambda s: [(f"{s}/general_journal_{s}.csv", "General Journal"), (f"{s}/ar_invoice_{s}.csv", "AR invoice"),
                           (f"{s}/control_totals_{s}.csv", "Control totals"), (f"{s}/exceptions_{s}.csv", "Exceptions"),
@@ -128,17 +145,22 @@ def _period_link(item, folder, kind, label):
 
 
 def card(root, item):
+    """One report's card: the band that names it, the latest period, its headline in a few words, a button to
+    open it and one per main file. Everything else (other files, earlier periods, what it is, when it was
+    built) is under "More"."""
     folder = root / item["folder"]
     pages = sorted(f for f in folder.glob("*.html") if re.fullmatch(item["pattern"], f.stem)) if folder.is_dir() else []
     if not pages:
-        return (f'<div class="hub-card empty"><div class="label">{item["title"]}</div>'
-                f'<h2>Not built yet</h2><p class="links">Build it with <code>{escape(item["build"])}</code></p></div>')
+        return (f'<div class="hub-card empty"><div class="band"><span>{item["title"]}</span></div><div class="in">'
+                f'<h2>Not Built Yet</h2><p class="links">Build it with <code>{escape(item["build"])}</code></p></div></div>')
     latest = pages[-1]
     text, alert = headline(latest)
     href = f'{item["folder"]}/{latest.name}'
     # An extra is (file, label) or (link, label, the file that must exist for the link to work).
-    links = [f'<a href="{item["folder"]}/{name}">{label}</a>' for name, label, *needs in item["extras"](latest.stem)
+    found = [(name, label) for name, label, *needs in item["extras"](latest.stem)
              if (folder / (needs[0] if needs else name)).exists()]
+    buttons = "".join(f'<a class="btn quiet small dl" href="{item["folder"]}/{name}">{label}</a>' for name, label in found[:BUTTONS])
+    links = [f'<a href="{item["folder"]}/{name}">{label}</a>' for name, label in found[BUTTONS:]]
     if item["archive"] and (folder / item["archive"][0]).exists():
         links.append(f'<a href="{item["folder"]}/{item["archive"][0]}">{item["archive"][1]} ({len(pages)})</a>')
     elif len(pages) > 1:
@@ -147,20 +169,27 @@ def card(root, item):
     if item.get("previous") and len(pages) > 1:
         before = pages[-2]
         links.insert(0, f'{item["previous"]}: <a href="{item["folder"]}/{before.name}">{escape(item["period"](before.stem))}</a>')
+    switch = ""
     if item.get("switch"):
-        links.insert(0, "Period: " + " · ".join(_period_link(item, folder, kind, label) for kind, label in item["switch"]))
+        switch = ('<p class="links">Period: ' + " · ".join(_period_link(item, folder, kind, label) for kind, label in item["switch"])
+                  + "</p>")
     built = datetime.fromtimestamp(latest.stat().st_mtime)
-    return (f'<div class="hub-card{" alert" if alert else ""}"><div class="label">{item["title"]}</div>'
-            f'<h2><a href="{href}">{escape(item["period"](latest.stem))}</a></h2>'
-            f'<p class="headline">{escape(text)}</p>'
-            f'<p class="links">{" · ".join(links)}</p>'
-            f'<p class="built">{escape(item["what"])} Built {stamp(built.isoformat())}.</p></div>')
+    short = text.split(";")[0].rstrip(".")  # the first thing the page says; the whole sentence is under "More"
+    more = (f'<details><summary>More</summary><p class="links">{escape(text)}</p>'
+            + (f'<p class="links">{" · ".join(links)}</p>' if links else "")
+            + f'<p class="built">{escape(item["what"])} Built {stamp(built.isoformat())}.</p></details>')
+    flagged = '<span class="flagged">Missing Data</span>' if alert else ""
+    return (f'<div class="hub-card{" alert" if alert else ""}"><div class="band"><span>{item["title"]}</span>{flagged}</div>'
+            f'<div class="in"><h2><a href="{href}">{escape(item["period"](latest.stem))}</a></h2>'
+            f'<p class="headline">{escape(short)}</p>'
+            f'<div class="actions"><a class="btn small" href="{href}">Open Report</a>{buttons}</div>'
+            f'{switch}{more}</div></div>')
 
 
 # Marketplace colors for the chart, bottom of the column first. Checked as a set for color-blind
 # separation on white; none is the green or red the pages use for change and missing data.
-SERIES = [("ShopGoodwill", "#0054A4"), ("Amazon", "#eb6834"), ("eBay", "#1baf7a")]
-PLOT_PX = 130
+SERIES = [(name, charts.COLORS[name]) for name in ("ShopGoodwill", "Amazon", "eBay")]
+PLOT_PX = 170
 
 
 def nights(root, count=8):
@@ -208,16 +237,37 @@ def trend(root):
         gap = f'<span class="gap">No data: {escape(", ".join(gaps))}</span>' if gaps else ""
         labels.append(f'<div><b>{d:%a}</b>{d:%b} {d.day}{gap}</div>')
     legend = "".join(f'<span><i style="background:{color}"></i>{name}</span>' for name, color in SERIES)
-    return (f'<div class="trend-head"><h2 class="sec">Revenue by night · last {len(days)} nights</h2>'
+    tip = "Sales minus refunds, before marketplace fees; a night with a missing file shows only what reported"
+    return (f'<div class="card trend"><div class="trend-head"><h2 class="sec">Revenue by Night · Last {len(days)} Nights{ast(tip)}</h2>'
             f'<div class="legend">{legend}</div></div>'
-            f'<div class="card trend"><div class="plot" style="height:{PLOT_PX}px">{ticks}'
-            f'<div class="cols">{"".join(cols)}</div></div><div class="xlabels">{"".join(labels)}</div></div>'
-            f'<p class="links">Revenue as on the nightly pulse: sales minus refunds, before marketplace fees. '
-            f'A night with a missing file shows only the marketplaces that reported. '
-            f'Select a column for that night, or see <a href="pulse/index.html">all days</a>.</p>')
+            f'<div class="plot" style="height:{PLOT_PX}px">{ticks}'
+            f'<div class="cols">{"".join(cols)}</div></div><div class="xlabels">{"".join(labels)}</div>'
+            f'<p class="hint">Select a bar to open that night\'s report.</p></div>')
 
 
-CLOSE_FILES = [("general_journal", "General Journal"), ("ar_invoice", "AR invoice"), ("control_totals", "Control totals"),
+def week_pie(root):
+    """The latest week's revenue by marketplace, as a pie: the nights on file of the ISO week (Monday to Sunday)
+    of the latest night. A marketplace with no data on a night adds nothing for that night; one with no data
+    all week is not drawn. "" when there is no night on file."""
+    days = nights(root)
+    if not days:
+        return ""
+    latest = date.fromisoformat(days[-1][0])
+    year, week, _ = latest.isocalendar()
+    monday = date.fromisocalendar(year, week, 1)
+    mine = [(day, rev, gaps) for day, rev, gaps in days if date.fromisoformat(day).isocalendar()[:2] == (year, week)]
+    totals = {name: sum(rev.get(name, 0) for _, rev, _ in mine) for name, _ in SERIES}
+    drawn = charts.pie([(name, color, totals[name]) for name, color in SERIES], f"${sum(totals.values()):,.0f}",
+                       f"{len(mine)} night{'s' if len(mine) != 1 else ''}")
+    if not drawn:
+        return ""
+    gaps = sum(bool(g) for _, _, g in mine)
+    tip = (f"Nights on file from {monday:%b} {monday.day} to {latest:%b} {latest.day}"
+           + (f"; {gaps} with a missing file count only what reported" if gaps else ""))
+    return (f'<div class="card chart"><h2 class="sec">Week {week} by Marketplace{ast(tip)}</h2>{drawn}</div>')
+
+
+CLOSE_FILES = [("general_journal", "General Journal"), ("ar_invoice", "AR Invoice"), ("control_totals", "Control Totals"),
                ("exceptions", "Exceptions")]
 # The close page's pill colors (reports/close_report.py): OPEN is black, INCOMPLETE and worse are red.
 CLOSE_PILL = {"RECONCILED": "ok", "OPEN": "stale"}
@@ -237,8 +287,8 @@ def _close_row(folder, month):
     pills = "".join(f'<span class="pill {CLOSE_PILL.get(r["Status"], "missing")}">{escape(r["Source"])} {escape(r["Status"])}</span>'
                     for r in control) or '<span class="muted">no control totals</span>'
     review = any(r["Status"] != "RECONCILED" for r in control) or bool(exceptions)
-    files = "".join(f'<a href="{month}/{key}_{month}.csv">{name}</a>' for key, name in CLOSE_FILES
-                    if (folder / month / f"{key}_{month}.csv").exists())
+    files = "".join(f'<a class="btn small dl" href="{month}/{key}_{month}.csv" download title="Download {name} (CSV)">{name}</a>'
+                    for key, name in CLOSE_FILES if (folder / month / f"{key}_{month}.csv").exists())
     return {"cells": [f'<a href="{month}.html">{escape(_month(month))}</a>', pills, f"{len(exceptions)}",
                       "<strong>Not posted</strong><small>export files only</small>", files],
             "find": f'{_month(month)} {month} {" ".join(r["Source"] + " " + r["Status"] for r in control)} not posted',
@@ -252,11 +302,10 @@ ADD_CSS = """
 .addfiles ul { padding-left:20px; }
 .addrow { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0 4px; }
 .addrow input[type=file] { font:inherit; font-size:14px; max-width:100%; }
-.btn { font:inherit; font-size:15px; font-weight:600; padding:8px 14px; border-radius:var(--radius); cursor:pointer;
-  border:1px solid var(--primary); background:var(--primary); color:#fff; }
-.btn.quiet { background:var(--card); color:var(--primary); }
-.btn:disabled { opacity:.5; cursor:default; }
-.btn:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+/* The export files of a month: one button each, in a column that wraps. */
+table.lib td.files { white-space:normal; min-width:300px; }
+table.lib td.files a.btn { margin:0 6px 6px 0; }
+table.lib td.files a + a { margin-left:0; }
 #add-state { min-height:1.5em; font-weight:600; }
 #add-state.bad { color:var(--down); }
 .addfiles .small { font-size:13px; color:var(--muted); }
@@ -317,7 +366,7 @@ def add_panel(folder, month):
     else:
         what = f"<p>No report is missing for {escape(_month(month))}. A late file can still be added.</p>"
     return (f'<section class="card addfiles" id="add" data-month="{month}">'
-            f'<h2 class="sec">Add missing reports · {escape(_month(month))}</h2>{what}'
+            f'<h2 class="sec">Add Missing Reports · {escape(_month(month))}</h2>{what}'
             f'<p>Download the report from the marketplace and add it here: the close runs again with it and this page '
             f'shows the new result. Nothing is posted.</p>'
             f'<div class="addrow"><input type="file" id="add-files" multiple accept=".csv,.xlsx" aria-label="Report files to add">'
@@ -339,17 +388,18 @@ def close_index(root):
     rows = [_close_row(folder, m) for m in months]
     panel = add_panel(folder, months[0]) + ADD_SCRIPT if months else ""
     top = library.tiles([
-        ("Latest close", _month(months[0]), "the month that ended last", f"{months[0]}.html"),
-        ("Exceptions to work", f'{rows[0]["exceptions"]}', f"in {_month(months[0])}", f"{months[0]}.html"),
-        ("Posting status", "Not posted", "export files for Business Central; nothing is sent", None)]) if months else ""
+        ("Latest Close", _month(months[0]), "", f"{months[0]}.html"),
+        ("Exceptions to Work", f'{rows[0]["exceptions"]}', f"in {_month(months[0])}", f"{months[0]}.html"),
+        ("Posting Status", "Not posted", "export files only; nothing is sent", None)]) if months else ""
     table = library.finder_table(
-        [("Month", "l"), ("Reconciliation by source", "l"), ("Exceptions", "num"), ("Posting", "l"), ("Export files", "files")],
+        [("Month", "l"), ("Reconciliation by Source", "l"), ("Exceptions", "num"), ("Posting", "l"),
+         ("Export Files for Business Central", "files")],
         [("", rows)], [("review", "Needs review"), ("clean", "Reconciled")],
         'Find a month: "September", "2026-09", "incomplete"', noun="close")
-    body = (f'<header><h1>Month-end Close</h1><p>Goodwill Michiana e-commerce · {len(months)} month(s) · '
-            f'export files for Business Central, not posted</p></header>{top}{panel}{table}')
+    body = (f'<header><h1>Month-End Close</h1><p>{len(months)} month(s) · export files for Business Central, not posted</p>'
+            f'</header>{top}{panel}{table}')
     css = CSS + library.LIBRARY_CSS + ADD_CSS + ".pill.stale { background:var(--ink); color:#fff; }"
-    (folder / "index.html").write_text(PAGE.substitute(title="Month-end Close", css=css, body=body), encoding="utf-8")
+    (folder / "index.html").write_text(PAGE.substitute(title="Month-End Close", css=css, body=body), encoding="utf-8")
 
 
 def build(root=ROOT / "reports"):
@@ -357,16 +407,23 @@ def build(root=ROOT / "reports"):
     root = Path(root)
     close_index(root)
     cards = [card(root, item) for item in SUITE]
-    body = (f'<header><h1>Latest reports</h1>'
-            f'<p>Goodwill Michiana e-commerce · updated {stamp(datetime.now().isoformat())}</p></header>'
-            f'{trend(root)}'
-            f'<div class="hub-grid">\n' + "\n".join(cards) + '\n</div>'
-            f'<p class="simnote"><strong>{DATA_LABEL}.</strong> Every figure on these pages comes from synthetic sample '
-            f'files and simulated APIs: {DATA_NOTE}. KPIs marked "Simulated internal data" use a mock of Goodwill\'s '
-            f'internal systems. The month-end close writes export files for Business Central: nothing is posted.</p>'
-            f'<section class="foot"><p>Red edge: the report flags missing data or partial totals.</p></section>')
+    bars, pie = trend(root), week_pie(root)
+    band = f'<div class="charts">{bars}{pie}</div>' if bars and pie else bars or pie
+    about = notes([
+        ("", f'<p><strong>{DATA_LABEL}.</strong> Every figure on these pages comes from synthetic sample files and '
+             f'simulated APIs: {DATA_NOTE}. KPIs marked "Simulated internal data" use a mock of Goodwill\'s internal '
+             f'systems. The month-end close writes export files for Business Central: nothing is posted.</p>'),
+        ("Charts", '<p>Revenue is as on the nightly pulse: sales minus refunds, before marketplace fees. A night with a '
+                   'missing file shows only the marketplaces that reported; no data is never drawn as zero. The pie adds '
+                   'up the nights on file of the latest week, Monday to Sunday.</p>'),
+        ("Cards", '<p>A red band and "Missing Data": the report\'s latest page flags missing data or partial totals. '
+                  '"More" on a card holds its other files and earlier periods.</p>')], title="About This Data")
+    body = (f'<header><h1>Latest Reports</h1>'
+            f'<p>Updated {stamp(datetime.now().isoformat())}</p></header>'
+            f'{band}'
+            f'<div class="hub-grid">\n' + "\n".join(cards) + f'\n</div>{about}')
     path = root / "index.html"
-    path.write_text(PAGE.substitute(title="E-commerce reports", css=CSS + HUB_CSS, body=body, root=""), encoding="utf-8")
+    path.write_text(PAGE.substitute(title="E-Commerce Reports", css=CSS + charts.CHART_CSS + HUB_CSS, body=body, root=""), encoding="utf-8")
     return path
 
 

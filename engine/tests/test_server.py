@@ -104,6 +104,14 @@ def test_serves_the_portal_folders_and_downloads(site):
     assert get(base + "/scorecard/month-2026-09.csv")[1].startswith("text/csv")
 
 
+def test_the_daily_reports_excel_workbook_is_served_as_a_download(site):
+    base, reports = site
+    (reports / "pulse").mkdir()
+    (reports / "pulse" / "2026-10-03.xlsx").write_bytes(b"PK")
+    status, ctype, body = get(base + "/pulse/2026-10-03.xlsx")
+    assert (status, ctype, body) == (200, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", b"PK")
+
+
 def test_nothing_outside_reports_and_no_api_pages(site):
     base, _ = site
     assert get(base + "/../secret.txt")[0] == 404

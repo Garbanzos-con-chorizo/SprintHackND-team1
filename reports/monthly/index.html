@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monthly dashboard</title>
+<title>Monthly Dashboard</title>
 <!-- Proof of concept (phase 2, O5). Loads <YYYY-MM>.json written by `python -m reports.monthly`.
      fetch() is blocked on file:// pages, so serve this folder:
        python -m http.server 8000 -d reports/monthly   ->  http://localhost:8000/?month=2026-09 -->
@@ -57,11 +57,11 @@ a { color:var(--accent); }
 </style>
 </head>
 <body>
-<div class="topbar"><div class="topbar-in"><a class="brand" href="../index.html">Goodwill Michiana e-commerce reports</a><nav><a href="../index.html">Overview</a><a href="../pulse/index.html">Daily Reports</a><a href="../scorecard/index.html" class="here">COO Scorecards</a><a href="../close/index.html">Month-end Close</a></nav><span class="datalabel">Synthetic sample data</span></div></div>
+<div class="topbar"><div class="topbar-in"><a class="brand" href="../index.html">Goodwill Michiana E-Commerce Reports</a><nav><a href="../index.html">Overview</a><a href="../pulse/index.html">Daily Reports</a><a href="../scorecard/index.html" class="here">COO Scorecards</a><a href="../close/index.html">Month-End Close</a></nav><span class="datalabel">Synthetic sample data</span></div></div>
 <main>
   <header>
     <div>
-      <h1 id="title">Monthly dashboard</h1>
+      <h1 id="title">Monthly Dashboard</h1>
       <p id="subtitle">Goodwill Michiana e-commerce</p>
       <p><a id="scorecard" href="#">COO scorecard for this month</a></p>
     </div>
@@ -74,7 +74,7 @@ a { color:var(--accent); }
   <div class="card"><table id="table"></table></div>
   <div class="foot" id="notes"></div>
 </main>
-<footer class="pagefoot">Goodwill Michiana e-commerce reports · <strong>Synthetic sample data</strong>: no real Goodwill file has been read.</footer>
+<footer class="pagefoot">Goodwill Michiana E-Commerce Reports · <strong>Synthetic sample data</strong>: no real Goodwill file has been read.</footer>
 
 <script>
 const MARKETS = [["shopgoodwill", "ShopGoodwill"], ["amazon", "Amazon"], ["ebay", "eBay"], ["other", "Other"]];
@@ -175,7 +175,7 @@ async function load(month) {
     const data = await getJSON(`${month}.json`);
     const first = new Date(month + "-01T12:00:00");
     document.getElementById("title").textContent =
-      "Monthly dashboard: " + first.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      "Monthly Dashboard: " + first.toLocaleDateString("en-US", { month: "long", year: "numeric" });
     document.getElementById("subtitle").textContent =
       `Goodwill Michiana e-commerce · generated ${data.generated_at}`;
     renderKpis(data);

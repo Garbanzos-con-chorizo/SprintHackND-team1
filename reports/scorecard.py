@@ -3,7 +3,10 @@
 The page does no arithmetic and decides nothing about missing data: every number, status, note,
 change and badge comes from the file. Five areas, three KPIs each, in the file's order; the two
 top-10 rankings as tables. Simulated KPIs carry the file's `internal_data.label` as a quiet badge.
-Prints on one landscape page (five area columns).
+A pie shows the period's revenue by marketplace (the file's `inputs.by_marketplace` of KPI 1). What the
+figures mean sits in a "Notes and Definitions" dropdown at the bottom. Prints on one landscape page
+(five area columns; the pie and the notes are screen only). The list page (index.html) also carries the
+KPI trend: each area's KPIs over the scorecards on file, by day, week or month.
 
     python -m reports.scorecard --kpi-file out/kpi/month-2026-09.json   # -> reports/scorecard/month-2026-09.html
     python -m reports.scorecard --period month                          # out/kpi/latest-month.json
@@ -16,8 +19,9 @@ from datetime import date
 from html import escape
 from pathlib import Path
 
-from reports import library
-from reports.pulse import CSS, DATA_LABEL, DATA_NOTE, PAGE, money, stamp
+from reports import charts, library
+from reports.pulse import CSS, DATA_LABEL, DATA_NOTE, PAGE, ast, money, notes, stamp
+from reports.schema import LABELS
 
 ROOT = Path(__file__).resolve().parent.parent
 KPI_DIR = ROOT / "out" / "kpi"
@@ -73,8 +77,30 @@ SCORECARD_CSS = """
 table.rank { min-width:0; width:100%; margin-top:4px; }
 table.rank th, table.rank td { padding:3px 4px; font-size:13px; }
 table.rank th:nth-child(2), table.rank td:nth-child(2) { text-align:left; }
-details.defs { margin-top:20px; font-size:14px; color:var(--muted); }
-details.defs dt { margin-top:6px; }
+details.notes dt { margin-top:6px; }
+/* The pie: the period's revenue by marketplace. */
+.mix { max-width:620px; padding:12px 16px; margin:16px 0 0; overflow:visible; }
+.mix h2.sec { margin:0 0 6px; }
+/* The KPI trend on the list page: an area and a period type to choose, one small line per KPI. */
+.explorer { padding:14px 16px; margin:4px 0 0; overflow:visible; }
+.ex-head { display:flex; flex-wrap:wrap; align-items:center; gap:8px 18px; }
+.ex-head h2.sec { margin:0 auto 0 0; }
+.ex-pick { display:flex; flex-wrap:wrap; gap:6px; }
+.pick { font:inherit; font-size:14px; padding:5px 12px; border:1px solid var(--line); border-radius:999px;
+  background:var(--card); color:var(--ink); cursor:pointer; }
+.pick[aria-pressed="true"] { background:var(--primary); border-color:var(--primary); color:#fff; font-weight:600; }
+.pick:disabled { opacity:.45; cursor:default; }
+.pick:focus-visible { outline:2px solid var(--primary); outline-offset:1px; }
+.ex-set { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:14px; }
+@media (max-width:800px) { .ex-set { grid-template-columns:1fr; } }
+.ex-kpi { border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px; }
+.ex-kpi .name { font-size:14px; font-weight:700; }
+.ex-kpi .value { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.3; }
+.ex-kpi .value .per { font-size:13px; font-weight:400; color:var(--muted); }
+.ex-kpi .value.none { font-size:15px; color:var(--muted); font-weight:600; }
+.ex-kpi .change { font-size:13px; min-height:1.6em; }
+.ex-kpi .chg:not(.up):not(.down) { border-color:var(--line); }
+.ex-none { margin:14px 0 0; color:var(--muted); }
 @media print {
   @page { size:letter landscape; margin:0.35in; }
   body { font-size:8pt; }
@@ -106,7 +132,7 @@ details.defs dt { margin-top:6px; }
   table.rank td:nth-child(2) { max-width:1.1in; overflow:hidden; text-overflow:ellipsis; }
   .gapnote { display:none; }
   table.rank .share { display:none; }
-  details.defs, .nav { display:none; }
+  details.notes, .nav, .mix, .explorer, .actions { display:none; }
   .tile, .sim, .chg { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 }
 """
@@ -268,26 +294,44 @@ def render(kf, dest=DEST):
         coverage = (f'<div class="banner coverage"><strong>Data missing:</strong> {escape(gaps)}{more}. '
                     f'KPIs that use these days are marked partial.</div>')
     simulated = sum(k["simulated"] for k in kf["kpis"])
-    data = f"<strong>{DATA_LABEL}:</strong> {DATA_NOTE}."
+    sim_def = kf["definitions"].get("simulated", "")
+    data = f"<strong>{DATA_LABEL}.</strong>"
     simnote = (f'<p class="simnote">{data} {simulated} of {len(kf["kpis"])} KPIs use {escape(sim_label.lower())} '
-               f'(marked). {escape(kf["definitions"].get("simulated", ""))}</p>') if simulated else f'<p class="simnote">{data}</p>'
+               f'(marked){ast(sim_def)}</p>') if simulated else f'<p class="simnote">{data}</p>'
     internal = kf.get("internal_data")
     if not internal:
         simnote = f'<p class="simnote">{data} No internal data stored for this period: KPIs that need it show "No data".</p>'
     defs = "".join(f"<dt>{escape(k['name'])}</dt><dd>{escape(k['definition'])}</dd>" for k in kf["kpis"])
     top_defs = " ".join(escape(v) for v in kf["definitions"].values())
-    files = "".join(f'<a href="{period["type"]}-{period["id"]}.{ext}">{label}</a>' for ext, label in
-                    (("csv", "KPI table (CSV)"), ("pdf", "PDF"), ("json", "KPI file")) if (dest / f"{period['type']}-{period['id']}.{ext}").exists())
-    downloads = f'<p class="links">Download: {files}</p>' if files else ""
-    body = (f'<header><h1>COO scorecard: {escape(period["label"])}</h1>'
-            f'<p>Goodwill Michiana e-commerce · {escape(period["start"])} to {escape(period["through"])} · '
-            f'compared with {escape(prior["label"])} · generated {escape(stamp(kf["generated_at"]))}</p></header>'
+    name = f'{period["type"]}-{period["id"]}'
+    files = "".join(f'<a class="btn{cls} dl" href="{name}.{ext}">{label}</a>' for ext, label, cls in
+                    (("pdf", "PDF", ""), ("csv", "KPI Table (CSV)", " quiet"), ("json", "KPI File", " quiet"))
+                    if (dest / f"{name}.{ext}").exists())
+    about = notes([
+        ("", f'<p><strong>{DATA_LABEL}:</strong> {DATA_NOTE}. Generated {escape(stamp(kf["generated_at"]))}.</p><p>{top_defs}</p>'
+             '<p>The (i) on a KPI opens its definition, the prior period\'s value and any note.</p>'),
+        ("KPI Definitions", f"<dl>{defs}</dl>")])
+    body = (f'<header><h1>COO Scorecard: {escape(period["label"])}</h1>'
+            f'<p>{escape(period["start"])} to {escape(period["through"])} · compared with {escape(prior["label"])}</p></header>'
             f'<p class="summary{" alert" if alert else ""}">{escape(text)}</p>{coverage}{simnote}'
+            f'{marketplace_pie(kf)}'
             f'<div class="areas">\n{areas}\n</div>'
-            f'<section class="foot"><p>{top_defs}</p></section>'
-            f'<details class="defs"><summary>KPI definitions</summary><dl>{defs}</dl></details>'
-            f'{downloads}<p class="nav"><a href="index.html">All scorecards</a> · <a href="../index.html">Reports</a></p>')
-    return PAGE.substitute(title=f"COO scorecard {period['id']}", css=CSS + SCORECARD_CSS, body=body)
+            f'<div class="actions">{files}<a class="btn quiet" href="index.html">All Scorecards</a></div>{about}')
+    return PAGE.substitute(title=f"COO Scorecard {period['id']}", css=CSS + charts.CHART_CSS + SCORECARD_CSS, body=body)
+
+
+def marketplace_pie(kf):
+    """The period's revenue by marketplace as a pie, from KPI 1's `inputs.by_marketplace` (kpi.md v0.7); "" for a
+    file without it or without revenue. Marketplace revenue comes from the files, so it carries no simulated badge."""
+    revenue = next((k for k in kf["kpis"] if k["id"] == "fin.revenue"), None)
+    by = ((revenue or {}).get("inputs") or {}).get("by_marketplace")
+    if not by or revenue["value"] is None:
+        return ""
+    slices = [(LABELS.get(m, m.title()), charts.COLORS.get(LABELS.get(m, ""), charts.COLORS["Other"]), cents / 100)
+              for m, cents in by.items()]
+    drawn = charts.pie(slices, f"${revenue['value'] / 100:,.0f}", "revenue")
+    tip = "Sales minus refunds, before marketplace fees, on the days each marketplace has data"
+    return f'<div class="card mix"><h2 class="sec">Revenue by Marketplace{ast(tip)}</h2>{drawn}</div>' if drawn else ""
 
 
 def _index_row(page):
@@ -320,26 +364,127 @@ def _index_row(page):
             "tags": period["type"], "label": period["label"], "revenue": revenue}
 
 
+KINDS = (("day", "Days"), ("week", "Weeks"), ("month", "Months"))
+SHOWN = {"day": 31, "week": 12, "month": 12}  # how many periods a trend line holds at most, newest last
+
+# The explorer's script only shows the chosen set and marks the chosen buttons: every line is already in the page.
+EXPLORER_SCRIPT = """<script>
+(function () {
+  var box = document.getElementById("trend");
+  if (!box) return;
+  var picks = [].slice.call(box.querySelectorAll(".pick")), sets = [].slice.call(box.querySelectorAll(".ex-set"));
+  var chosen = { area: box.dataset.area, kind: box.dataset.kind };
+  function show() {
+    sets.forEach(function (s) { s.hidden = s.dataset.area !== chosen.area || s.dataset.kind !== chosen.kind; });
+    picks.forEach(function (b) { b.setAttribute("aria-pressed", chosen[b.dataset.pick] === b.dataset.value ? "true" : "false"); });
+  }
+  picks.forEach(function (b) {
+    b.addEventListener("click", function () { chosen[b.dataset.pick] = b.dataset.value; show(); });
+  });
+  show();
+})();
+</script>"""
+
+
+def _short(period):
+    """A period as it fits under a small chart: "Oct 3", "W40", "Sep 2026"."""
+    start = date.fromisoformat(period["start"])
+    if period["type"] == "day":
+        return f"{start:%b} {start.day}"
+    return period["id"].split("-")[-1] if period["type"] == "week" else f"{start:%b %Y}"
+
+
+def _trend_card(k, found):
+    """One KPI over the scorecards on file: its latest value and change (the newest file's own), and the line."""
+    points, latest = [], None
+    for stem, kf in found:
+        cur = next((x for x in kf["kpis"] if x["id"] == k["id"]), None)
+        value = cur["value"] if cur else None
+        shown = fmt(value, k["unit"]) or "No data"
+        partial = bool(cur) and cur["status"] == "partial"
+        points.append((_short(kf["period"]), value, f'{kf["period"]["label"]}: {shown}{" (partial data)" if partial else ""}',
+                       f"{stem}.html", partial))
+        latest = (cur, kf)
+    cur, kf = latest
+    shown = fmt(cur["value"], k["unit"]) if cur else None
+    per = f' <span class="per">per {escape(k["per"])}</span>' if k.get("per") else ""
+    value = f'<div class="value">{escape(shown)}{per}</div>' if shown is not None else '<div class="value none">No data</div>'
+    delta = delta_text(cur) if cur else ""
+    change = f'{delta} <span class="muted">vs {escape(kf["prior_period"]["label"])}</span>' if delta and "chg" in delta else delta
+    badge = f'<span class="sim">{escape((kf.get("internal_data") or {}).get("label") or "Simulated internal data")}</span>' if k["simulated"] else ""
+    return (f'<div class="ex-kpi"><div class="name">{escape(k["name"])}{badge}</div>{value}<div class="change">{change}</div>'
+            f'{charts.line(points, lambda v: fmt(v, k["unit"]))}</div>')
+
+
+def explorer(dest):
+    """The KPI trend of the list page: choose an area (Financial, Productivity, Inventory, Sales, ...) and days,
+    weeks or months, and see each of the area's KPIs over the scorecards on file. Every value is a KPI file's own:
+    nothing is computed here. A partial period is a hollow dot; a period with no data breaks the line."""
+    on_file = {kind: [] for kind, _ in KINDS}
+    for f in sorted(dest.glob("*.json")):
+        m = re.fullmatch(r"(day|week|month)-[\dW-]+", f.stem)
+        if not m or not f.with_suffix(".html").exists():
+            continue
+        try:
+            kf = json.loads(f.read_text(encoding="utf-8"))
+            kf["period"]["start"], kf["kpis"], kf["areas"]
+        except (OSError, ValueError, KeyError):
+            continue
+        on_file[m[1]].append((f.stem, kf))
+    newest = next((found[-1][1] for found in (on_file["month"], on_file["week"], on_file["day"]) if found), None)
+    if newest is None:
+        return ""
+    areas = [a for a in newest["areas"] if any(k["area"] == a["id"] and k["kind"] == "scalar" for k in newest["kpis"])]
+    first_kind = max(KINDS, key=lambda kn: len(on_file[kn[0]]))[0]
+    sets = []
+    for kind, _ in KINDS:
+        found = on_file[kind][-SHOWN[kind]:]
+        for a in areas:
+            cards = "".join(_trend_card(k, found) for k in newest["kpis"] if k["area"] == a["id"] and k["kind"] == "scalar") if found else ""
+            hidden = "" if (kind == first_kind and a is areas[0]) else " hidden"
+            sets.append(f'<div class="ex-set" data-kind="{kind}" data-area="{escape(a["id"])}"{hidden}>'
+                        + (cards or '<p class="ex-none">No scorecard of this kind on file yet.</p>') + "</div>")
+
+    def picks(what, options, chosen):
+        return "".join(f'<button class="pick" type="button" data-pick="{what}" data-value="{escape(value)}" '
+                       f'aria-pressed="{"true" if value == chosen else "false"}">{escape(name)}</button>'
+                       for value, name in options)
+
+    tip = "Each KPI as its scorecards state it; a hollow dot is partial data, a gap is no data. Select a dot to open that scorecard"
+    return (f'<section class="card explorer" id="trend" data-kind="{first_kind}" data-area="{escape(areas[0]["id"])}">'
+            f'<div class="ex-head"><h2 class="sec">KPI Trend{ast(tip)}</h2>'
+            f'<div class="ex-pick" role="group" aria-label="KPI area">{picks("area", [(a["id"], a["name"]) for a in areas], areas[0]["id"])}</div>'
+            f'<div class="ex-pick" role="group" aria-label="Period">{picks("kind", KINDS, first_kind)}</div></div>'
+            f'{"".join(sets)}</section>{EXPLORER_SCRIPT}')
+
+
 def render_index(dest):
-    """The COO Scorecards page: every scorecard on file with its revenue, growth and data state, newest first."""
+    """The COO Scorecards page: the KPI trend, and every scorecard on file with its revenue, growth and data state,
+    newest first."""
     pages = sorted((f for f in dest.glob("*.html") if re.fullmatch(r"(day|week|month)-[\dW-]+", f.stem)),
                    key=lambda f: f.stem, reverse=True)
-    kinds = (("month", "Months", "Latest month"), ("week", "Weeks", "Latest week"), ("day", "Days", "Latest day"))
+    kinds = (("month", "Months", "Latest Month"), ("week", "Weeks", "Latest Week"), ("day", "Days", "Latest Day"))
     groups, top = [], []
     for kind, title, latest in kinds:
         found = [(f, _index_row(f)) for f in pages if f.stem.startswith(kind + "-")]
         groups.append((title, [row for _, row in found]))
         if found:
             page, row = found[0]
-            top.append((latest, row["revenue"], f'{row["label"]} · total e-commerce revenue', page.name))
+            top.append((latest, row["revenue"], f'{row["label"]} · revenue', page.name))
     table = library.finder_table(
         [("Period", "l"), ("Dates", "l"), ("Revenue", "num"), ("Growth", "num"), ("Data", "l"), ("Files", "files")],
         groups, [(kind, title) for kind, title, _ in kinds],
         'Find: "September", "week 40", "Oct 3"', noun="scorecard")
-    body = (f'<header><h1>COO Scorecards</h1><p>Goodwill Michiana e-commerce · the 15 KPIs by day, week and month · '
-            f'{len(pages)} scorecard(s)</p></header>{library.tiles(top) if top else ""}{table}'
-            f'<p class="nav"><a href="../index.html">Reports</a></p>')
-    return PAGE.substitute(title="COO Scorecards", css=CSS + SCORECARD_CSS + library.LIBRARY_CSS, body=body)
+    about = notes([
+        ("", f'<p><strong>{DATA_LABEL}:</strong> {DATA_NOTE}. KPIs marked "Simulated internal data" use a mock of '
+             f'Goodwill\'s internal systems.</p>'),
+        ("KPI Trend", '<p>Each line shows one KPI as the scorecards on file state it, by day, week or month; nothing is '
+                      'recomputed here. A hollow dot is a period with partial data and a gap is a period with no data. '
+                      'The change beside the latest value is the newest scorecard\'s own, against its prior period. '
+                      'The latest week and month are to date until they end.</p>')])
+    body = (f'<header><h1>COO Scorecards</h1><p>The 15 KPIs by day, week and month · {len(pages)} scorecard(s)</p></header>'
+            f'{library.tiles(top) if top else ""}{explorer(dest)}{table}{about}')
+    return PAGE.substitute(title="COO Scorecards", css=CSS + charts.CHART_CSS + SCORECARD_CSS + library.LIBRARY_CSS, body=body)
 
 
 def build(kpi_file, dest=DEST):

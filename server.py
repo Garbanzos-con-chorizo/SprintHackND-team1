@@ -26,10 +26,11 @@ from reports import close_upload
 REPORTS = Path(os.environ.get("REPORTS_DIR") or Path(__file__).resolve().parent / "reports")
 # reports/ also holds the generators' Python code and config/subscribers.csv (people's email addresses),
 # so only what the generators write is served: pages, their data and the downloads.
-SERVED = {".html", ".css", ".js", ".json", ".csv", ".pdf", ".png", ".svg", ".ico"}
+SERVED = {".html", ".css", ".js", ".json", ".csv", ".pdf", ".png", ".svg", ".ico", ".xlsx"}
 # Same content types on every machine (the Windows registry may say .csv is application/vnd.ms-excel).
 for _suffix, _type in {".csv": "text/csv", ".pdf": "application/pdf", ".json": "application/json",
-                       ".js": "text/javascript", ".svg": "image/svg+xml"}.items():
+                       ".js": "text/javascript", ".svg": "image/svg+xml",
+                       ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}.items():
     mimetypes.add_type(_type, _suffix)
 NEVER = {"config", "tests", "__pycache__"}
 
