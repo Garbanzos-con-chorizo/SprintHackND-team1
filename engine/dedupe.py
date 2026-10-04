@@ -45,6 +45,8 @@ def dedupe_bank(lines: list[dict]) -> tuple[list[dict], list[dict]]:
 _TABLE_IDS = {
     "ledger": ("ledger entry", lambda r: r["entry_no"]),
     "statements": ("statement", lambda r: r["reference"] and (r["source"], r["reference"])),
+    "jewelry": ("jewelry sale", lambda r: (r["item_id"], r["order_id"])),
+    "jewelry_suppliers": ("supplier lookup row", lambda r: (r["item_id"], r["supplier"])),
 }
 
 

@@ -1,5 +1,6 @@
 """Pluggable ingestion: any adapter that returns canonical rows plugs into the same pipeline."""
 from ..dedupe import dedupe_bank, dedupe_payouts, dedupe_rows, dedupe_table
+from ..enrich import assign_suppliers
 from .base import DataIngestAdapter, NormalizedBatch
 from .email_adapter import EmailAttachmentAdapter
 from .scraper_adapter import MockScraperAdapter
@@ -22,4 +23,6 @@ def ingest(adapters: list[DataIngestAdapter], business_date: str | None = None) 
     for name in list(merged.tables):
         merged.tables[name], duplicate_warnings = dedupe_table(name, merged.tables[name])
         merged.warnings.extend(duplicate_warnings)
+    # The supplier lookup is not an output of its own: it fills the supplier of each jewelry sale.
+    merged.warnings.extend(assign_suppliers(merged.tables.get("jewelry", []), merged.tables.pop("jewelry_suppliers", [])))
     return merged

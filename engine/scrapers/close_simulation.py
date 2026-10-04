@@ -239,3 +239,52 @@ def simulate_shopgoodwill_periodic(month: str, dest_dir: Path) -> tuple[list[Pat
                                       "period_to": p["period_to"].isoformat(),
                                       "paid_date": p["paid_date"].isoformat()} for p in periods]}
     return [_write_csv(dest_dir / f"shopgoodwill_periodic_{month}.csv", PERIODIC_HEADER, rows)], key
+
+
+# ---------------------------------------------------------------- Jewelry Report and supplier lookup (V3.10)
+
+JEWELRY_HEADER = ["Item ID", "Order ID", "Sold Date", "Description", "Sale Amount"]
+SUPPLIER_HEADER = ["Item ID", "Supplier"]
+SUPPLIERS = ["Store 01", "Store 02", "Store 03", "Store 04", "Store 05", "Store 06"]  # made-up store names
+_PIECES = ["14K gold ring", "Sterling silver bracelet", "Costume jewelry lot", "Pearl necklace", "Vintage brooch",
+           "Wristwatch", "Gold-filled locket", "Silver charm lot", "Gemstone earrings", "Cufflinks set"]
+
+
+def jewelry_records(month: str) -> list[dict]:
+    """The month's jewelry sales. `supplier` is the store that supplied the item, known to the lookup for
+    every item but one (`in_lookup` False): the planted item the engine must flag, never guess."""
+    first, last = month_span(month)
+    rng = _rng(month, "jewelry")
+    records = []
+    for i in range(36):
+        records.append({"item_id": f"JW-{rng.randrange(10000, 99999)}-{i:02d}",
+                        "order_id": str(65800000 + rng.randrange(0, 90000)),
+                        "sold_date": first.replace(day=rng.randrange(1, last.day + 1)),
+                        "description": rng.choice(_PIECES), "amount_cents": rng.randrange(1500, 42000),
+                        "supplier": rng.choice(SUPPLIERS), "in_lookup": True})
+    records[rng.randrange(len(records))]["in_lookup"] = False
+    records.sort(key=lambda r: (r["sold_date"], r["item_id"]))
+    return records
+
+
+def jewelry_key(records: list[dict]) -> dict:
+    by_supplier = {}
+    for r in records:
+        if r["in_lookup"]:
+            entry = by_supplier.setdefault(r["supplier"], {"cents": 0, "items": 0})
+            entry["cents"] += r["amount_cents"]
+            entry["items"] += 1
+    unknown = [r for r in records if not r["in_lookup"]]
+    return {"jewelry": {"items": len(records), "sales_cents": sum(r["amount_cents"] for r in records),
+                        "by_supplier": dict(sorted(by_supplier.items())),
+                        "missing_supplier": {"items": [r["item_id"] for r in unknown],
+                                             "cents": sum(r["amount_cents"] for r in unknown)}}}
+
+
+def simulate_jewelry(month: str, dest_dir: Path) -> tuple[list[Path], dict]:
+    records = jewelry_records(month)
+    report = [[r["item_id"], r["order_id"], _us(r["sold_date"]), r["description"], _money(r["amount_cents"])]
+              for r in records]
+    lookup = sorted([r["item_id"], r["supplier"]] for r in records if r["in_lookup"])
+    return [_write_csv(dest_dir / f"jewelry_report_{month}.csv", JEWELRY_HEADER, report),
+            _write_csv(dest_dir / f"jewelry_supplier_lookup_{month}.csv", SUPPLIER_HEADER, lookup)], jewelry_key(records)
