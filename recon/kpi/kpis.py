@@ -23,6 +23,9 @@ PER_ORDER = ("Revenue / orders (per order until unit counts are available).",
              "Per order, not per unit: the exports do not give unit counts yet.")
 BY_ORDERS = ("Orders / listings created in the period (a stand-in for units sold / units listed).",
              "Orders / listings created, until unit counts are available.")
+# Sell-through over 100%: the period's own listings can account for 100% at most, the rest is older stock.
+SOLD_EARLIER = ("{rate} = 100% counted against what was listed in the period + {extra} from items listed earlier "
+                "(at least {count} {things}).")
 
 
 @dataclass
@@ -282,7 +285,8 @@ def _asp(f, prev):
 
 
 def _sell_through(f, prev):
-    res = Result(inputs={"units_sold": f.units, "orders": f.files and f.files["orders"], "units_listed": None})
+    res = Result(inputs={"units_sold": f.units, "orders": f.files and f.files["orders"], "units_listed": None,
+                         "from_period": None, "from_earlier": None, "sold_from_earlier": None})
     stop = _no_files(res, f)
     stop |= _no_internal(res, f, "listings_created")
     if stop:
@@ -295,8 +299,22 @@ def _sell_through(f, prev):
         res.basis = "units"
     if listed <= 0:
         return _zero(res, "No listings were created in the period.")
-    res.value = round((f.files["orders"] if f.units is None else f.units) / listed, 4)
+    sold = f.files["orders"] if f.units is None else f.units
+    res.value = round(sold / listed, 4)
+    # We cannot tell which listings sold. The period's own listings account for at most 100%; whatever
+    # is above that is the least that must have been listed earlier.
+    from_period = min(res.value, 1.0)
+    res.inputs.update(from_period=from_period, from_earlier=round(res.value - from_period, 4),
+                      sold_from_earlier=max(sold - listed, 0))
+    if sold > listed:
+        split = SOLD_EARLIER.format(rate=_pct(res.value), extra=_pct(res.inputs["from_earlier"]),
+                                    count=sold - listed, things="orders" if f.units is None else "units")
+        res.note = f"{split} {res.note}" if res.note else split
     return res
+
+
+def _pct(ratio):
+    return f"{ratio * 100:.1f}%"
 
 
 def _sales_per_employee(f, prev):
