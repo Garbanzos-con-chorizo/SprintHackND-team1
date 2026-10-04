@@ -1,7 +1,7 @@
 # 010 — Add the missing reports from the portal and run the close again
 
 - **Date / author:** 2026-10-04, Victor
-- **Status:** proposed (Victor); needs Dani's and Orlando's yes before it merges
+- **Status:** accepted by Victor and merged on his call (2026-10-04, #77), before Dani and Orlando answered; their notes are in their inboxes and their response lines are open below
 - **Changes:** decision 008 on one point. The server "computes nothing and has no pages of its own" becomes: it still has no pages and still computes nothing itself, but it takes one action on request. Everything else in 008 and 006 stands.
 
 ## Context
@@ -24,3 +24,7 @@ A month-end close that says `INCOMPLETE` is missing a report for some days (the 
 - The server is no longer read-only when uploads are on. Anyone who can reach the port can add files and run the close, so it must stay on localhost or behind `CLOSE_UPLOADS=0` until there is authentication.
 - `reports/run_scheduled.py` exposes `close_from(month, inboxes)`, the part of its close that the panel shares.
 - Not built: choosing which earlier month to add files to (the panel is for the latest), a progress bar, and a check of the file's contents before the close reads it (the engine reports a file no source recognizes, as for any inbox).
+
+## Responses
+- Dani:
+- Orlando:
