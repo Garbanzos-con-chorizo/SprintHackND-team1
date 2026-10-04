@@ -1,4 +1,4 @@
-"""Phase 2 wiring kept from the branch: the store summary for the portal, the pulse labels.
+"""Phase 2 wiring kept from the branch: the portal's store card, the pulse labels.
 
 The weekly page is covered by test_weekly.py (main's weekly.py, which renders the week's KPI file).
 """
@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from reports import pulse, store_view
+from reports import hub, pulse, store_view
 
 ROOT = Path(__file__).resolve().parents[2]
 EXAMPLES = ROOT / "docs" / "contracts" / "examples"
@@ -45,6 +45,22 @@ class StoreCardTest(unittest.TestCase):
             self.assertEqual((s["internal_days"], s["internal_sources"], s["failed_runs"]), (2, ["mock"], 1))
             self.assertEqual([t["revenue_cents"] for t in s["trend"]], [30000, 30000, 20000])
             self.assertEqual(s["runs"][0]["command"], "pull")  # newest first
+
+    def test_portal_shows_the_store_and_says_when_there_is_none(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, db = Path(tmp) / "reports", Path(tmp) / "ecom.db"
+            root.mkdir()
+            make_store(db)
+            html = hub.build(root, db).read_text(encoding="utf-8")
+            self.assertIn("Nightly store", html)
+            self.assertIn("2 of 3", html)  # complete days
+            self.assertIn('<span class="pill warn">Simulated</span>', html)
+            self.assertIn("Partial day: Oct 3, 2026", html)
+            self.assertEqual(html.count('<path class="bar'), 3)
+            self.assertIn('class="bar partial"', html)
+            html = hub.build(root, Path(tmp) / "none.db").read_text(encoding="utf-8")
+            self.assertIn("Not built yet", html)
+            self.assertIsNone(store_view.summary(Path(tmp) / "none.db"))
 
 
 class PulseLabelsTest(unittest.TestCase):
