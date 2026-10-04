@@ -1,0 +1,3 @@
+# Reports dropped or delivered here are input data, never committed.
+*
+!.gitignore
