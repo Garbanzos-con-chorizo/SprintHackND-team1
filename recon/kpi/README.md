@@ -72,7 +72,7 @@ Rules that hold for every KPI (they are in the contract; the tests pin them):
 - `kpi_samples.py` (not a test): builds the test databases and regenerates the contract examples.
 
 ## Known limits
-- **Not yet run on a store loaded by the real pipeline.** The tests build the store from Victor's `schema.sql` and insert rows the way his loader does, but engine -> pulse -> `store load` -> `recon.kpi` has not been run end to end here (the engine's dependencies are not installed on this machine). First thing to do at checkpoint 1.
+- **Run on Victor's loader, but only on two fixture days, and never on the engine's own output.** Checked by hand on 2026-10-03: `recon/tests/fixtures/clean_day` -> `recon.pulse` -> `engine.store` `load_day` -> `recon.kpi --date 2026-10-02` gives revenue 30,147 with the prior day 25,800, the pulse's own numbers, and writes `kpi_values`. What has not been run: the engine's real output for a month (its dependencies are not installed on this machine), and anything with internal data, because `internal_api pull` does not exist yet. Both are checkpoint 1.
 - **11 of the 15 KPIs are simulated** until Goodwill's internal data is real.
 - Growth compares with the period before, not year over year (needs 13 months stored).
 - Average selling price and sell-through are per order until the transactions carry `units`.

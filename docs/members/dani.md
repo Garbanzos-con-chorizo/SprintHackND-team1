@@ -25,7 +25,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - Two PRs: `d/kpi-contract-v02` (contract v0.2 and the four examples, docs only) and `d/kpi-calc` (the calculator and its tests, stacked on it).
 
 ## Not verified yet (be careful what you claim)
-- **`recon.kpi` has not run on a store loaded by the real pipeline.** My tests fill the store the way Victor's loader does, but engine -> pulse -> `store load` -> `recon.kpi` was not run end to end on this machine (the engine's dependencies are not installed here). That is checkpoint 1.
+- **`recon.kpi` ran on Victor's real loader only for two fixture days.** By hand: `recon/tests/fixtures/clean_day` -> `recon.pulse` -> `engine.store` `load_day` -> `recon.kpi --date 2026-10-02`: revenue 30,147, prior day 25,800, change 4,347, the pulse's own numbers; `kpi_values` and the `runs` line written; the `other` row (`not_configured`) ignored. **Not run:** the engine's real output for a whole month (its dependencies are not installed on this machine) and anything with internal data (`internal_api pull` does not exist yet, so the 11 internal KPIs have only ever seen my test rows). That is checkpoint 1.
 - 11 of the 15 KPIs rest on simulated internal data; ASP and sell-through are per order until the transactions carry `units`.
 
 ## For teammates: what the new context file changes
