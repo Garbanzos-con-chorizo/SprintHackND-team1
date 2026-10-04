@@ -12,6 +12,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
   - Orlando's `export_html.py` shows the last slide on every page (an inline `display:flex` beats `display:none`). `deck.html` here was built with a one-line fix to a scratch copy of it; the fix is in his inbox.
   - His generator puts slide 1's quotes at 30 px, below the 32 px rule.
   - The CLI close does not rebuild the Month-end Close list page; only the scheduled run and the panel do, so the take keeps `out/` from the scheduled run.
+- **13:35, the deck to use is a Slides artifact:** https://claude.ai/artifact/F1y3oyZP9vKm88Vn6Tqcti (private until shared from its Share menu). `docs/pitch/deck-proposal/slides-artifact/` is a copy of its files; `README.md` there says how to edit it. Rendered locally at 1920x1080: nothing overflows. It downloads as PowerPoint for Google Slides. Dani is asked (her inbox) to edit on this branch and check the close part of the narration.
 - **Next:** Orlando takes or changes it; Dani confirms the close commands in the narration; dry run, record, Google Slides by 15:00.
 
 ## Front end: one look for every page (#76) and adding missing reports from the portal (#77): on `main`
