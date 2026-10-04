@@ -63,6 +63,10 @@ BLOCKS = (
      "buyers": [3] * 7 + [2] * 2 + [1] * 162},
 )
 NO_BACKLOG = "2026-10-04"  # the backlog snapshot of that night is missing: shows an old snapshot
+# Listings still active on August 31, the night before the scenario starts (the real backfill pulls it too).
+OPENING = ("2026-08-31", {"0-30": 1490, "31-60": 560, "61-90": 170, "91+": 80})
+# How long before its sale a unit had been listed: (days, share of the day's units). Invented.
+SALE_AGES = ((0, 0.05), (2, 0.15), (5, 0.30), (9, 0.30), (16, 0.20))
 
 
 def make_db(path, pulse=(), sales=(), internal=()):
@@ -108,6 +112,15 @@ def _spread(total, n):
     return [total // n + (i < total % n) for i in range(n)]
 
 
+def _by_weight(total, weights):
+    """An integer split in proportion to the weights, adding up exactly."""
+    exact = [total * w / sum(weights) for w in weights]
+    parts = [int(x) for x in exact]
+    for i in sorted(range(len(parts)), key=lambda i: (parts[i] - exact[i], i))[: total - sum(parts)]:
+        parts[i] += 1
+    return parts
+
+
 def _employees(day):
     if day <= "2026-09-04":
         return 9.0
@@ -137,6 +150,7 @@ def build_sample_db(path):
     """The database behind the contract examples."""
     answers = answer_days()
     pulse, sales, internal = [], [], []
+    internal.extend((OPENING[0], "active_listings_by_age", bucket, n) for bucket, n in OPENING[1].items())
     for block in BLOCKS:
         days = _days(block)
         working = [day for day in days if date.fromisoformat(day).weekday() != 6]  # nothing is produced on Sundays
@@ -174,6 +188,10 @@ def build_sample_db(path):
             internal.extend((day, "donation_to_listing_days", str(age), n)
                             for day, n in zip(working, _spread(count, len(working))) if n)
         every_day("shipping_net_cost_cents", "total", _spread(block["shipping_net_cost_cents"], len(days)))
+        for day in days:  # the listing system's view of the day's sales: units sold by days since listing
+            sold = sum(units for d, _, _, _, units in sales if d == day)
+            internal.extend((day, "listing_to_sale_days", str(age), n)
+                            for (age, _), n in zip(SALE_AGES, _by_weight(sold, [w for _, w in SALE_AGES])) if n)
         every_day("employees", "total", [_employees(day) for day in days])
         internal.extend((day, "unlisted_backlog", "total", _backlog(day)) for day in days if day != NO_BACKLOG)
         for bucket, count in block["active"].items():
