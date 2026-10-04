@@ -10,7 +10,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 ### Done
 - **V2.3 + V2.4** (branch `victor/store-status-backfill`): `python -m engine.store status [--month M]` and `python -m engine.store backfill --inbox DIR --from D1 --to D2 [--out out]`. Backfill reads the inbox once and writes each day through the same `engine.cli.write_day` that `engine run` uses (tested: identical files), so **September loads in about 6 s** (was 41 s day by day). 8 tests in `engine/tests/test_store_backfill.py`.
 - **Checked by hand, all of September:** `clean_month`: 30 of 30 days complete, 90 of 90 marketplace-days equal to the answer key, month revenue 7,075,396 cents = key. `messy_month`: month revenue 6,850,986 cents = key; `status` flags the 3 days with a stale file (Sep 7 ShopGoodwill, Sep 21-22 Amazon). The answer key writes 0 for those; the store keeps NULL, as `pulse.md` says. **The 10:00 tripwire is met.**
-- Found, not mine: `reports/pulse.py` line 399 needs Python 3.12+, so `run_nightly` crashes on 3.11 (my machine). Fix sent to Orlando.
+- **Python 3.13 for the project** (`.python-version`, `uv venv`; update appended to decision 002). That also fixes `run_nightly` on my machine: it crashed on 3.11 because `reports/pulse.py` needs 3.12+.
 - **V2.1 + V2.2** (branch `victor/store-loader`): `engine/store/` with `connect`/`init` (path: `--db`, else `ECOM_DB`, else `out/store/ecom.db`) and `load_day`. Command: `python -m engine.store init`, `python -m engine.store load --in-dir out --date D`. 15 tests in `engine/tests/test_store.py`: re-run changes nothing, dropped rows disappear, moved rows move, other dates untouched, failures (missing or wrong pulse, bad CSV, failure halfway through the writes) leave the previous load and log a `failed` run, plus one September day through the real engine + pulse + load against `expected.json`.
 - **Checked by hand:** all of September from `clean_month`, run with the real commands (engine run -> recon.pulse -> store load, one day at a time): **month revenue in `v_monthly` = 7,075,396 cents = the answer key, to the cent**; 30 of 30 days ok for ShopGoodwill, eBay and Amazon; `other` has NULL, not 0; 2,425 transactions; about 1.4 s a day (41 s for the month), mostly the engine reading the month spreadsheet.
 - Contracts (merged, #16):
@@ -80,9 +80,14 @@ python -m engine.store load --in-dir out --date 2026-09-14
 python -m engine.store backfill --inbox data/sample/clean_month/inbox --from 2026-09-01 --to 2026-09-30
 python -m engine.store status --month 2026-09
 ```
-From the repo root, Python 3.11+:
+From the repo root, **Python 3.13** (`.python-version`; decision 002 update). Once, with uv:
 ```
-pip install -r engine/requirements.txt
+uv venv
+uv pip install -r engine/requirements.txt
+.venv\Scriptsctivate
+```
+Then:
+```
 python -m engine run [--inbox inbox] [--out out] [--date YYYY-MM-DD]
 python -m pytest engine -q
 ```
