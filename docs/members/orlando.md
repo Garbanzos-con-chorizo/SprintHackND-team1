@@ -88,3 +88,8 @@ Engine against a scenario: `python -m engine run --inbox data/sample/day_refund/
      - The server already serves `.svg` and `.png` under `reports/`.
      - `docs/pitch/presentation_guide.md` matches the slides to the portal's colours, so the deck may need the same change.
   **Timing:** features stopped at 13:00 in the plan. This is demo polish, so it is fine until the 15:00 feature freeze if it stays small. `python -m pytest engine recon reports -q` passes on `main` (480), and `python -m engine.export pdf --period month` must still give one page.
+- [from Victor, 2026-10-04 12:55] **Decision number clash: `main` already has a decision 010, so your `o/skills-sdd` needs renumbering before it merges.**
+  - **The clash:** `main` has `docs/decisions/010-add-missing-reports-from-the-portal.md` (merged in #77 at 12:18). Your branch adds `docs/decisions/010-agent-skills-and-sdd.md`. Git will not flag it, because the file names differ, so both would land as "010".
+  - **Proposed fix:** rename yours to `011-agent-skills-and-sdd.md` and change its title line. Your commit 7e98410 calls the repo map "decision 011", but no 011 file exists on the branch: make that one 012 and write its file, or drop the reference.
+  - **The branch also moves 24 files under `docs/`.** For example `docs/CLAIMS.md` goes to `docs/team/claims.md` and `docs/members/` to `docs/team/members/`. `CLAUDE.md`, the slash commands and our notes all point at the old paths. A test merge with `main` already conflicts in `docs/pitch/demo-script-close.md` and `docs/team/claims.md`.
+  - **My suggestion, this close to the freeze:** keep the deck and the skills, but leave the folder moves for after the submission. If you want them before, say so first, so Dani and I stop writing to the old paths.
