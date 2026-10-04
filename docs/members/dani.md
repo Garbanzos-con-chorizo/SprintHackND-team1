@@ -2,7 +2,20 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 13:00 EDT · **Branch:** nothing open; the feedback round (decision 011) merged in #79, so everything of mine is on `main`
+**Last updated:** 2026-10-04 13:50 EDT · **Branch:** `d/debie-answers` (Debie's answers, decision 012; file pickers on the close page)
+
+## Debie's answers and the by-hand file pickers: decision 012, branch `d/debie-answers`
+Debie Coble answered two questions by email on Sunday: the month-end reports are **downloaded by hand by the Controller** (no API, no scheduled report), and Business Central is **cloud**, fed today by **a recurring entry whose monthly amount the Controller changes**, and "we can also do CSV uploads". Her words are quoted in `docs/decisions/012-debie-answers-month-end-by-hand.md`.
+
+- **What works** (run 13:40 to 13:50 on the branch, in the browser against `python server.py`):
+  - **The month's close page** (`reports/close/2026-09.html`) says above the nine-source table that the Controller downloads these reports by hand, and has **a file picker beside each of the nine sources** with one button, "Add the chosen files and run the close again". Chosen beside Amazon and Upright, the two late samples (`data/sample/messy_month/late/`) took Amazon and ShopGoodwill from INCOMPLETE to OPEN (17 exceptions to 13); "Remove the added files and run again" put the month back.
+  - It uses Victor's routes of decision 010 unchanged (`server.py`, `reports/close_upload.py`): files go to `out/uploads/<month>/`, only `.csv` and `.xlsx`, and the same close runs. The engine recognizes a file by its columns and name, so the row a file is chosen beside is a checklist for the person, not a rule.
+  - The note on "simulated API" now says Goodwill has no such API today and the simulator stands in for the Controller's download.
+- **How to run it:** `python -m reports.run_scheduled --from 2026-10-01 --to 2026-10-01`, then `python server.py`, open `http://127.0.0.1:8000/close/2026-09.html` and scroll to the nine sources. Tests: `python -m pytest reports/tests/test_close_report.py -q`.
+- **Docs changed:** `docs/ASSUMPTIONS.md` 1.2 and 2c.1, `docs/PLAN_PHASE_3.md` section 6 (questions 16 and 1) marked answered. Both are shared files; the PR merges at once, so no claim row is left in `docs/CLAIMS.md`.
+- **Known issues:** opened from disk the pickers are disabled and say they need the server; with `CLOSE_UPLOADS=0` (the Docker image) they are disabled too. A file whose name is already in the run is refused by the close, and the page shows its message. Nothing checks that a file chosen beside "Jewelry" is a jewelry report.
+- **Not done, for the owners:** the wording of "simulated API" in Victor's README, close email and demo script (note in his requests); the deck's wording (note in Orlando's requests).
+- **Next:** if there is time before the freeze, ask Debie which CSV upload route she means and what lines the recurring entry has (decision 012, "still open").
 
 ## Website feedback round (done): decision 011, PR #79
 Feedback on the site asked for seven fixes; all seven went in with one PR. It edited files held by Victor and Orlando (a note is in each one's requests; my claim row is released).

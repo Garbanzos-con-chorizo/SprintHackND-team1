@@ -73,6 +73,20 @@ class ClosePageTest(unittest.TestCase):
         self.assertIn("a report is missing for some days", self.messy)
         self.assertNotIn("a report is missing for some days", self.tidy)
 
+    def test_every_source_has_a_place_to_choose_the_file_downloaded_by_hand(self):
+        # Decision 012: Goodwill's Controller downloads the month-end reports by hand, so the page says so and
+        # each of the nine sources has its own file picker; one button hands the chosen files to the close.
+        for html in (self.messy, self.tidy):
+            rows = re.findall(r'<tr class="src">.*?</tr>', html, re.S)
+            self.assertEqual(len(rows), 9)
+            for row in rows:
+                self.assertEqual(row.count('<input type="file" class="src-file"'), 1, row)
+            self.assertIn("Controller downloads these reports by hand today", text_of(html))
+            self.assertIn(f'id="pick" data-month="{MONTH}"', html)
+            self.assertIn('id="pick-run"', html)
+            self.assertIn("Goodwill has no such API today", html)
+            self.assertNotIn(">Post<", html)
+
     def test_a_source_is_only_called_simulated_when_its_file_reached_the_run(self):
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp) / MONTH
