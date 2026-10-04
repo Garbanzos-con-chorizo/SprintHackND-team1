@@ -43,5 +43,19 @@ Checked 2026-10-03 against slides 19-31 of the SprintHack deck (`innovationsprin
 3. **Is the Cash Monkey report only Goodwill Books,** and where do the non-book eBay and Amazon sales come from? Does Upright carry eBay or Goodwillfinds orders we should count under Other? (risks 1 and 2)
 4. **Revenue:** `Subtotal` only, or `Subtotal` plus shipping (row 12)? And what time do staff want the report (row 11)?
 
-## Phase 2 starts at slide 32
-Slide 32 names five pillars: **Growth, Profitability, Productivity, Inventory, Engagement**. Slides 33-35 turn them into the KPI framework, and the 15-KPI COO scorecard on slide 35 is grouped as Financial, Productivity, Inventory, Sales, Category + Customer. Our KPI contract and decision 006 follow slide 35's grouping. The pillar names on slide 32 are not used as headings anywhere, so the dashboard should either show them or state the mapping (Growth and Profitability sit inside Financial, Engagement is Customer). That is a phase 2 point for Dani and Orlando.
+## Phase 2 starts at slide 32: the KPI contract and the KPI identification (marked for Dani and Orlando)
+**Owners.** The KPI contract is `docs/contracts/kpi.md` (Dani, `recon/kpi/`). The **identification of the KPIs** is its 15 stable ids (`fin.revenue`, `prod.listings_created`, ...), their names and their five areas. Orlando renders them (scorecard page, print layout) and decides the headings. Victor only exports the file (CSV, PDF, email). Neither of us should rename an id without a change to `kpi.md`.
+
+**The gap.** Slide 32 names five *pillars*: **Growth, Profitability, Productivity, Inventory, Engagement**. The contract follows slide 35's five *areas* (`financial`, `productivity`, `inventory`, `sales`, `category_customer`). Both are Goodwill's own words, but the pillar names appear nowhere in our contract or page, so the dashboard does not yet say "Growth" or "Engagement" anywhere Debie would look for them.
+
+**Proposed mapping** (Dani and Orlando to confirm or change; the ids are unchanged, only a label is added):
+| Slide 32 pillar | KPI ids from `kpi.md` | Note |
+|---|---|---|
+| Growth | `fin.revenue`, `fin.revenue_growth` | Slide 33 says year over year; we compare with the prior period until 13 months are stored (stated in `kpi.md`). |
+| Profitability | `fin.net_margin`, `cat.top_margin` | Needs internal cost data (mock, labelled). |
+| Productivity | `prod.listings_created`, `prod.revenue_per_labor_hour`, `prod.listings_per_employee`, `sales.sales_per_employee` | Internal data (mock, labelled). |
+| Inventory | `inv.days_donation_to_listing`, `inv.unlisted_backlog`, `inv.unsold_pct`, `sales.sell_through` | Internal data (mock, labelled). |
+| Engagement | `cust.repeat_buyer_rate` | The only customer KPI we can compute from real files. Needs a buyer id: Upright has one, Cash Monkey has none (see `docs/PHASE1_ALIGNMENT.md`, row 7). |
+| (no pillar) | `fin.revenue`, `sales.asp`, `cat.top_revenue` | Slide 35 groups these under Financial, Sales and Category. Show them under the area name, or attach a pillar if the team prefers. |
+
+**Two things to settle with the mapping.** (1) Either add a `pillar` field per KPI in `kpi.md` (Dani) or keep the mapping as labels on the page (Orlando); one place only, so they cannot disagree. (2) `sales.asp` and `sales.sell_through` need a `units` column that `transactions.csv` does not have yet (the store schema has the column, empty); until it exists those two show as partial.
