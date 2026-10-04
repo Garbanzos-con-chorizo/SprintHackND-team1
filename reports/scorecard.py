@@ -34,7 +34,7 @@ DEST = ROOT / "reports" / "scorecard"
 PERIOD_TYPES = (("day", "Day"), ("week", "Week"), ("month", "Month"))
 PAGE_NAME = r"(day-\d{4}-\d{2}-\d{2}|week-\d{4}-W\d{2}|month-\d{4}-\d{2})"
 DOWNLOADS = ((".pdf", "PDF"), (".csv", "CSV"), (".json", "KPI file"))
-SPLIT = {"listing_dates": "By listing date, from the listing system's sales.",
+SPLIT = {"listing_dates": "By listing date: each unit sold is counted in the box of the day it was listed (internal data).",
          "period_first": "Assumed: what was listed in the period sold first (no sale says which listing it came from)."}
 
 SCORECARD_CSS = """
