@@ -17,7 +17,7 @@ from html import escape, unescape
 from pathlib import Path
 from string import Template
 
-from reports import library
+from reports import a11y, library
 from reports.schema import day_record, write_csv
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -252,11 +252,13 @@ def topbar(title, root="../"):
 
 
 class _Page(Template):
-    """The page shell. `substitute(title=, css=, body=)` as before; the top bar and footer come with it."""
+    """The page shell. `substitute(title=, css=, body=)` as before; the top bar, footer and accessibility
+    menu (reports/a11y.py) come with it, and font sizes become rem so the menu's text size reaches them."""
 
     def substitute(self, *, title, css, body, root="../"):
-        return super().substitute(title=title, css=css, body=body, topbar=topbar(title, root),
-                                  label=DATA_LABEL, note=DATA_NOTE)
+        return super().substitute(title=title, css=a11y.scalable(css + a11y.CSS), body=body,
+                                  topbar=topbar(title, root), label=DATA_LABEL, note=DATA_NOTE,
+                                  a11y_script=a11y.SCRIPT, a11y_menu=a11y.MENU)
 
 
 PAGE = _Page("""<!doctype html>
@@ -268,7 +270,9 @@ PAGE = _Page("""<!doctype html>
 <style>$css</style>
 </head>
 <body>
+$a11y_script
 $topbar
+$a11y_menu
 <main>
 $body
 </main>
