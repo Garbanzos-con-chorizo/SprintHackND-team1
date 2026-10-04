@@ -1,0 +1,1508 @@
+[
+  {
+    "source_file": "bank_activity_2026-09.csv",
+    "source_row": 0,
+    "kind": "unparseable",
+    "reason": "no source recognizes this file"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 222,
+    "kind": "bad_amount",
+    "reason": "not an amount: '#VALUE!'"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 223,
+    "kind": "bad_date",
+    "reason": "day is out of range for month"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 1,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 97"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 2,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 98"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 3,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 99"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 4,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 100"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 5,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 101"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 6,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 102"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 7,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 103"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 8,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 104"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 9,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 105"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 10,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 106"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 11,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 107"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 12,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 108"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 13,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 109"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 14,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 110"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 15,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 111"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 16,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 112"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 17,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 113"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 18,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 114"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 19,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 115"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 20,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 116"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 21,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 117"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 22,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 118"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 23,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 119"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 24,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 120"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 25,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 121"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 26,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 122"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 27,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 123"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 28,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 124"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 29,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 125"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 30,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 126"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 31,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 127"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 32,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 128"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 33,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 129"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 34,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 130"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 35,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 131"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 36,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 132"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 37,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 133"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 38,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 134"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 39,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 135"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 40,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 136"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 41,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 137"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 42,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 138"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 43,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 139"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 44,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 140"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 45,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 141"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 46,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 142"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 47,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 143"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 48,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 144"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 49,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 145"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 50,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 146"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 51,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 147"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 52,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 148"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 53,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 149"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 54,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 150"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 55,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 151"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 56,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 152"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 57,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 153"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 58,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 154"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 59,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 155"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 60,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 156"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 61,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 157"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 62,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 158"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 63,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 159"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 64,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 160"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 65,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 161"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 66,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 162"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 67,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 163"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 68,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 164"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 69,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 165"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 70,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 166"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 71,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 167"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 72,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 168"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 73,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 169"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 74,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 170"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 75,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 171"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 76,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 172"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 77,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 173"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-12_2026-09-18 (1).csv",
+    "source_row": 78,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-08_2026-09-14.csv row 174"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 1,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 79"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 2,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 80"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 3,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 81"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 4,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 82"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 5,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 83"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 6,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 84"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 7,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 85"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 8,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 86"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 9,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 87"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 10,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 88"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 11,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 89"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 12,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 90"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 13,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 91"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 14,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 92"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 15,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 93"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 16,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 94"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 17,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 95"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 18,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 96"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 19,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 97"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 20,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 98"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 21,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 99"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 22,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 100"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 23,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 101"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 24,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 102"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 25,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 103"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 26,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 104"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 27,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 105"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 28,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 106"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 29,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 107"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 30,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 108"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 31,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 109"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 32,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 110"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 33,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 111"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 34,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 112"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 35,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 113"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 36,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 114"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 37,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 115"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 38,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 116"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 39,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 117"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 40,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 118"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 41,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 119"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 42,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 120"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 43,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 121"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 44,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 122"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 45,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 123"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 46,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 124"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 47,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 125"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 48,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 126"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 49,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 127"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 50,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 128"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 51,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 129"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 52,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 130"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 53,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 131"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 54,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 132"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 55,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 133"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 56,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 134"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 57,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 135"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 58,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 136"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 59,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 137"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 60,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 138"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 61,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 139"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 62,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 140"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 63,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 141"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 64,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 142"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 65,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 143"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 66,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 144"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 67,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 145"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 68,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 146"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 69,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 147"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 70,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 148"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 71,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 149"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 72,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 150"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 73,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 151"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 74,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 152"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 75,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 153"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 76,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 154"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 77,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 155"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 78,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 156"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 79,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 157"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 80,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 158"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 81,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 159"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 82,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 160"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 83,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 161"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 84,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 162"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 85,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 163"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 86,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 164"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 87,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 165"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 88,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 166"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 89,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 167"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 90,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 168"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 91,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 169"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 92,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 170"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 93,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 171"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 94,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 172"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 95,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 173"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 96,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 174"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 97,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 175"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 98,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 176"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 99,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 177"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 100,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 178"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 101,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 179"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 102,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 180"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 103,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 181"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 104,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 182"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 105,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 183"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 106,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 184"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 107,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 185"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 108,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 186"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 109,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 187"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 110,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 188"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 111,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 189"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 112,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 190"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 113,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 191"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 114,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 192"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 115,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 193"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 116,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 194"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 117,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 195"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 118,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 196"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 119,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 197"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 120,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 198"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 121,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 199"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 122,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 200"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 123,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 201"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 124,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 202"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 125,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 203"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 126,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 204"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 127,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 205"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 128,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 206"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 129,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 207"
+  },
+  {
+    "source_file": "ebay_transactions_2026-09-15_2026-09-21.csv",
+    "source_row": 130,
+    "kind": "duplicate",
+    "reason": "same transaction as ebay_transactions_2026-09-12_2026-09-18 (1).csv row 208"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 1,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 1"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 2,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 2"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 3,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 3"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 4,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 4"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 5,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 5"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 6,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 6"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 7,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 7"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 8,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 8"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 9,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 9"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 10,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 10"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 11,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 11"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 12,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 12"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 13,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 13"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 14,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 14"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 15,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 15"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 16,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 16"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 17,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 17"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 18,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 18"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 19,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 19"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 20,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 20"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 21,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 21"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 22,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 22"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 23,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 23"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 24,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 24"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 25,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 25"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 26,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 26"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 27,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 27"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 28,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 28"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 29,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 29"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 30,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 30"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 31,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 31"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 32,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 32"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 33,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 33"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 34,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 34"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 35,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 35"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 36,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 36"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 37,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 37"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 38,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 38"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 39,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 39"
+  },
+  {
+    "source_file": "paid_orders_09-15-2026_09-15-2026.xlsx",
+    "source_row": 40,
+    "kind": "duplicate",
+    "reason": "same transaction as paid_orders_09-15-2026_09-15-2026 (4).xlsx row 40"
+  }
+]

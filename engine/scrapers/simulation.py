@@ -39,6 +39,13 @@ def day_orders(business_date: str) -> tuple[list[Order], random.Random]:
     day = date.fromisoformat(business_date)
     rng = random.Random(int(day.strftime("%Y%m%d")))
     orders = make_orders(rng, [day], PER_DAY)
+    # make_orders numbers ShopGoodwill orders from 1 on every call; a real provider never reuses a number on
+    # another day, and the dedupe would (rightly) drop a second day as repeats. Give each date its own range.
+    offset = (day - date(2026, 1, 1)).days * 1000
+    for o in orders:
+        if o.marketplace == "shopgoodwill":
+            o.order_id = str(int(o.order_id) + offset)
+            o.upright_id = str(int(o.upright_id) + offset)
     # Plant the boundary cases every day so the simulated data always exercises the timezone logic: Upright
     # stamps Pacific, so an order just after Eastern midnight is still the previous day on its own clock.
     # (An evening Eastern sale crossing UTC midnight is already common in the random data.)

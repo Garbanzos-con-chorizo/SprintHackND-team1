@@ -1,0 +1,559 @@
+{
+  "month": "2026-09",
+  "posting_date": "2026-09-30",
+  "mock": "reconciled from the raw inbox",
+  "inbox": "D:\\Projects2\\SprintHackND-team1\\.claude\\worktrees\\nightly-pulse-victor-tasks-4d001d\\data\\sample\\messy_month\\inbox",
+  "stopgaps": [],
+  "sources": {
+    "ebay": {
+      "sales_cents": 2005232,
+      "refunds_cents": 9497,
+      "fees_cents": 310373,
+      "shipping_cents": 163527,
+      "handling_cents": 0
+    },
+    "amazon": {
+      "sales_cents": 948649,
+      "refunds_cents": 5198,
+      "fees_cents": 250496,
+      "shipping_cents": 179151,
+      "handling_cents": 0
+    },
+    "shopgoodwill": {
+      "sales_cents": 3911800,
+      "refunds_cents": 0,
+      "fees_cents": 0,
+      "shipping_cents": 1412826,
+      "handling_cents": 352200
+    }
+  },
+  "deposits": [
+    {
+      "date": "2026-09-04",
+      "source": "ebay",
+      "amount_cents": 46947,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0901 (EBAY-PAID-0902)",
+      "matches": [
+        "EBAY-PAID-0902"
+      ]
+    },
+    {
+      "date": "2026-09-08",
+      "source": "ebay",
+      "amount_cents": 248642,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0902+ (EBAY-PAID-0903, EBAY-PAID-0904, EBAY-PAID-0905, EBAY-PAID-0906)",
+      "matches": [
+        "EBAY-PAID-0903",
+        "EBAY-PAID-0904",
+        "EBAY-PAID-0905",
+        "EBAY-PAID-0906"
+      ]
+    },
+    {
+      "date": "2026-09-08",
+      "source": "shopgoodwill",
+      "amount_cents": 1088878,
+      "reference": "SHOPGOODWILL.COM DES:SELLER PAYOUT ID:0906",
+      "matches": []
+    },
+    {
+      "date": "2026-09-09",
+      "source": "ebay",
+      "amount_cents": 80243,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0906 (EBAY-PAID-0907)",
+      "matches": [
+        "EBAY-PAID-0907"
+      ]
+    },
+    {
+      "date": "2026-09-10",
+      "source": "ebay",
+      "amount_cents": 60013,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0907 (EBAY-PAID-0908)",
+      "matches": [
+        "EBAY-PAID-0908"
+      ]
+    },
+    {
+      "date": "2026-09-11",
+      "source": "ebay",
+      "amount_cents": 56103,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0908 (EBAY-PAID-0909)",
+      "matches": [
+        "EBAY-PAID-0909"
+      ]
+    },
+    {
+      "date": "2026-09-14",
+      "source": "ebay",
+      "amount_cents": 165069,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0909+ (EBAY-PAID-0910, EBAY-PAID-0911, EBAY-PAID-0912)",
+      "matches": [
+        "EBAY-PAID-0910",
+        "EBAY-PAID-0911",
+        "EBAY-PAID-0912"
+      ]
+    },
+    {
+      "date": "2026-09-15",
+      "source": "ebay",
+      "amount_cents": 49585,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0912 (EBAY-PAID-0913)",
+      "matches": [
+        "EBAY-PAID-0913"
+      ]
+    },
+    {
+      "date": "2026-09-15",
+      "source": "shopgoodwill",
+      "amount_cents": 1531893,
+      "reference": "SHOPGOODWILL.COM DES:SELLER PAYOUT ID:0913",
+      "matches": []
+    },
+    {
+      "date": "2026-09-16",
+      "source": "ebay",
+      "amount_cents": 78264,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0913 (EBAY-PAID-0914)",
+      "matches": [
+        "EBAY-PAID-0914"
+      ]
+    },
+    {
+      "date": "2026-09-17",
+      "source": "ebay",
+      "amount_cents": 56070,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0914 (EBAY-PAID-0915)",
+      "matches": [
+        "EBAY-PAID-0915"
+      ]
+    },
+    {
+      "date": "2026-09-18",
+      "source": "amazon",
+      "amount_cents": 405400,
+      "reference": "AMAZON.COM SERVICES LLC DES:PAYMENTS ID:0914 (AMAZON-PAID-0915)",
+      "matches": [
+        "AMAZON-PAID-0915"
+      ]
+    },
+    {
+      "date": "2026-09-18",
+      "source": "ebay",
+      "amount_cents": 69247,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0915 (EBAY-PAID-0916)",
+      "matches": [
+        "EBAY-PAID-0916"
+      ]
+    },
+    {
+      "date": "2026-09-21",
+      "source": "ebay",
+      "amount_cents": 250368,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0916+ (EBAY-PAID-0917, EBAY-PAID-0918, EBAY-PAID-0919)",
+      "matches": [
+        "EBAY-PAID-0917",
+        "EBAY-PAID-0918",
+        "EBAY-PAID-0919"
+      ]
+    },
+    {
+      "date": "2026-09-22",
+      "source": "ebay",
+      "amount_cents": 93719,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0919 (EBAY-PAID-0920)",
+      "matches": [
+        "EBAY-PAID-0920"
+      ]
+    },
+    {
+      "date": "2026-09-22",
+      "source": "shopgoodwill",
+      "amount_cents": 1329924,
+      "reference": "SHOPGOODWILL.COM DES:SELLER PAYOUT ID:0920",
+      "matches": []
+    },
+    {
+      "date": "2026-09-23",
+      "source": "ebay",
+      "amount_cents": 46963,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0920 (EBAY-PAID-0921)",
+      "matches": [
+        "EBAY-PAID-0921"
+      ]
+    },
+    {
+      "date": "2026-09-24",
+      "source": "ebay",
+      "amount_cents": 62604,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0921 (EBAY-PAID-0922)",
+      "matches": [
+        "EBAY-PAID-0922"
+      ]
+    },
+    {
+      "date": "2026-09-25",
+      "source": "ebay",
+      "amount_cents": 46309,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0922 (EBAY-PAID-0923)",
+      "matches": [
+        "EBAY-PAID-0923"
+      ]
+    },
+    {
+      "date": "2026-09-28",
+      "source": "ebay",
+      "amount_cents": 190731,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0923+ (EBAY-PAID-0924, EBAY-PAID-0925, EBAY-PAID-0926)",
+      "matches": [
+        "EBAY-PAID-0924",
+        "EBAY-PAID-0925",
+        "EBAY-PAID-0926"
+      ]
+    },
+    {
+      "date": "2026-09-29",
+      "source": "ebay",
+      "amount_cents": 47636,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0926 (EBAY-PAID-0927)",
+      "matches": [
+        "EBAY-PAID-0927"
+      ]
+    },
+    {
+      "date": "2026-09-29",
+      "source": "shopgoodwill",
+      "amount_cents": 1370702,
+      "reference": "SHOPGOODWILL.COM DES:SELLER PAYOUT ID:0927",
+      "matches": []
+    },
+    {
+      "date": "2026-09-30",
+      "source": "ebay",
+      "amount_cents": 53820,
+      "reference": "EBAY COMMERCE INC DES:PAYOUT ID:0927 (EBAY-PAID-0928)",
+      "matches": [
+        "EBAY-PAID-0928"
+      ]
+    }
+  ],
+  "exceptions": [
+    {
+      "kind": "unmatched_deposit",
+      "source": "",
+      "amount_cents": 41237,
+      "effect": "not_posted",
+      "detail": "2026-09-17 REMOTE DEPOSIT CAPTURE REF 88213: matches no bank rule; held out of the journal"
+    },
+    {
+      "kind": "in_transit",
+      "source": "amazon",
+      "amount_cents": 489384,
+      "effect": "open_balance",
+      "detail": "AMAZON-PAID-0929: paid 2026-09-29, not in the bank by 2026-09-30"
+    },
+    {
+      "kind": "in_transit",
+      "source": "ebay",
+      "amount_cents": 34463,
+      "effect": "open_balance",
+      "detail": "EBAY-PAID-0929: paid 2026-09-29, not in the bank by 2026-09-30"
+    },
+    {
+      "kind": "in_transit",
+      "source": "ebay",
+      "amount_cents": 60931,
+      "effect": "open_balance",
+      "detail": "EBAY-PAID-0930: paid 2026-09-30, not in the bank by 2026-09-30"
+    },
+    {
+      "kind": "missing_report",
+      "source": "amazon",
+      "amount_cents": null,
+      "effect": "info",
+      "detail": "no Amazon report covers 2026-09-21, 2026-09-22; totals and payouts for those days can't be checked"
+    },
+    {
+      "kind": "missing_report",
+      "source": "shopgoodwill",
+      "amount_cents": null,
+      "effect": "info",
+      "detail": "no ShopGoodwill report covers 2026-09-07; totals and payouts for those days can't be checked"
+    },
+    {
+      "kind": "prior_month_refund",
+      "source": "amazon",
+      "amount_cents": -3299,
+      "effect": "info",
+      "detail": "113-5501842-7720931 refunded 2026-09-08, sale not in this month's files; posted as a refund this month, review the prior month's revenue"
+    },
+    {
+      "kind": "prior_month_refund",
+      "source": "ebay",
+      "amount_cents": -2399,
+      "effect": "info",
+      "detail": "26-31877-40522 refunded 2026-09-03, sale not in this month's files; posted as a refund this month, review the prior month's revenue"
+    },
+    {
+      "kind": "bad_amount",
+      "source": "",
+      "amount_cents": null,
+      "effect": "info",
+      "detail": "ebay_transactions_2026-09-15_2026-09-21.csv row 222: not an amount: '#VALUE!'; left out of the totals"
+    },
+    {
+      "kind": "bad_date",
+      "source": "",
+      "amount_cents": null,
+      "effect": "info",
+      "detail": "ebay_transactions_2026-09-15_2026-09-21.csv row 223: day is out of range for month; left out of the totals"
+    },
+    {
+      "kind": "duplicate_rows",
+      "source": "",
+      "amount_cents": null,
+      "effect": "info",
+      "detail": "248 duplicate rows counted once (3 files)"
+    },
+    {
+      "kind": "not_yet_paid_out",
+      "source": "ebay",
+      "amount_cents": 51162,
+      "effect": "open_balance",
+      "detail": "eBay activity in the last 3 days of the month not paid out yet ($511.62, within the $1,474.28 that cycle covers)"
+    },
+    {
+      "kind": "residual_unexplained",
+      "source": "amazon",
+      "amount_cents": -22678,
+      "effect": "info",
+      "detail": "Amazon: -$226.78 left after deposits and payouts in transit; more was paid than our files show. Check the missing reports above before closing"
+    },
+    {
+      "kind": "not_yet_paid_out",
+      "source": "shopgoodwill",
+      "amount_cents": 355429,
+      "effect": "open_balance",
+      "detail": "ShopGoodwill activity in the last 9 days of the month not paid out yet ($3,554.29, within the $16,295.59 that cycle covers)"
+    }
+  ],
+  "payouts": [
+    {
+      "id": "EBAY-PAID-0902",
+      "source": "ebay",
+      "paid": "2026-09-02",
+      "amount_cents": 46947,
+      "deposit": "2026-09-04"
+    },
+    {
+      "id": "EBAY-PAID-0903",
+      "source": "ebay",
+      "paid": "2026-09-03",
+      "amount_cents": 61574,
+      "deposit": "2026-09-08"
+    },
+    {
+      "id": "EBAY-PAID-0904",
+      "source": "ebay",
+      "paid": "2026-09-04",
+      "amount_cents": 75830,
+      "deposit": "2026-09-08"
+    },
+    {
+      "id": "EBAY-PAID-0905",
+      "source": "ebay",
+      "paid": "2026-09-05",
+      "amount_cents": 76831,
+      "deposit": "2026-09-08"
+    },
+    {
+      "id": "EBAY-PAID-0906",
+      "source": "ebay",
+      "paid": "2026-09-06",
+      "amount_cents": 34407,
+      "deposit": "2026-09-08"
+    },
+    {
+      "id": "EBAY-PAID-0907",
+      "source": "ebay",
+      "paid": "2026-09-07",
+      "amount_cents": 80243,
+      "deposit": "2026-09-09"
+    },
+    {
+      "id": "EBAY-PAID-0908",
+      "source": "ebay",
+      "paid": "2026-09-08",
+      "amount_cents": 60013,
+      "deposit": "2026-09-10"
+    },
+    {
+      "id": "EBAY-PAID-0909",
+      "source": "ebay",
+      "paid": "2026-09-09",
+      "amount_cents": 56103,
+      "deposit": "2026-09-11"
+    },
+    {
+      "id": "EBAY-PAID-0910",
+      "source": "ebay",
+      "paid": "2026-09-10",
+      "amount_cents": 51791,
+      "deposit": "2026-09-14"
+    },
+    {
+      "id": "EBAY-PAID-0911",
+      "source": "ebay",
+      "paid": "2026-09-11",
+      "amount_cents": 59688,
+      "deposit": "2026-09-14"
+    },
+    {
+      "id": "EBAY-PAID-0912",
+      "source": "ebay",
+      "paid": "2026-09-12",
+      "amount_cents": 53590,
+      "deposit": "2026-09-14"
+    },
+    {
+      "id": "EBAY-PAID-0913",
+      "source": "ebay",
+      "paid": "2026-09-13",
+      "amount_cents": 49585,
+      "deposit": "2026-09-15"
+    },
+    {
+      "id": "EBAY-PAID-0914",
+      "source": "ebay",
+      "paid": "2026-09-14",
+      "amount_cents": 78264,
+      "deposit": "2026-09-16"
+    },
+    {
+      "id": "AMAZON-PAID-0915",
+      "source": "amazon",
+      "paid": "2026-09-15",
+      "amount_cents": 405400,
+      "deposit": "2026-09-18"
+    },
+    {
+      "id": "EBAY-PAID-0915",
+      "source": "ebay",
+      "paid": "2026-09-15",
+      "amount_cents": 56070,
+      "deposit": "2026-09-17"
+    },
+    {
+      "id": "EBAY-PAID-0916",
+      "source": "ebay",
+      "paid": "2026-09-16",
+      "amount_cents": 69247,
+      "deposit": "2026-09-18"
+    },
+    {
+      "id": "EBAY-PAID-0917",
+      "source": "ebay",
+      "paid": "2026-09-17",
+      "amount_cents": 71073,
+      "deposit": "2026-09-21"
+    },
+    {
+      "id": "EBAY-PAID-0918",
+      "source": "ebay",
+      "paid": "2026-09-18",
+      "amount_cents": 104468,
+      "deposit": "2026-09-21"
+    },
+    {
+      "id": "EBAY-PAID-0919",
+      "source": "ebay",
+      "paid": "2026-09-19",
+      "amount_cents": 74827,
+      "deposit": "2026-09-21"
+    },
+    {
+      "id": "EBAY-PAID-0920",
+      "source": "ebay",
+      "paid": "2026-09-20",
+      "amount_cents": 93719,
+      "deposit": "2026-09-22"
+    },
+    {
+      "id": "EBAY-PAID-0921",
+      "source": "ebay",
+      "paid": "2026-09-21",
+      "amount_cents": 46963,
+      "deposit": "2026-09-23"
+    },
+    {
+      "id": "EBAY-PAID-0922",
+      "source": "ebay",
+      "paid": "2026-09-22",
+      "amount_cents": 62604,
+      "deposit": "2026-09-24"
+    },
+    {
+      "id": "EBAY-PAID-0923",
+      "source": "ebay",
+      "paid": "2026-09-23",
+      "amount_cents": 46309,
+      "deposit": "2026-09-25"
+    },
+    {
+      "id": "EBAY-PAID-0924",
+      "source": "ebay",
+      "paid": "2026-09-24",
+      "amount_cents": 66451,
+      "deposit": "2026-09-28"
+    },
+    {
+      "id": "EBAY-PAID-0925",
+      "source": "ebay",
+      "paid": "2026-09-25",
+      "amount_cents": 52959,
+      "deposit": "2026-09-28"
+    },
+    {
+      "id": "EBAY-PAID-0926",
+      "source": "ebay",
+      "paid": "2026-09-26",
+      "amount_cents": 71321,
+      "deposit": "2026-09-28"
+    },
+    {
+      "id": "EBAY-PAID-0927",
+      "source": "ebay",
+      "paid": "2026-09-27",
+      "amount_cents": 47636,
+      "deposit": "2026-09-29"
+    },
+    {
+      "id": "EBAY-PAID-0928",
+      "source": "ebay",
+      "paid": "2026-09-28",
+      "amount_cents": 53820,
+      "deposit": "2026-09-30"
+    },
+    {
+      "id": "AMAZON-PAID-0929",
+      "source": "amazon",
+      "paid": "2026-09-29",
+      "amount_cents": 489384,
+      "deposit": null
+    },
+    {
+      "id": "EBAY-PAID-0929",
+      "source": "ebay",
+      "paid": "2026-09-29",
+      "amount_cents": 34463,
+      "deposit": null
+    },
+    {
+      "id": "EBAY-PAID-0930",
+      "source": "ebay",
+      "paid": "2026-09-30",
+      "amount_cents": 60931,
+      "deposit": null
+    }
+  ]
+}

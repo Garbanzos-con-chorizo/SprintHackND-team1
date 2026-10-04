@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-10-04T00:04:09-04:00",
+  "business_date": "2026-10-01",
+  "sources": {
+    "shopgoodwill": {
+      "status": "ok",
+      "files": [
+        "paid_orders_09-29-2026_10-01-2026.xlsx"
+      ],
+      "rows": 35
+    },
+    "amazon": {
+      "status": "ok",
+      "files": [
+        "orders2023-20261002-001512-96170.xlsx"
+      ],
+      "rows": 18
+    },
+    "ebay": {
+      "status": "ok",
+      "files": [
+        "orders2023-20261002-001512-96170.xlsx"
+      ],
+      "rows": 26
+    }
+  }
+}

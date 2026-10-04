@@ -1,5 +1,6 @@
 """Command line entry: python -m engine run [--inbox inbox] [--out out] [--date YYYY-MM-DD]."""
 import argparse
+from datetime import date, timedelta
 from pathlib import Path
 
 from .ingest import EmailAttachmentAdapter, NormalizedBatch, ingest
@@ -31,6 +32,8 @@ def main(argv: list[str] | None = None) -> int:
     fetch_p.add_argument("--inbox", type=Path, default=Path("inbox"))
     fetch_p.add_argument("--out", type=Path, default=Path("out"))
     fetch_p.add_argument("--date", default=None, help="business date YYYY-MM-DD (default: today, Eastern)")
+    fetch_p.add_argument("--from", dest="start", default=None, help="with --to and --simulate: every day of the range")
+    fetch_p.add_argument("--to", dest="end", default=None, help="last business date of the range")
     fetch_p.add_argument("--source", default=None, help="only this source, e.g. upright")
     fetch_p.add_argument("--simulate", action="store_true",
                          help="demo: write synthetic reports as each provider's API would deliver them")
@@ -38,6 +41,13 @@ def main(argv: list[str] | None = None) -> int:
 
     business_date = args.date or now_local().date().isoformat()
     if args.command == "fetch":
+        if args.start or args.end:
+            if not (args.start and args.end and args.simulate):
+                parser.error("--from and --to go together and need --simulate")
+            days = (date.fromisoformat(args.start) + timedelta(days=i)
+                    for i in range((date.fromisoformat(args.end) - date.fromisoformat(args.start)).days + 1))
+            codes = [fetch(args.inbox, args.out, d.isoformat(), args.source, simulate=True) for d in days]
+            return 1 if any(codes) else 0
         return fetch(args.inbox, args.out, business_date, args.source, simulate=args.simulate)
     run(args.inbox, args.out, business_date)
     print(f"engine: wrote {args.out}/ for {business_date}")

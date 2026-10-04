@@ -1,0 +1,15 @@
+Kind,Source,Amount,Effect,Detail
+unmatched_deposit,,412.37,not_posted,2026-09-17 REMOTE DEPOSIT CAPTURE REF 88213: matches no bank rule; held out of the journal
+in_transit,Amazon,4893.84,open_balance,"AMAZON-PAID-0929: paid 2026-09-29, not in the bank by 2026-09-30"
+in_transit,eBay,344.63,open_balance,"EBAY-PAID-0929: paid 2026-09-29, not in the bank by 2026-09-30"
+in_transit,eBay,609.31,open_balance,"EBAY-PAID-0930: paid 2026-09-30, not in the bank by 2026-09-30"
+missing_report,Amazon,,info,"no Amazon report covers 2026-09-21, 2026-09-22; totals and payouts for those days can't be checked"
+missing_report,ShopGoodwill,,info,no ShopGoodwill report covers 2026-09-07; totals and payouts for those days can't be checked
+prior_month_refund,Amazon,-32.99,info,"113-5501842-7720931 refunded 2026-09-08, sale not in this month's files; posted as a refund this month, review the prior month's revenue"
+prior_month_refund,eBay,-23.99,info,"26-31877-40522 refunded 2026-09-03, sale not in this month's files; posted as a refund this month, review the prior month's revenue"
+bad_amount,,,info,ebay_transactions_2026-09-15_2026-09-21.csv row 222: not an amount: '#VALUE!'; left out of the totals
+bad_date,,,info,ebay_transactions_2026-09-15_2026-09-21.csv row 223: day is out of range for month; left out of the totals
+duplicate_rows,,,info,248 duplicate rows counted once (3 files)
+not_yet_paid_out,eBay,511.62,open_balance,"eBay activity in the last 3 days of the month not paid out yet ($511.62, within the $1,474.28 that cycle covers)"
+residual_unexplained,Amazon,-226.78,info,Amazon: -$226.78 left after deposits and payouts in transit; more was paid than our files show. Check the missing reports above before closing
+not_yet_paid_out,ShopGoodwill,3554.29,open_balance,"ShopGoodwill activity in the last 9 days of the month not paid out yet ($3,554.29, within the $16,295.59 that cycle covers)"

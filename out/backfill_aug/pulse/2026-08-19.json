@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "business_date": "2026-08-19",
+  "generated_at": "2026-10-04T00:03:59-04:00",
+  "currency": "USD",
+  "marketplaces": {
+    "shopgoodwill": {
+      "status": "ok",
+      "gross_cents": 202212,
+      "refunds_cents": 0,
+      "revenue_cents": 202212,
+      "fees_cents": 0,
+      "orders": 24,
+      "customers": 24,
+      "customer_basis": "order",
+      "delta": {
+        "prior_date": "2026-08-18",
+        "prior_revenue_cents": 207136,
+        "prior_customers": 24,
+        "revenue_cents": -4924,
+        "revenue_pct": -2.4,
+        "customers": 0,
+        "reason": null
+      }
+    },
+    "amazon": {
+      "status": "ok",
+      "gross_cents": 67020,
+      "refunds_cents": 0,
+      "revenue_cents": 67020,
+      "fees_cents": 10054,
+      "orders": 14,
+      "customers": 14,
+      "customer_basis": "order",
+      "delta": {
+        "prior_date": "2026-08-18",
+        "prior_revenue_cents": 66262,
+        "prior_customers": 14,
+        "revenue_cents": 758,
+        "revenue_pct": 1.1,
+        "customers": 0,
+        "reason": null
+      }
+    },
+    "ebay": {
+      "status": "ok",
+      "gross_cents": 85926,
+      "refunds_cents": 0,
+      "revenue_cents": 85926,
+      "fees_cents": 12016,
+      "orders": 16,
+      "customers": 16,
+      "customer_basis": "order",
+      "delta": {
+        "prior_date": "2026-08-18",
+        "prior_revenue_cents": 75029,
+        "prior_customers": 16,
+        "revenue_cents": 10897,
+        "revenue_pct": 14.5,
+        "customers": 0,
+        "reason": null
+      }
+    },
+    "other": {
+      "status": "ok",
+      "gross_cents": 8910,
+      "refunds_cents": 0,
+      "revenue_cents": 8910,
+      "fees_cents": 1335,
+      "orders": 4,
+      "customers": 4,
+      "customer_basis": "order",
+      "delta": {
+        "prior_date": "2026-08-18",
+        "prior_revenue_cents": 6271,
+        "prior_customers": 4,
+        "revenue_cents": 2639,
+        "revenue_pct": 42.1,
+        "customers": 0,
+        "reason": null
+      }
+    }
+  },
+  "enterprise": {
+    "gross_cents": 364068,
+    "refunds_cents": 0,
+    "revenue_cents": 364068,
+    "fees_cents": 23405,
+    "orders": 58,
+    "customers": 58,
+    "customer_basis": "order",
+    "included": [
+      "shopgoodwill",
+      "amazon",
+      "ebay",
+      "other"
+    ],
+    "excluded": [],
+    "delta": {
+      "prior_date": "2026-08-18",
+      "prior_revenue_cents": 354698,
+      "prior_customers": 58,
+      "revenue_cents": 9370,
+      "revenue_pct": 2.6,
+      "customers": 0,
+      "reason": null
+    }
+  },
+  "data_quality": {
+    "warnings_total": 0,
+    "by_kind": {}
+  },
+  "definitions": {
+    "revenue": "Sales minus refunds, before marketplace fees. Excludes shipping and tax.",
+    "fees": "Marketplace fees are shown separately and are not subtracted from revenue.",
+    "customers": "Unique buyers where the marketplace exposes a buyer id, otherwise orders. The enterprise count is the sum of the marketplaces.",
+    "day": "Order date, Eastern time."
+  }
+}

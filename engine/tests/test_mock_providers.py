@@ -95,3 +95,23 @@ def test_two_identical_units_of_one_order_are_both_counted(tmp_path):
         rows = list(csv.DictReader(f))
     assert len(rows) == 1 and rows[0]["gross_cents"] == "2000" and rows[0]["fee_cents"] == "300"
     assert json.loads((tmp_path / "out" / "warnings.json").read_text(encoding="utf-8")) == []
+
+
+def test_a_shopgoodwill_order_number_is_never_reused_on_another_day():
+    """Two days in one inbox must not look like the same orders (the dedupe would drop the second day)."""
+    ids = []
+    for d in ("2026-08-01", "2026-08-02", "2026-09-01"):
+        orders, _ = simulation.day_orders(d)
+        ids += [o.order_id for o in orders if o.marketplace == "shopgoodwill"]
+    assert len(ids) == len(set(ids))
+
+
+def test_fetch_range_writes_every_day_and_loads_as_complete_days(tmp_path):
+    from engine.cli import main
+    inbox = tmp_path / "inbox"
+    assert main(["fetch", "--simulate", "--from", "2026-08-01", "--to", "2026-08-03",
+                 "--inbox", str(inbox), "--out", str(tmp_path / "o")]) == 0
+    assert len(list(inbox.glob("paid_orders_*"))) == 3
+    run(inbox, tmp_path / "out", "2026-08-03")
+    status = json.loads((tmp_path / "out" / "source_status.json").read_text(encoding="utf-8"))
+    assert status["sources"]["shopgoodwill"]["status"] == "ok"

@@ -1,0 +1,4 @@
+Source,Path,Revenue In,Revenue Posted,Difference,Receivable Posted,Deposits,Open Balance,Explained,Unexplained,Status
+eBay,Journal,19957.35,19957.35,0.00,18488.89,17023.33,1465.56,1465.56,0.00,OPEN
+Amazon,Journal,9434.51,9434.51,0.00,8721.06,4054.00,4667.06,4893.84,-226.78,UNEXPLAINED
+ShopGoodwill,Invoice,39118.00,39118.00,0.00,56768.26,53213.97,3554.29,3554.29,0.00,OPEN
