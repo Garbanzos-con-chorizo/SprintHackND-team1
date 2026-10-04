@@ -33,6 +33,14 @@ main { max-width:1280px; }
 .tile .name { font-size:12px; font-weight:700; color:var(--ink); }
 .tile .value { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; margin:2px 0; }
 .tile .value .per { font-size:12px; font-weight:400; color:var(--muted); }
+.tile .pillar { font-size:10px; font-weight:600; color:var(--primary); text-transform:uppercase; letter-spacing:.05em; }
+.parts { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:4px 0; }
+.part { border:1px solid var(--line); border-radius:var(--radius); padding:4px 6px; }
+.part .pname { font-size:11px; color:var(--muted); }
+.part .pval { font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; }
+.part .pval.none { font-size:13px; color:var(--muted); font-weight:600; }
+.part .pof { font-size:11px; color:var(--muted); }
+.links a + a { margin-left:10px; }
 .tile .value.none { font-size:15px; color:var(--muted); font-weight:600; }
 .tile .change { font-size:12px; margin:2px 0; }
 .tile .note { font-size:12px; color:var(--muted); margin:4px 0 0; }
@@ -60,6 +68,13 @@ details.defs dt { margin-top:6px; }
   .tile .name { font-size:7.5pt; }
   .tile .value { font-size:12pt; }
   .tile .value.none { font-size:9pt; }
+  .tile .pillar { font-size:6pt; }
+  .parts { gap:3px; margin:2px 0; }
+  .part { padding:1px 3px; }
+  .part .pname, .part .pof { font-size:6pt; }
+  .part .pval { font-size:10pt; }
+  .part .pval.none { font-size:8pt; }
+  .links { display:none; }
   .tile .change, .tile .note, .tile .meta { font-size:6.5pt; margin-top:1px; }
   .sim { font-size:6pt; padding:0 3px; }
   table.rank th, table.rank td { font-size:6.5pt; padding:0 2px; line-height:1.25; }
@@ -117,7 +132,19 @@ def note_html(note):
     return " ".join(f'<span class="gapnote">{escape(p)}</span>' if " has no data on " in p else escape(p) for p in parts)
 
 
-def tile(k, prior_label, sim_label):
+def parts_html(parts, unit):
+    """Sell-through's two boxes (kpi.md, "Sell-through in two boxes"); a null value shows "No data"."""
+    boxes = []
+    for p in parts:
+        shown = fmt(p["value"], unit)
+        val = f'<div class="pval">{escape(shown)}</div>' if shown is not None else '<div class="pval none">No data</div>'
+        of = (f'<div class="pof">{p["sold"]:,} of {p["available"]:,}</div>'
+              if p.get("sold") is not None and p.get("available") is not None else "")
+        boxes.append(f'<div class="part"><div class="pname">{escape(p["name"])}</div>{val}{of}</div>')
+    return f'<div class="parts">{"".join(boxes)}</div>'
+
+
+def tile(k, prior_label, sim_label, pillars=None):
     badge = f'<span class="sim">{escape(sim_label)}</span>' if k["simulated"] else ""
     status = k["status"]
     if k["kind"] == "ranking":
@@ -136,7 +163,9 @@ def tile(k, prior_label, sim_label):
         change = ""
     else:
         shown = fmt(k["value"], k["unit"])
-        if shown is None:
+        if k.get("parts"):
+            main = parts_html(k["parts"], k["unit"])
+        elif shown is None:
             main = '<div class="value none">No data</div>'
         else:
             per = f' <span class="per">per {escape(k["per"])}</span>' if k.get("per") else ""
@@ -146,7 +175,9 @@ def tile(k, prior_label, sim_label):
         change = (f'<div class="change">{delta}' + (f' <span class="muted">vs {escape(prior_label)}: {escape(prior)}</span>'
                                                      if prior is not None else "") + "</div>") if (delta or prior) else ""
     note = f'<div class="note">{note_html(k["note"])}</div>' if k.get("note") else ""
-    return (f'<div class="tile {status}" title="{escape(k["definition"])}">'
+    pillar = (pillars or {}).get(k.get("pillar"))
+    tag = f'<div class="pillar">{escape(pillar)}</div>' if pillar else ""
+    return (f'<div class="tile {status}" title="{escape(k["definition"])}">{tag}'
             f'<div class="name">{escape(k["name"])}{badge}</div>{main}{change}{note}</div>')
 
 
@@ -168,13 +199,14 @@ def headline(kf):
     return text + ".", not kf["coverage"]["complete"]
 
 
-def render(kf):
+def render(kf, dest=DEST):
     period, prior = kf["period"], kf["prior_period"]
     sim_label = (kf.get("internal_data") or {}).get("label") or "Simulated internal data"
+    pillars = {p["id"]: p["name"] for p in kf.get("pillars", [])}
     by_area = {a["id"]: [k for k in kf["kpis"] if k["area"] == a["id"]] for a in kf["areas"]}
     areas = "\n".join(
         f'<section class="area"><h2>{escape(a["name"])}</h2>'
-        + "".join(tile(k, prior["label"], sim_label) for k in by_area[a["id"]]) + "</section>"
+        + "".join(tile(k, prior["label"], sim_label, pillars) for k in by_area[a["id"]]) + "</section>"
         for a in kf["areas"])
     text, alert = headline(kf)
     cov = kf["coverage"]
@@ -192,6 +224,9 @@ def render(kf):
         simnote = '<p class="simnote">No internal data stored for this period: KPIs that need it show "No data".</p>'
     defs = "".join(f"<dt>{escape(k['name'])}</dt><dd>{escape(k['definition'])}</dd>" for k in kf["kpis"])
     top_defs = " ".join(escape(v) for v in kf["definitions"].values())
+    files = "".join(f'<a href="{period["type"]}-{period["id"]}.{ext}">{label}</a>' for ext, label in
+                    (("csv", "KPI table (CSV)"), ("pdf", "PDF"), ("json", "KPI file")) if (dest / f"{period['type']}-{period['id']}.{ext}").exists())
+    downloads = f'<p class="links">Download: {files}</p>' if files else ""
     body = (f'<header><h1>COO scorecard: {escape(period["label"])}</h1>'
             f'<p>Goodwill Michiana e-commerce · {escape(period["start"])} to {escape(period["through"])} · '
             f'compared with {escape(prior["label"])} · generated {escape(kf["generated_at"])}</p></header>'
@@ -199,7 +234,7 @@ def render(kf):
             f'<div class="areas">\n{areas}\n</div>'
             f'<section class="foot"><p>{top_defs}</p></section>'
             f'<details class="defs"><summary>KPI definitions</summary><dl>{defs}</dl></details>'
-            f'<p class="nav"><a href="index.html">All scorecards</a> · <a href="../index.html">Reports</a></p>')
+            f'{downloads}<p class="nav"><a href="index.html">All scorecards</a> · <a href="../index.html">Reports</a></p>')
     return PAGE.substitute(title=f"COO scorecard {period['id']}", css=CSS + SCORECARD_CSS, body=body)
 
 
@@ -219,7 +254,7 @@ def build(kpi_file, dest=DEST):
     dest.mkdir(parents=True, exist_ok=True)
     name = f"{kf['period']['type']}-{kf['period']['id']}"
     page = dest / f"{name}.html"
-    page.write_text(render(kf), encoding="utf-8")
+    page.write_text(render(kf, dest), encoding="utf-8")
     shutil.copyfile(kpi_file, dest / f"{name}.json")
     (dest / "index.html").write_text(render_index(dest), encoding="utf-8")
     return page

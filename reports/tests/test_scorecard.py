@@ -22,10 +22,40 @@ class ScorecardTest(unittest.TestCase):
                 kf, html = self.render(name)
                 self.assertEqual(html.count('<div class="tile '), 15)
                 self.assertEqual(html.count('class="sim"'), sum(k["simulated"] for k in kf["kpis"]))
-                no_data = sum(k["status"] == "no_data" or (k["kind"] == "ranking" and not k["rows"]) for k in kf["kpis"])
+                no_data = sum(k["status"] == "no_data" or (k["kind"] == "ranking" and not k["rows"])
+                              for k in kf["kpis"] if not k.get("parts"))  # sell-through draws its two boxes instead
                 self.assertEqual(html.count('value none">No data'), no_data)
                 for area in kf["areas"]:
                     self.assertIn(f'<h2>{area["name"].replace("+", "+")}</h2>', html.replace("&amp;", "&"))
+
+    def test_every_pillar_name_is_on_the_page(self):
+        kf, html = self.render("kpi.sample.month.json")
+        for pillar in kf["pillars"]:
+            self.assertIn(f'<div class="pillar">{pillar["name"]}</div>', html)
+        self.assertEqual(html.count('class="pillar"'), 15)
+
+    def test_sell_through_is_two_boxes_and_a_null_box_says_no_data(self):
+        kf, html = self.render("kpi.sample.month.json")
+        parts = next(k for k in kf["kpis"] if k["id"] == "sales.sell_through")["parts"]
+        self.assertEqual(html.count('class="part"'), 2)
+        for p in parts:
+            self.assertIn(f'<div class="pname">{p["name"]}</div>', html)
+        self.assertIn(f'{parts[0]["value"] * 100:.1f}%', html)
+        for k in kf["kpis"]:
+            if k["id"] == "sales.sell_through":
+                k["parts"][1].update(value=None, available=None)
+        self.assertIn('pval none">No data', scorecard.render(kf))
+
+    def test_download_links_appear_only_for_files_that_exist(self):
+        kf, _ = self.render("kpi.sample.month.json")
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = Path(tmp)
+            self.assertNotIn("Download:", scorecard.render(kf, dest))
+            (dest / "month-2026-09.csv").write_text("x", encoding="utf-8")
+            (dest / "month-2026-09.pdf").write_bytes(b"%PDF")
+            html = scorecard.render(kf, dest)
+            self.assertIn('<a href="month-2026-09.csv">', html)
+            self.assertIn('<a href="month-2026-09.pdf">', html)
 
     def test_rankings_render_their_rows_and_partial_coverage_raises_the_banner(self):
         kf, html = self.render("kpi.sample.month.partial.json")
