@@ -50,6 +50,12 @@ Goodwill's slide 38 lists month-end sources nobody has shown us. We assume each 
 
 The fetch log, `<inbox>/_simulated.json` and `source_coverage.json` mark every simulated file. `expected_close_sources.json` is the answer key, computed from the generated records and never by a parser. The engine applies no rule to these files: which ledger rows are FedEx and which bank lines are a carrier is the close's job. Columns: `docs/contracts/close-inputs.md`.
 
+## The close as Business Central API requests (API-ready, not connected)
+```
+python -m engine.export bc-api --month 2026-09     # after python -m reports.close: writes the requests, sends nothing
+```
+The close writes import files. This turns the same journal and invoice lines into the requests of Business Central's standard API v2.0 and writes them to `out/close/<month>/bc_api_requests_<month>.json`. With `--send` and the `BC_*` variables of `.env.example` a client would load them as **drafts** (it never posts). **It has never been run against a real Business Central**: we have none. The tests run it against a local stand-in. Details and known gaps: `docs/contracts/bc-api.md`.
+
 ## Where things are
 | Path | What it is |
 |---|---|
