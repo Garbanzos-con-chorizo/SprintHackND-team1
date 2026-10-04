@@ -73,7 +73,7 @@ The third run is the panel in the browser, not a command.
 | 2:10 | Slide 4 | "It checks its own work. Totals match an answer key computed apart from the program; a journal that doesn't balance is never written; a missing report is never zero." |
 | 2:22 | Slide 5 | "It uses tools they already pay for: Excel, Outlook, Business Central's import format. Nothing new to buy." |
 | 2:32 | Slide 6 | "What we simulated: all the data, the provider APIs and the mailbox, and the internal data behind eleven of the fifteen KPIs. Not done: posting, their real accounts, and their workbook's rules." |
-| 2:48 | Slide 7 | "Send us one real month of files and your allocation workbook. We'll run your close and compare it with yours, line by line." |
+| 2:48 | Slide 7 | "Send us one real month of files and your allocation workbook. We'll run your close and compare it with yours, line by line. The backend can already write the same lines as Business Central API requests; it has never been connected." (Never "integrated" or "posts": `docs/contracts/bc-api.md`.) |
 
 ## If the slot is shorter: cut in this order
 1. The Excel step in the close (about 5 s).
