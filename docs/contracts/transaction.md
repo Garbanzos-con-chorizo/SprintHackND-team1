@@ -76,7 +76,7 @@ Lets the pulse show "no data" instead of `$0`. **Keyed by marketplace**, because
 ```json
 [ { "source_file": "ebay_2026-10-02.csv", "source_row": 12, "kind": "duplicate", "reason": "same order id as row 9" } ]
 ```
-`kind` is one of `duplicate`, `bad_date`, `bad_amount`, `missing_column`, `unsupported_currency`, `unparseable`. Orlando may show a count as a data-quality footnote.
+`kind` is one of `duplicate`, `bad_date`, `bad_amount`, `missing_column`, `unsupported_currency`, `unparseable`, and for the close's files (`close-inputs.md`) `missing_supplier`. Orlando may show a count as a data-quality footnote.
 
 ## Example (also in `examples/transactions.sample.csv`)
 ```csv

@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from .contract import BANK_COLUMNS, COLUMNS, PAYOUT_COLUMNS, TIMEZONE
+from .contract import BANK_COLUMNS, CLOSE_TABLES, COLUMNS, PAYOUT_COLUMNS, TIMEZONE
 
 
 def now_local() -> datetime:
@@ -13,12 +13,14 @@ def now_local() -> datetime:
 
 
 def write_outputs(out_dir: Path, rows: list[dict], source_status: dict, warnings: list[dict],
-                  payouts: list[dict] = (), bank: list[dict] = (), source_coverage: dict | None = None) -> None:
+                  payouts: list[dict] = (), bank: list[dict] = (), source_coverage: dict | None = None,
+                  tables: dict[str, list[dict]] | None = None) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # transactions.csv (transaction.md), then the close inputs (close-inputs.md), written even when empty.
-    for name, columns, items in (("transactions.csv", COLUMNS, rows), ("payouts.csv", PAYOUT_COLUMNS, payouts),
-                                 ("bank.csv", BANK_COLUMNS, bank)):
+    files = [("transactions.csv", COLUMNS, rows), ("payouts.csv", PAYOUT_COLUMNS, payouts), ("bank.csv", BANK_COLUMNS, bank)]
+    files += [(f"{name}.csv", columns, (tables or {}).get(name, [])) for name, columns in CLOSE_TABLES.items()]
+    for name, columns, items in files:
         with open(out_dir / name, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=columns, lineterminator="\n")
             writer.writeheader()

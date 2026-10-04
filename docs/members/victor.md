@@ -2,7 +2,7 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 · **Branch:** victor/v3-3-source-coverage
+**Last updated:** 2026-10-04 · **Branch:** victor/v3-5-fedex-ledger
 
 ## Phase 3: decision 009, plan in `docs/PLAN_PHASE_3.md` (my tasks V3.1 to V3.10)
 ### Done
@@ -10,8 +10,9 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - **V3.2 + C3.1** (branch `victor/v3-2-payouts-bank`, stacked on V3.1): `engine run` also writes `payouts.csv` (eBay `Payout` and Amazon `Transfer` rows, amount positive = paid to Goodwill, dated as the report dates them, de-duplicated across overlapping downloads with a `duplicate` warning) and `bank.csv` (new `bank` parser: every line, credits positive, debits negative, running balance, `OPERATING` account). **On `messy_month`: 31 payouts (29 eBay, 2 Amazon), each equal to the answer key; 26 bank lines (24 credits, 2 debits); no `unparseable` warning for the bank file.** New contract `docs/contracts/close-inputs.md` v0.1 (built and planned files). 5 tests in `engine/tests/test_payouts_bank.py`.
 - **V3.3** (branch `victor/v3-3-source-coverage`): `engine run` also writes `source_coverage.json`. For each source it lists the files, the days each covers (from the name, else from its rows), the rows, whether a simulator wrote it, and the days of the month no file covers. `fetch --simulate` records its files in `<inbox>/_simulated.json`, which the engine reads. **On `messy_month`: Amazon missing 09-21 and 09-22, ShopGoodwill 09-07, eBay and the bank none; a simulated fetch reads `"simulated": true`.** 5 tests in `engine/tests/test_source_coverage.py`; `close-inputs.md` v0.2.
 - V3.1 (#54) and V3.2 (#56) are merged.
+- **V3.5** (branch `victor/v3-5-fedex-ledger`): `python -m engine fetch --simulate --close-month 2026-09 --inbox DIR --out DIR2` delivers the month-end sources as simulated APIs: provider classes with `cadence = "month_end"` in `engine/scrapers/`, records and answer keys in `close_simulation.py`. The first one is `bc_ledger`: a Business Central G/L entries export (layout ours) with FedEx charges on 40356 / 180 / V00122, three BNKDEPOSIT refunds, and five rows of another vendor, department or account. The engine writes every row to `ledger.csv`. **Charges $3,282.10 minus refunds $136.94 = $3,145.16 = `fedex.net_cents` in `expected_close_sources.json`**, by filter and sum on `ledger.csv`. `close-inputs.md` v0.3. 8 tests in `engine/tests/test_close_sources.py`.
 ### Next
-- V3.5: FedEx from Business Central's ledger (simulated API), and `fetch --simulate --close-month`.
+- V3.7 and V3.9 (bank feed of account 0101, Goodwill Books statement), V3.8, V3.10, then V3.4.
 - Decision 009: my response line is still open (C3.4), and so are my claim rows.
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`

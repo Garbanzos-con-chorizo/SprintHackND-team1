@@ -33,6 +33,13 @@ PAYOUT_COLUMNS = ["payout_id", "marketplace", "paid_date", "amount_cents", "peri
 BANK_COLUMNS = ["bank_txn_id", "account", "posting_date", "description", "amount_cents", "balance_cents",
                 "source_file", "source_row"]
 
+# The close's other tables (close-inputs.md): file name without .csv -> columns. Every run writes each
+# of them, header only when no file fed it.
+# ledger.csv (V3.5): every row of a Business Central G/L entries export, debit positive.
+LEDGER_COLUMNS = ["entry_no", "posting_date", "document_type", "document_no", "gl_account", "department",
+                  "vendor_no", "description", "amount_cents", "source_file", "source_row"]
+CLOSE_TABLES = {"ledger": LEDGER_COLUMNS}
+
 # Marketplaces the pulse expects data for each day (keys of source_status.json). `other` is not
 # listed: it appears only on a day it has rows, otherwise the pulse treats it as not configured.
 EXPECTED_MARKETPLACES = ["shopgoodwill", "amazon", "ebay"]
@@ -44,4 +51,5 @@ WARNING_KINDS = [
     "missing_column",
     "unsupported_currency",
     "unparseable",
+    "missing_supplier",  # close inputs: a jewelry item the supplier lookup does not know
 ]
