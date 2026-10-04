@@ -2,7 +2,7 @@
 
 **Everyone edits this folder, on branch `victor/pitch-deck`.** Orlando owns `docs/pitch/` and has the last word on the deck. Small commits, `git pull --rebase` before you push, never force-push, and say what you changed in your status file.
 
-**The deck to use is the Slides artifact:** https://claude.ai/artifact/F1y3oyZP9vKm88Vn6Tqcti (Victor shares it from its Share menu). `slides-artifact/` is a copy of its files as published at 14:05 EDT (slide 7 now has the Business Central API line): `deck.json` (title, slide order, sections) and one `slides/<id>.html` per slide, with the speaker notes in each slide's `<aside>`.
+**The deck to use is the Slides artifact:** https://claude.ai/artifact/F1y3oyZP9vKm88Vn6Tqcti (Victor shares it from its Share menu). `slides-artifact/` is a copy of its files as published at 14:35 EDT: eight slides, with Orlando's diagram (slide 2) and missing-report steps (slide 5) ported in, an integration slide (6) that follows decision 012 (the Controller downloads the month-end reports by hand; Business Central is cloud and takes CSV), and a closing slide in Goodwill's words instead of the ask: `deck.json` (title, slide order, sections) and one `slides/<id>.html` per slide, with the speaker notes in each slide's `<aside>`.
 
 To change a slide, either way works:
 - edit it in the artifact's own editor (once it is shared with you), then copy the changed slide into `slides-artifact/` and commit it;
