@@ -2,7 +2,7 @@
 import argparse
 from pathlib import Path
 
-from .ingest import EmailAttachmentAdapter, ingest
+from .ingest import EmailAttachmentAdapter, NormalizedBatch, ingest
 from .parsers import Parser
 from .status import build_source_status
 from .writer import now_local, write_outputs
@@ -10,10 +10,14 @@ from .writer import now_local, write_outputs
 
 def run(inbox: Path, out: Path, business_date: str, parsers: list[Parser] | None = None) -> None:
     batch = ingest([EmailAttachmentAdapter(inbox, parsers)], business_date)
-    rows, warnings = batch.rows, batch.warnings
+    write_day(batch, out, business_date)
 
-    source_status = build_source_status(business_date, now_local().isoformat(), batch.files, rows)
-    write_outputs(out, rows=rows, source_status=source_status, warnings=warnings)
+
+def write_day(batch: NormalizedBatch, out: Path, business_date: str) -> None:
+    """The three output files for one business date from an ingested inbox. Backfill ingests once
+    and calls this per day, so a backfilled day is exactly what `engine run --date` would write."""
+    source_status = build_source_status(business_date, now_local().isoformat(), batch.files, batch.rows)
+    write_outputs(out, rows=batch.rows, source_status=source_status, warnings=batch.warnings)
 
 
 def main(argv: list[str] | None = None) -> int:

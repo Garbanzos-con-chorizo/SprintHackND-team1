@@ -2,12 +2,15 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 23:30 · **Branch:** victor/store-loader
+**Last updated:** 2026-10-04 00:00 · **Branch:** victor/store-status-backfill
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`
 **Decision 007:** agreed by all three, SQLite included (Orlando's amendment at 21:30, my response appended). Tripwire: if September isn't in the store by 10:00 Sunday, the KPIs read the files instead.
 
 ### Done
+- **V2.3 + V2.4** (branch `victor/store-status-backfill`): `python -m engine.store status [--month M]` and `python -m engine.store backfill --inbox DIR --from D1 --to D2 [--out out]`. Backfill reads the inbox once and writes each day through the same `engine.cli.write_day` that `engine run` uses (tested: identical files), so **September loads in about 6 s** (was 41 s day by day). 8 tests in `engine/tests/test_store_backfill.py`.
+- **Checked by hand, all of September:** `clean_month`: 30 of 30 days complete, 90 of 90 marketplace-days equal to the answer key, month revenue 7,075,396 cents = key. `messy_month`: month revenue 6,850,986 cents = key; `status` flags the 3 days with a stale file (Sep 7 ShopGoodwill, Sep 21-22 Amazon). The answer key writes 0 for those; the store keeps NULL, as `pulse.md` says. **The 10:00 tripwire is met.**
+- Found, not mine: `reports/pulse.py` line 399 needs Python 3.12+, so `run_nightly` crashes on 3.11 (my machine). Fix sent to Orlando.
 - **V2.1 + V2.2** (branch `victor/store-loader`): `engine/store/` with `connect`/`init` (path: `--db`, else `ECOM_DB`, else `out/store/ecom.db`) and `load_day`. Command: `python -m engine.store init`, `python -m engine.store load --in-dir out --date D`. 15 tests in `engine/tests/test_store.py`: re-run changes nothing, dropped rows disappear, moved rows move, other dates untouched, failures (missing or wrong pulse, bad CSV, failure halfway through the writes) leave the previous load and log a `failed` run, plus one September day through the real engine + pulse + load against `expected.json`.
 - **Checked by hand:** all of September from `clean_month`, run with the real commands (engine run -> recon.pulse -> store load, one day at a time): **month revenue in `v_monthly` = 7,075,396 cents = the answer key, to the cent**; 30 of 30 days ok for ShopGoodwill, eBay and Amazon; `other` has NULL, not 0; 2,425 transactions; about 1.4 s a day (41 s for the month), mostly the engine reading the month spreadsheet.
 - Contracts (merged, #16):
@@ -18,15 +21,13 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 ### Next, in order (sizes S < 30 min, M 30-90 min)
 | ID | Task | Size | Target |
 |---|---|---|---|
-| V2.3 | `store status` (views already in the schema) | S | 08:30 |
-| V2.4 | `store backfill`: September from `clean_month` (one month file per marketplace, so engine runs once per date on the same inbox); month revenue = `expected.json` | M | **10:00 tripwire** |
 | V2.5 | `engine/internal_api/`: client + mock per `internal-api.md`; `reports/mock_api.py` re-exports it until Orlando switches | M | 10:45 |
 | V2.6 | `internal_api pull`, included in backfill | S | 11:00 checkpoint 1 |
 | V2.11 | `run_nightly`: add store load, internal pull, kpi | S | after CP1 |
 | V2.8 | `export kpi-csv` from the KPI file (against Dani's sample file) | S | |
 | V2.9 | `export pdf`: headless Edge prints Orlando's scorecard page (needs O2.4); goes to Orlando if late | M | |
 | V2.10 | Attach the PDF to Orlando's `email_gen.py` `.eml` (already writes drafts) | S | |
-| V2.7 | `units` in parsers + `transaction.md` (the `units` column already exists in the store, NULL for now) | S-M | if time |
+| V2.7 | `units`, plus Orlando's `shipping_cents` / `handling_cents` (for `reports/reconcile.py`), in the parsers and `transaction.md` | S-M | after CP1 |
 | V2.12 | August sample for growth | M | cut first |
 Then phase 3, with Orlando's `reports/bc_export.py` already on `main`.
 
@@ -76,6 +77,8 @@ Store (phase 2), from the repo root, after `engine run` and `recon.pulse` for th
 ```
 python -m engine.store init
 python -m engine.store load --in-dir out --date 2026-09-14
+python -m engine.store backfill --inbox data/sample/clean_month/inbox --from 2026-09-01 --to 2026-09-30
+python -m engine.store status --month 2026-09
 ```
 From the repo root, Python 3.11+:
 ```
