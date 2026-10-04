@@ -37,7 +37,7 @@ def test_the_close_runs_on_the_sample_inbox_plus_the_simulated_sources(closed):
     assert status["inboxes"][1] == "data/sample/messy_month/periodic"
     assert status["journal"]["balanced"] is True and status["posting"]["status"] == "not_posted"
     assert {k: v["status"] for k, v in status["sources"].items()} == {
-        "ebay": "OPEN", "amazon": "INCOMPLETE", "shopgoodwill": "INCOMPLETE"}
+        "ebay": "OPEN", "amazon": "INCOMPLETE", "shopgoodwill": "INCOMPLETE", "goodwillbooks": "RECONCILED"}
     # Every simulated file is labelled, in the fetch log and in what the engine read for the close.
     log = json.loads((base / "out" / "close_sources" / "2026-09" / "fetch_log.json").read_text(encoding="utf-8"))
     assert sorted(log["sources"]) == ["bank_0101", "bc_ledger", "goodwillbooks", "jewelry"]

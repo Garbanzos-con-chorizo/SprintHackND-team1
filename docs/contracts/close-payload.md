@@ -1,7 +1,7 @@
 # Contract: close payload (input of the Business Central export)
 
 - **Owner:** Dani for phase 3 (decision 009; Orlando wrote it and `reports/bc_export.py`). **Producer:** `python -m reports.reconcile` (matching from the raw inbox); `reports/mock_recon.py` builds the same payload from an answer key, for tests. **Consumer:** `python -m reports.bc_export --payload <file>`.
-- **Status:** draft v0.5. Verified with the built-in mock (`python -m reports.bc_export`) and the messy month (`reports/tests/test_reconcile.py`, `test_bc_export.py`).
+- **Status:** draft v0.6. Verified with the built-in mock (`python -m reports.bc_export`) and the messy month (`reports/tests/test_reconcile.py`, `test_bc_export.py`).
 
 ## Shape
 ```json
@@ -83,6 +83,17 @@ Two more things since tasks D3.2 and D3.3 of `docs/PLAN_PHASE_3.md`:
 ```
 Any difference is also a `cross_check_difference` exception that says how many orders, how much and on which days. With no report of its own for a marketplace (the nightly run), its Cash Monkey rows are not set aside: they are all there is.
 
+## Shipping costs and statements (v0.6)
+`shipping_costs` has one entry per carrier whose lookup reached the run (rows of `reports/config/close_shipping.csv`): a carrier paid from the bank when its bank account is in the engine's `bank.csv`, FedEx when there is a `ledger.csv`. It is empty otherwise.
+```json
+{ "carrier": "fedex", "label": "FedEx",
+  "figure_from": "Business Central ledger: G/L 40356, department 180, vendor V00122, net of BNKDEPOSIT refunds",
+  "charges_cents": 328210, "refunds_cents": 13694, "net_cents": 314516, "lines": 12, "post": null }
+```
+All three amounts are positive; `net_cents` = charges minus refunds. `post` is `null` for a figure that is already in Business Central (FedEx: reported, never posted again). For a carrier paid from the bank it is `{"expense_account": "60510", "offset_account": "10009", "department": "180"}`, and the export writes one document `ECOM-<yymm>-SHIP`: a debit per carrier, one credit per offset account. The export also writes `shipping_costs_<month>.csv` (header only when the list is empty).
+
+A source that reports by **payment statement** (Goodwill Books, the engine's `statements.csv`) is an entry of `sources` like any other: the statements paid in the month, with `refunds_cents`, `shipping_cents` and `handling_cents` 0, and a `period_label` ("Aug 2026 statement GWB-2026-08") that the export uses in its line descriptions, because the sales belong to the month before. Its bank credit is an entry of `deposits` whose `matches` holds the statement's reference. Two kinds of exception: `statement_not_in_bank` (the statement says it was paid and the bank shows another amount, or nothing; the source reads `UNEXPLAINED`) and `statement_mismatch` (its net is not its sales minus its fees). With no statement in the inbox nothing is posted for that source, and a credit that carries its bank text is held out as an `unmatched_deposit`.
+
 ## What the export guarantees
 - Each source posts through exactly one path from `bc_mapping.csv`: **Journal** (net receivable to a clearing account, sales / refunds / shipping / handling / fees to their accounts) or **Invoice** (one sales invoice to the source's customer, fees as a journal against the customer).
 - Each deposit is one journal document: bank debit, clearing (or customer) credit.
@@ -90,6 +101,7 @@ Any difference is also a `cross_check_difference` exception that says how many o
 - `control_totals_<month>.csv` per source: revenue in vs posted (must match), receivable posted, deposits, open balance. `Explained` = the `open_balance` exceptions for that source, `Unexplained` = open balance minus explained. Status, worst first: `MISMATCH`: posted revenue differs from the input. `UNEXPLAINED`: money nobody has accounted for. `INCOMPLETE` (v0.4): every cent is accounted for, but the source has a `payout_data_gap`, so its posted revenue is known to be short until the missing report is downloaded. `OPEN`: open but fully explained. `RECONCILED`: open balance 0.
 
 ## Changelog
+- draft v0.6 (2026-10-04, Dani, D3.5 and D3.13): `shipping_costs`, statement sources with `period_label`, the kinds `statement_not_in_bank` and `statement_mismatch`, the passthrough `missing_supplier`. Additions only.
 - draft v0.5 (2026-10-04, Dani, D3.14): `cross_checks` and the exception kind `cross_check_difference`. Additions only; the export ignores `cross_checks`.
 - draft v0.4 (2026-10-04, Dani): payouts carry their window, what the files hold for it and the gap; new exception kinds `payout_data_gap`, `payout_mismatch`, `prior_month_payout`, `no_order_times`; new control status `INCOMPLETE`; `not_yet_paid_out` is now an exact amount, not what is left over; the table of exception kinds. Owner is Dani for phase 3. Additions only: a v0.3 payload still exports the same files.
 - draft v0.3: produced by `reports.reconcile` from the raw inbox. Optional extra fields, ignored by the export: `deposits[].matches` (payout ids), `payouts` (every payout read, with its deposit date or null), `stopgaps` (numbers not yet from the engine), `inbox`.

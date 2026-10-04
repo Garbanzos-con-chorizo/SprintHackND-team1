@@ -21,7 +21,7 @@ from reports import close, reconcile
 
 INBOX = close.ROOT / "data" / "sample" / "messy_month" / "inbox"
 MONTH = "2026-09"
-CSVS = ("general_journal", "ar_invoice", "control_totals", "exceptions")
+CSVS = ("general_journal", "ar_invoice", "control_totals", "exceptions", "shipping_costs")  # the fifth since D3.5
 LAST_LINE = "posting: NOT POSTED (import files ready)"
 
 

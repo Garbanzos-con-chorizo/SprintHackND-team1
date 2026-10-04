@@ -68,8 +68,8 @@ class ClosePageTest(unittest.TestCase):
             self.assertEqual(states[source], "sample file", source)
         self.assertEqual(states["Cash Monkey"], "not in this inbox")
         # A source no file reached is never shown as captured.
-        for source in ("Jewelry", "OSM / PB / EasyPost", "FedEx", "Goodwill Books"):
-            self.assertIn(states[source], ("not modeled", "simulated API"), source)
+        for source in ("Jewelry", "OSM / PB / EasyPost", "FedEx", "Goodwill Books", "ShopGoodwill"):
+            self.assertEqual(states[source], "not in this inbox", source)
         self.assertIn("a report is missing for some days", self.messy)
         self.assertNotIn("a report is missing for some days", self.tidy)
 

@@ -11,6 +11,7 @@ into the General Journal / Sales Invoice grid or loaded with Edit in Excel:
   general_journal_<YYYY-MM>.csv   one balanced document per journal-path source, one per deposit
   ar_invoice_<YYYY-MM>.csv        one sales invoice per invoice-path source
   control_totals_<YYYY-MM>.csv    source totals in vs posted, deposits, open balance
+  shipping_costs_<YYYY-MM>.csv    net shipping cost per carrier, and the journal document that posts it, if any
 Money is integer cents internally; BC convention on output: positive = debit, negative = credit.
 If any document does not sum to 0.00, nothing is written and the command exits 1. After writing,
 the files are read back and checked again (exit 2 if that check fails).
@@ -37,6 +38,7 @@ INVOICE_COLUMNS = ["Document No.", "Customer No.", "Posting Date", "Type", "No."
 CONTROL_COLUMNS = ["Source", "Path", "Revenue In", "Revenue Posted", "Difference", "Receivable Posted",
                    "Deposits", "Open Balance", "Explained", "Unexplained", "Status"]
 EXCEPTION_COLUMNS = ["Kind", "Source", "Amount", "Effect", "Detail", "Owner", "Action"]
+SHIPPING_COLUMNS = ["Carrier", "Figure From", "Charges", "Refunds", "Net", "Lines", "Journal Document"]
 # Effect of an exception: "open_balance" explains part of a source's open balance (money in transit,
 # activity not paid yet, a payout for activity missing from our files); "not_posted" = held out of BC;
 # "info" = nothing to post, someone should look.
@@ -100,7 +102,7 @@ def build(payload, mapping, owners=None):
     month = payload["month"]
     yymm = month[2:4] + month[5:7]
     posting = payload["posting_date"]
-    period = f"{date.fromisoformat(month + '-01'):%b %Y}"
+    month_label = f"{date.fromisoformat(month + '-01'):%b %Y}"
     journal, invoice, exceptions = [], [], [dict(e) for e in payload.get("exceptions", [])]
 
     def jl(doc, account_type, account, desc, cents, m, doc_type="", when=posting):
@@ -122,6 +124,7 @@ def build(payload, mapping, owners=None):
             continue
         posted_sources.append(src)
         label, code = m["Label"], m["Code"]
+        period = s.get("period_label") or month_label  # a statement posts the month it reports on, by name
         parts = [("Sales_Account", f"{label} sales {period}", -s["sales_cents"]),
                  ("Refunds_Account", f"{label} refunds {period}", s["refunds_cents"]),
                  ("Shipping_Account", f"{label} shipping charged {period}", -s["shipping_cents"]),
@@ -162,6 +165,23 @@ def build(payload, mapping, owners=None):
             jl(doc, "G/L Account", m["Clearing_Account"], desc, -dep["amount_cents"], m, "Payment", dep["date"])
         else:
             jl(doc, "Customer", m["Customer_No"], desc, -dep["amount_cents"], m, "Payment", dep["date"])
+
+    # Shipping cost paid from the bank (OSM, PB, EasyPost): one document, a debit per carrier to its expense
+    # account and one credit per bank account's G/L account. FedEx is already in Business Central's ledger,
+    # so it has no `post` and nothing is written for it.
+    paid = [c for c in payload.get("shipping_costs", []) if c.get("post") and c["net_cents"]]
+    offsets = defaultdict(int)
+    for c in paid:
+        journal.append({"Posting Date": posting, "Document Type": "", "Document No.": f"ECOM-{yymm}-SHIP",
+                        "Account Type": "G/L Account", "Account No.": c["post"]["expense_account"],
+                        "Description": f"{c['label']} shipping cost {month_label}", "Amount": c["net_cents"],
+                        "Department Code": c["post"]["department"]})
+        offsets[(c["post"]["offset_account"], c["post"]["department"])] += c["net_cents"]
+    for (account, department), cents in offsets.items():
+        journal.append({"Posting Date": posting, "Document Type": "", "Document No.": f"ECOM-{yymm}-SHIP",
+                        "Account Type": "G/L Account", "Account No.": account,
+                        "Description": f"Carrier payments {month_label}", "Amount": -cents,
+                        "Department Code": department})
 
     control = []
     for src in posted_sources:
@@ -217,7 +237,7 @@ def us_date(iso):
     return f"{d.month:02d}/{d.day:02d}/{d.year}"
 
 
-def write(folder, month, journal, invoice, control, exceptions, mapping):
+def write(folder, month, journal, invoice, control, exceptions, mapping, shipping=()):
     folder.mkdir(parents=True, exist_ok=True)
     paths = {k: folder / f"{k}_{month}.csv" for k in ("general_journal", "ar_invoice", "control_totals", "exceptions")}
     with open(paths["general_journal"], "w", encoding="utf-8", newline="") as f:
@@ -246,6 +266,14 @@ def write(folder, month, journal, invoice, control, exceptions, mapping):
             w.writerow([e["kind"], mapping.get(src, {}).get("Label", src),
                         dollars(e["amount_cents"]) if e.get("amount_cents") is not None else "",
                         e.get("effect", "info"), e["detail"], e.get("owner", ""), e.get("action", "")])
+    paths["shipping_costs"] = folder / f"shipping_costs_{month}.csv"
+    with open(paths["shipping_costs"], "w", encoding="utf-8", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(SHIPPING_COLUMNS)
+        for c in shipping:
+            w.writerow([c["label"], c["figure_from"], dollars(c["charges_cents"]), dollars(c["refunds_cents"]),
+                        dollars(c["net_cents"]), c["lines"],
+                        f"ECOM-{month[2:4]}{month[5:7]}-SHIP" if c.get("post") and c["net_cents"] else ""])
     return paths
 
 
@@ -287,7 +315,8 @@ def main(argv=None):
         print("No journal written. Fix the payload or bc_mapping.csv and run again.", file=sys.stderr)
         return 1
     folder = Path(args.out) / payload["month"]
-    paths = write(folder, payload["month"], journal, invoice, control, exceptions, mapping)
+    paths = write(folder, payload["month"], journal, invoice, control, exceptions, mapping,
+                  payload.get("shipping_costs", []))
     problems, n_lines, n_docs = verify_files(paths)
     origin = payload.get("origin") or payload.get("mock") or f"payload {args.payload}"  # "mock": before v0.4
     print(f"{origin}: close {payload['month']}")

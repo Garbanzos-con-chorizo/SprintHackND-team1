@@ -17,7 +17,13 @@ inbox (docs/contracts/close-inputs.md); this module parses no report itself:
     names), refunds of orders sold before the month, rows the engine rejected or de-duplicated;
   - cross-check: when the inbox also holds the Cash Monkey Orders report for a marketplace that has its
     own report (`Cross_Check_Source` in bc_mapping.csv), its rows are compared with the report order by
-    order and never added to it: the same sales are in both.
+    order and never added to it: the same sales are in both;
+  - shipping cost: the two lookups Goodwill's slide 38 spells out, each a row of close_shipping.csv. A
+    carrier paid from the bank (OSM, PB, EasyPost) is the lines of its bank account that carry its text;
+    FedEx is the ledger entries on its G/L account, department and vendor, net of the refunds that came
+    back as bank deposits. Only a carrier whose bank feed or ledger reached the run is listed;
+  - statements: a source that reports by payment statement (Goodwill Books) posts the statements paid in
+    the month, matched to their bank credit.
 Everything here comes from the engine's files and the bank file; nothing is read from an answer key.
 Shipping and handling are the engine's `shipping_cents` and `handling_cents` columns
 (`docs/contracts/transaction.md` v0.4). Payout windows need the day each row counts toward in its
@@ -46,6 +52,7 @@ from reports.bc_export import load_mapping, net
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "out" / "close"
+SHIPPING = ROOT / "reports" / "config" / "close_shipping.csv"
 WINDOW_DAYS = 5
 EASTERN = "America/New_York"  # the zone of the engine's business_date
 WEEKDAYS = {"MON": 0, "TUE": 1, "WED": 2, "THU": 3, "FRI": 4, "SAT": 5, "SUN": 6}
@@ -77,13 +84,66 @@ def engine_csv(out, name):
         return list(csv.DictReader(f))
 
 
-def bank_credits(out, mapping):
+def optional_engine_csv(out, name):
+    """Rows of an engine file that only some runs have (ledger.csv, statements.csv); None when the engine
+    wrote no such file, which is different from a file with no rows."""
+    return engine_csv(out, name) if (out / name).exists() else None
+
+
+def load_shipping(path=SHIPPING):
+    """The carriers and where each one's month is looked up: one row of close_shipping.csv per carrier."""
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        return [{k: (v or "").strip() for k, v in r.items()} for r in csv.DictReader(f)]
+
+
+def carrier_of(bank_row, carriers):
+    """The carrier a bank line belongs to: the line is on that carrier's account and carries its text."""
+    text = bank_row["description"].upper()
+    return next((c for c in carriers if c["Figure_From"] == "bank" and bank_row.get("account") == c["Bank_Account"]
+                 and c["Bank_Text"].upper() in text), None)
+
+
+def shipping_costs(bank, ledger, carriers, in_month):
+    """What shipping cost in the month, per carrier (slide 38: "shipping amounts", "shipping charges +
+    refunds"). `bank` is the engine's bank.csv, `ledger` its ledger.csv or None when there is none. A
+    carrier appears only when its lookup reached the run: its bank account is in the bank file, or there
+    is a ledger. Charges, refunds and net are positive cents; net = charges - refunds."""
+    accounts, costs = {r.get("account") for r in bank}, []
+    for c in carriers:
+        if c["Figure_From"] == "bank":
+            if c["Bank_Account"] not in accounts:
+                continue
+            amounts = [int(r["amount_cents"]) for r in bank if in_month(r["posting_date"]) and carrier_of(r, [c])]
+            charges, refunds = -sum(a for a in amounts if a < 0), sum(a for a in amounts if a > 0)
+            where = f"bank account {c['Bank_Account']}, lines with {c['Bank_Text']}"
+            post = {"expense_account": c["Expense_Account"], "offset_account": c["Offset_Account"],
+                    "department": c["Department_Code"]}
+        elif ledger is not None:
+            mine = [r for r in ledger if in_month(r["posting_date"]) and r["gl_account"] == c["GL_Account"]
+                    and r["department"] == c["Department_Code"] and r["vendor_no"] == c["Vendor_No"]]
+            back = [r for r in mine if c["Refund_Document"]
+                    and r["document_no"].upper().startswith(c["Refund_Document"].upper())]
+            amounts = [int(r["amount_cents"]) for r in mine]
+            refunds = -sum(int(r["amount_cents"]) for r in back)
+            charges = sum(amounts) + refunds
+            where = (f"Business Central ledger: G/L {c['GL_Account']}, department {c['Department_Code']}, vendor "
+                     f"{c['Vendor_No']}, net of {c['Refund_Document']} refunds")
+            post = None  # already in Business Central: the close reports the net and posts nothing
+        else:
+            continue
+        costs.append({"carrier": c["Carrier"], "label": c["Label"], "figure_from": where, "charges_cents": charges,
+                      "refunds_cents": refunds, "net_cents": charges - refunds, "lines": len(amounts), "post": post})
+    return costs
+
+
+def bank_credits(out, mapping, carriers=()):
     """The bank's credits from the engine's bank.csv, each classified to a source by `Bank_Text` in
-    bc_mapping.csv (None when no rule matches). Debits (payroll, fees, carriers) are not marketplace money."""
+    bc_mapping.csv (None when no rule matches). Debits (payroll, fees, carriers) are not marketplace money,
+    and a credit from a carrier is a refund of shipping cost, netted there, not a deposit."""
     credits = []
     for r in engine_csv(out, "bank.csv"):
         amount = int(r["amount_cents"])
-        if amount <= 0:
+        if amount <= 0 or carrier_of(r, carriers):
             continue
         text = r["description"].upper()
         source = next((s for s, m in mapping.items() if m.get("Bank_Text") and m["Bank_Text"].upper() in text), None)
@@ -355,7 +415,8 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
     in_month = lambda iso: first.isoformat() <= iso <= last.isoformat()
     rows, warnings = run_engine(inbox, engine_out, last)
     rows, set_aside = split_cross_checks(rows, mapping)
-    deposits, payouts = match_deposits(bank_credits(engine_out, mapping), reported_payouts(engine_out))
+    carriers = load_shipping()
+    deposits, payouts = match_deposits(bank_credits(engine_out, mapping, carriers), reported_payouts(engine_out))
     exceptions, stopgaps = [], []
 
     # Month totals per source from the engine (marketplace column). A marketplace with rows but no row in
@@ -374,6 +435,28 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
                         "fees_cents": sum(int(r["fee_cents"]) for r in mine),
                         "shipping_cents": sum(int(r["shipping_cents"]) for r in mine),
                         "handling_cents": sum(int(r["handling_cents"]) for r in mine)}
+
+    # A source that reports by payment statement (Goodwill Books): the statements paid in the month are
+    # its month, whatever month they report on, and each is matched to its bank credit by its reference.
+    statements = defaultdict(list)
+    for st in optional_engine_csv(engine_out, "statements.csv") or []:
+        if in_month(st["paid_date"]):
+            statements[st["source"]].append(st)
+    for src, sts in statements.items():
+        sales, fees = sum(int(st["sales_cents"]) for st in sts), sum(int(st["fees_cents"]) for st in sts)
+        about = ", ".join(f"{date.fromisoformat(st['period_from']):%b %Y} statement {st['reference']}" for st in sts)
+        sources[src] = {"sales_cents": sales, "refunds_cents": 0, "fees_cents": fees, "shipping_cents": 0,
+                        "handling_cents": 0, "period_label": about}
+        for st in sts:
+            if int(st["net_cents"]) != int(st["sales_cents"]) - int(st["fees_cents"]):
+                exceptions.append({"kind": "statement_mismatch", "source": src, "amount_cents": int(st["net_cents"]),
+                                   "effect": "info",
+                                   "detail": f"statement {st['reference']} says it paid {money(int(st['net_cents']))}, "
+                                             f"but its sales minus its fees are "
+                                             f"{money(int(st['sales_cents']) - int(st['fees_cents']))}"})
+            for d in deposits:
+                if d["source"] == src and st["reference"] and st["reference"].upper() in d["description"].upper():
+                    d["matches"] = [st["reference"]]
 
     payload_deposits = []
     for d in deposits:
@@ -433,7 +516,8 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
             continue
         for w in ws:
             exceptions.append({"kind": kind, "source": "", "amount_cents": None, "effect": "info",
-                               "detail": f"{w['source_file']} row {w['source_row']}: {w['reason']}; left out of the totals"})
+                               "detail": f"{w['source_file']} row {w['source_row']}: {w['reason']}"
+                                         + ("" if kind == "missing_supplier" else "; left out of the totals")})
 
     cross_checks = []
     for src, theirs in set_aside.items():
@@ -443,9 +527,18 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
         exceptions += found
 
     # What is left open after the deposits: explained payout by payout, never as one net figure.
+    for src, sts in statements.items():
+        paid = sum(d["amount_cents"] for d in payload_deposits if d["source"] == src)
+        if src in mapping and paid != net(sources[src]):
+            exceptions.append({"kind": "statement_not_in_bank", "source": src, "amount_cents": net(sources[src]) - paid,
+                               "effect": "info",
+                               "detail": f"{', '.join(st['reference'] for st in sts)}: the statement says "
+                                         f"{money(net(sources[src]))} was paid, the bank shows {money(paid)} for "
+                                         f"{mapping[src]['Label']}"})
+
     for src, s in sources.items():
-        if src not in mapping:
-            continue  # unmapped: the export reports it and posts nothing
+        if src not in mapping or src in statements:
+            continue  # unmapped: the export reports it and posts nothing. A statement is checked above
         m = mapping[src]
         tz = m.get("Payout_Timezone") or EASTERN
         no_time = sum(not payout_day(r, tz)[1] for r in month_rows[src])
@@ -470,6 +563,8 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
     return {"month": month, "posting_date": last.isoformat(),
             "origin": "reconciled from the raw inbox", "inbox": str(inbox), "stopgaps": stopgaps,
             "sources": sources, "deposits": payload_deposits, "exceptions": exceptions, "cross_checks": cross_checks,
+            "shipping_costs": shipping_costs(engine_csv(engine_out, "bank.csv"),
+                                             optional_engine_csv(engine_out, "ledger.csv"), carriers, in_month),
             "payouts": [{**{k: iso(v) for k, v in p.items()}, "deposit": iso(p.get("deposit"))} for p in payouts]}
 
 

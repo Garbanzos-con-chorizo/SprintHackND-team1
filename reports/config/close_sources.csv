@@ -1,10 +1,10 @@
 Source,Month_End_Input,Acquisition_Rule,Detect,Origin,When_Absent,What_We_Read
 Cash Monkey,Orders • full month,Submit/download CSV; save as Excel,cross_check:cashmonkey,sample file,not in this inbox,The month's Orders report as a cross-check against the eBay and Amazon reports; never a second count
 Upright,Paid order items • full month,Generate; email delivery; save as Excel,marketplace:shopgoodwill,sample file,not in this inbox,Daily Paid orders files for ShopGoodwill (one row per order); not the item-level month report
-Jewelry,Jewelry Report,Request report; Co-Pivot populates Supplier,engine_file:jewelry.csv,simulated API,not modeled,Jewelry sales with the supplying store filled in by a lookup
-OSM / PB / EasyPost,Shipping amounts,1st Source acct 0101 • GL 10009,bank_account:0101,simulated API,not modeled,Carrier payments in the bank feed of account 0101
-FedEx,Shipping charges + refunds,BC GL 40356 • Dept 180 • V00122 • net BNKDEPOSIT refunds,engine_file:ledger.csv,simulated API,not modeled,Business Central ledger entries filtered as the slide says
-ShopGoodwill,Periodic marketplace reports,Filter year/month; Period 1 periodic only; Period 3 all reports,payout_period:shopgoodwill,sample file,not modeled,Its payouts with the period each one covers; what Period 1 and Period 3 mean is unknown
-Goodwill Books,Prior-month payment statement,Monthly email attachment,engine_file:statements.csv,simulated API,not modeled,The statement's sales and fees and net payment
+Jewelry,Jewelry Report,Request report; Co-Pivot populates Supplier,engine_file:jewelry.csv,simulated API,not in this inbox,Jewelry sales with the supplying store filled in by a lookup
+OSM / PB / EasyPost,Shipping amounts,1st Source acct 0101 • GL 10009,bank_account:0101,simulated API,not in this inbox,Carrier payments in the bank feed of account 0101
+FedEx,Shipping charges + refunds,BC GL 40356 • Dept 180 • V00122 • net BNKDEPOSIT refunds,engine_file:ledger.csv,simulated API,not in this inbox,Business Central ledger entries filtered as the slide says
+ShopGoodwill,Periodic marketplace reports,Filter year/month; Period 1 periodic only; Period 3 all reports,payout_period:shopgoodwill,sample file,not in this inbox,Its payouts with the period each one covers; what Period 1 and Period 3 mean is unknown
+Goodwill Books,Prior-month payment statement,Monthly email attachment,engine_file:statements.csv,simulated API,not in this inbox,The statement's sales and fees and net payment
 eBay,Listing sales report,Seller Center • change date • generate/download,marketplace:ebay,sample file,not in this inbox,Transaction report with its payout rows; the layout is ours
 Amazon,Payments summary,Seller Central • request/refresh/download,marketplace:amazon,sample file,not in this inbox,Date Range report with its transfer rows; the layout is ours
