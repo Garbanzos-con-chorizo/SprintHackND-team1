@@ -1,6 +1,6 @@
 # Plan: phase 2 (database, KPIs, dashboard, exports) and phase 3 (Business Central)
 
-Written 2026-10-03 20:30 EDT by Dani's agent. **Status: proposed**, see `docs/decisions/007-phase-2-3-owners-database-scorecard.md`. It replaces the phase 2 and phase 3 rows of `docs/PHASES.md` once Victor and Orlando accept it. Sizes: **S** < 30 min, **M** 30-90 min, **L** 90+ min.
+Written 2026-10-03 20:30 EDT by Dani's agent. **Status: accepted** (`docs/decisions/007-phase-2-3-owners-database-scorecard.md`). **What is done and what is left of phase 2: section 11; everything left is Victor's.** It replaces the phase 2 and phase 3 rows of `docs/PHASES.md` once Victor and Orlando accept it. Sizes: **S** < 30 min, **M** 30-90 min, **L** 90+ min.
 
 Checked against `main` at 78f876f (Orlando's static portal and the "static first" update to decision 006).
 
@@ -259,3 +259,23 @@ Suggested clock for Sunday: contracts done by 08:30, checkpoint 1 at 11:00, chec
 - **Phase 3 has no owner until checkpoint 1.** If checkpoint 1 slips past 11:00, phase 3 shrinks to package C on the month totals (a balanced General Journal without bank matching) before anything else is cut from it.
 - **Two KPI lists in the repo** until decision 007 is accepted and `kpi_catalog.md` is updated by Orlando.
 - **Growth needs two periods.** Without August it reads "no prior period", which is correct and should stay that way rather than be faked.
+
+## 11. Phase 2: what is done, and what is left (all Victor's)
+Checked 2026-10-03 23:40 on a clean checkout of `main`, on the generated pages rather than on status files.
+
+**Done and verified:** contracts C1 to C5; the store, the internal API mock and snapshot, the exports and the nightly run (V2.1 to V2.11, plus `listing_to_sale_days`); the 15 KPIs and their tests (D2.1 to D2.10); the monthly scorecard page and its print layout (O2.1, O2.2, O2.4). `python -m pytest engine recon reports -q`: 347 passed. `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04`: exit 0, with the September scorecard, its CSV, a one-page PDF and the email drafts. September revenue 7,075,396 = the answer key.
+
+**Left: eight items, all assigned to Victor** (Dani, 2026-10-03 23:58; decision 007, last amendment). The list, with files, sizes and a "done when" for each, is **L1 to L8 in `docs/members/victor.md`** ("Next: what is left of phase 2"); it is kept there so there is one list. In terms of section 8:
+
+| Victor's item | What | Was |
+|---|---|---|
+| L1 | Slide 32's pillar names on the scorecard page | new (from `docs/PHASE1_ALIGNMENT.md`) |
+| L2 | Sell-through as two boxes (`parts` in the KPI file) | new (Dani's page of 22:35) |
+| L3 | Links to the KPI CSV and the PDF | O2.6 |
+| L4 | A prior month for Revenue Growth % (August) | V2.12 |
+| L5 | Day, week-to-date and month-to-date scorecards on the portal | O2.3 |
+| L6 | Weekly page from the KPI file; delete `reports/kpi.py` and `reports/mock_api.py` | O2.5, D2.11 |
+| L7 | Demo script for phases 2 and 3; `docs/pitch/kpi_catalog.md` | O2.8 |
+| L8 | Phase 2 status in `docs/PHASES.md` | new |
+
+The slides, the video and the submission stay with Orlando (O6 to O9, I4, I5). Nothing is left in `recon/`.
