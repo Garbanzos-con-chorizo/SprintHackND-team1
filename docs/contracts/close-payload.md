@@ -1,7 +1,7 @@
 # Contract: close payload (input of the Business Central export)
 
 - **Owner:** Dani for phase 3 (decision 009; Orlando wrote it and `reports/bc_export.py`). **Producer:** `python -m reports.reconcile` (matching from the raw inbox); `reports/mock_recon.py` builds the same payload from an answer key, for tests. **Consumer:** `python -m reports.bc_export --payload <file>`.
-- **Status:** draft v0.4. Verified with the built-in mock (`python -m reports.bc_export`) and the messy month (`reports/tests/test_reconcile.py`, `test_bc_export.py`).
+- **Status:** draft v0.5. Verified with the built-in mock (`python -m reports.bc_export`) and the messy month (`reports/tests/test_reconcile.py`, `test_bc_export.py`).
 
 ## Shape
 ```json
@@ -64,6 +64,7 @@ A row's day in that calendar needs the order's time (`occurred_at`, `transaction
 | `unmapped_source` | `not_posted` | a source with no row in `bc_mapping.csv` (added by the export) |
 | `deposit_payout_mismatch` | `info` | a deposit of a source that matches no run of its payouts |
 | `missing_report` | `info` | days of the month no report of that source covers |
+| `cross_check_difference` | `info` | the source's own reports and its cross-check source (the Cash Monkey Orders report) do not hold the same orders; `amount_cents` is cross-check sales minus report sales |
 | `prior_month_refund` | `info` | a refund whose sale is not in this month's files |
 | `no_order_times` | `info` | the source could not be checked payout by payout (see above) |
 | `residual_unexplained` | `info` | what the one-figure check could not accept |
@@ -74,6 +75,14 @@ Two more things since tasks D3.2 and D3.3 of `docs/PLAN_PHASE_3.md`:
 - Every exception leaves the export with an `owner` and an `action`, the last two columns of `exceptions_<month>.csv`. They come from `reports/config/close_exceptions.csv`, one row per kind and a `*` row for any kind it does not list. **The owners are role names we made up** (Accounting, E-commerce, IT), not Goodwill's; a producer may set `owner` and `action` itself and the export keeps them.
 - A marketplace that has rows in the month but no row in `bc_mapping.csv` is in `sources` like any other, so the export reports it as `unmapped_source` instead of the close leaving it out.
 
+## Cross-checks (v0.5)
+`cross_checks` has one entry per marketplace whose inbox held both its own report and its `Cross_Check_Source` from `bc_mapping.csv` (the Cash Monkey Orders report, for eBay and Amazon); it is empty otherwise. The cross-check rows are **compared, never added**: `sources` is built from the marketplace's own reports only. Sales only, because the Cash Monkey report lists orders, not refunds.
+```json
+{ "source": "amazon", "against": "cashmonkey", "report_sales_cents": 948649, "against_sales_cents": 1032160,
+  "difference_cents": 83511, "orders_only_in_against": 34, "orders_only_in_report": 0, "orders_with_another_amount": 0 }
+```
+Any difference is also a `cross_check_difference` exception that says how many orders, how much and on which days. With no report of its own for a marketplace (the nightly run), its Cash Monkey rows are not set aside: they are all there is.
+
 ## What the export guarantees
 - Each source posts through exactly one path from `bc_mapping.csv`: **Journal** (net receivable to a clearing account, sales / refunds / shipping / handling / fees to their accounts) or **Invoice** (one sales invoice to the source's customer, fees as a journal against the customer).
 - Each deposit is one journal document: bank debit, clearing (or customer) credit.
@@ -81,6 +90,7 @@ Two more things since tasks D3.2 and D3.3 of `docs/PLAN_PHASE_3.md`:
 - `control_totals_<month>.csv` per source: revenue in vs posted (must match), receivable posted, deposits, open balance. `Explained` = the `open_balance` exceptions for that source, `Unexplained` = open balance minus explained. Status, worst first: `MISMATCH`: posted revenue differs from the input. `UNEXPLAINED`: money nobody has accounted for. `INCOMPLETE` (v0.4): every cent is accounted for, but the source has a `payout_data_gap`, so its posted revenue is known to be short until the missing report is downloaded. `OPEN`: open but fully explained. `RECONCILED`: open balance 0.
 
 ## Changelog
+- draft v0.5 (2026-10-04, Dani, D3.14): `cross_checks` and the exception kind `cross_check_difference`. Additions only; the export ignores `cross_checks`.
 - draft v0.4 (2026-10-04, Dani): payouts carry their window, what the files hold for it and the gap; new exception kinds `payout_data_gap`, `payout_mismatch`, `prior_month_payout`, `no_order_times`; new control status `INCOMPLETE`; `not_yet_paid_out` is now an exact amount, not what is left over; the table of exception kinds. Owner is Dani for phase 3. Additions only: a v0.3 payload still exports the same files.
 - draft v0.3: produced by `reports.reconcile` from the raw inbox. Optional extra fields, ignored by the export: `deposits[].matches` (payout ids), `payouts` (every payout read, with its deposit date or null), `stopgaps` (numbers not yet from the engine), `inbox`.
 - draft v0.2: exceptions carry source, amount and effect; control totals add Explained / Unexplained. `reports/mock_recon.py` builds a payload from the messy-month answer key.
