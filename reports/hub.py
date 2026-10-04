@@ -14,6 +14,7 @@ from datetime import date, datetime
 from html import escape, unescape
 from pathlib import Path
 
+from reports import library
 from reports.pulse import CSS, DATA_LABEL, DATA_NOTE, PAGE, stamp
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -80,7 +81,7 @@ def _month(stem):
 
 # What the portal shows: folder, page name pattern, how to name the period, related files.
 SUITE = [
-    {"title": "Nightly pulse", "what": "Revenue and customers by marketplace for the day that just ended.",
+    {"title": "Daily report · nightly pulse", "what": "Revenue and customers by marketplace for the day that just ended.",
      "folder": "pulse", "pattern": r"\d{4}-\d{2}-\d{2}", "period": _long_day,
      "extras": lambda s: [(f"{s}.csv", "CSV"), (f"{s}.email.html", "Email copy")],
      "archive": ("index.html", "All days"),
@@ -215,17 +216,53 @@ def trend(root):
             f'Select a column for that night, or see <a href="pulse/index.html">all days</a>.</p>')
 
 
+CLOSE_FILES = [("general_journal", "General Journal"), ("ar_invoice", "AR invoice"), ("control_totals", "Control totals"),
+               ("exceptions", "Exceptions")]
+# The close page's pill colors (reports/close_report.py): OPEN is black, INCOMPLETE and worse are red.
+CLOSE_PILL = {"RECONCILED": "ok", "OPEN": "stale"}
+
+
+def _rows(path):
+    if not path.exists():
+        return []
+    with open(path, encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def _close_row(folder, month):
+    """One month for the list page, from the control totals and exceptions the close copied beside its page."""
+    control = _rows(folder / month / f"control_totals_{month}.csv")
+    exceptions = _rows(folder / month / f"exceptions_{month}.csv")
+    pills = "".join(f'<span class="pill {CLOSE_PILL.get(r["Status"], "missing")}">{escape(r["Source"])} {escape(r["Status"])}</span>'
+                    for r in control) or '<span class="muted">no control totals</span>'
+    review = any(r["Status"] != "RECONCILED" for r in control) or bool(exceptions)
+    files = "".join(f'<a href="{month}/{key}_{month}.csv">{name}</a>' for key, name in CLOSE_FILES
+                    if (folder / month / f"{key}_{month}.csv").exists())
+    return {"cells": [f'<a href="{month}.html">{escape(_month(month))}</a>', pills, f"{len(exceptions)}",
+                      "<strong>Not posted</strong><small>import files only</small>", files],
+            "find": f'{_month(month)} {month} {" ".join(r["Source"] + " " + r["Status"] for r in control)} not posted',
+            "tags": "review" if review else "clean", "exceptions": len(exceptions)}
+
+
 def close_index(root):
-    """<root>/close/index.html, the months closed (newest first): where the top bar's "Month-end close" lands."""
+    """<root>/close/index.html, the Month-end Close page: every month closed, newest first, with each source's
+    reconciliation status, its exceptions and its Business Central import files."""
     folder = root / "close"
     folder.mkdir(parents=True, exist_ok=True)
     months = sorted((f.stem for f in folder.glob("*.html") if re.fullmatch(r"\d{4}-\d{2}", f.stem)), reverse=True)
-    items = "\n".join(f'  <li><a href="{m}.html">{escape(_month(m))}{" <span class=\"muted\">(latest)</span>" if i == 0 else ""}'
-                      f'</a></li>' for i, m in enumerate(months))
-    body = (f'<header><h1>Month-end close</h1><p>Goodwill Michiana e-commerce · {len(months)} month(s) · '
-            f'Business Central import files, not posted</p></header>'
-            f'<ul class="days">\n{items or '  <li><a class="muted">None yet</a></li>'}\n</ul>')
-    (folder / "index.html").write_text(PAGE.substitute(title="Month-end close", css=CSS, body=body), encoding="utf-8")
+    rows = [_close_row(folder, m) for m in months]
+    top = library.tiles([
+        ("Latest close", _month(months[0]), "the month that ended last", f"{months[0]}.html"),
+        ("Exceptions to work", f'{rows[0]["exceptions"]}', f"in {_month(months[0])}", f"{months[0]}.html"),
+        ("Posting status", "Not posted", "import files for Business Central; nothing is sent", None)]) if months else ""
+    table = library.finder_table(
+        [("Month", "l"), ("Reconciliation by source", "l"), ("Exceptions", "num"), ("Posting", "l"), ("Import files", "files")],
+        [("", rows)], [("review", "Needs review"), ("clean", "Reconciled")],
+        'Find a month: "September", "2026-09", "incomplete"', noun="close")
+    body = (f'<header><h1>Month-end Close</h1><p>Goodwill Michiana e-commerce · {len(months)} month(s) · '
+            f'Business Central import files, not posted</p></header>{top}{table}')
+    css = CSS + library.LIBRARY_CSS + ".pill.stale { background:var(--ink); color:#fff; }"
+    (folder / "index.html").write_text(PAGE.substitute(title="Month-end Close", css=css, body=body), encoding="utf-8")
 
 
 def build(root=ROOT / "reports"):

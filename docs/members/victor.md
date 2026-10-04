@@ -9,9 +9,17 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - **Files outside my claim:** `reports/pulse.py` (shared `CSS` and `PAGE`) and `reports/monthly/index.html` are Orlando's; claimed in `docs/CLAIMS.md`, notes in his and Dani's inboxes. `reports/close_report.py` is not edited; no word or number on the close page changes.
 - **How to run it:** `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04`, then `python server.py` and open http://127.0.0.1:8000/.
 - **Scorecard tiles:** on screen a tile shows the value and its change; the definition, the prior period's value and the note are behind an (i) button (a browser `popover`, no script). A partial KPI says "Partial data" in words. The PDF has no button, so it prints the prior value and the note in the tile as before.
-- **Checked:** `python -m pytest engine recon reports -q`: 460 passed. The September scorecard PDF is still 1 page. At 375px wide no page scrolls sideways.
+- **List pages:** Daily Reports (was "Nightly pulse"), COO Scorecards and Month-end Close are no longer file listings. Each has headline tiles, a search box with filter buttons, and one table with a row per report: its figures, the state of its data and its files. Built by the new `reports/library.py`; the search is about twenty lines of inline script, no dependency. The top bar now reads Overview, Daily Reports, COO Scorecards, Month-end Close. The day pages keep the title "Nightly pulse: <date>".
+- **Checked:** `python -m pytest engine recon reports -q`: 463 passed. The September scorecard PDF is still 1 page. At 375px wide no page scrolls sideways.
 - **Known issues:** the portal chart shows Saturday Oct 3 at $2,324 (two files missing that night) while Sunday's pulse says "down 14.3% vs Saturday": Sunday's files also cover Saturday, so its comparison uses $3,243.08. Both are right for what each night had; don't linger on it in the video. The daily table (`monthly/index.html`) still prints the raw timestamp.
 - **Next:** Orlando's and Dani's yes, then one PR with the before and after screenshots.
+- **My task (assigned 2026-10-04 11:50, not started): add the missing files from the dashboard to complete the messy month.** On the close page (or its list page), a place to choose the reports that were missing and run the close again, so the demo shows `INCOMPLETE` turn to `OPEN` without a terminal. What it needs:
+  - An upload route in `server.py`. Decision 008 says the server only serves files and computes nothing, so this needs an amendment to 008 first. Read the request body directly (no `python-multipart`: that would be a new dependency). Accept only `.csv` and `.xlsx`, a size limit, the file name stripped of any path; localhost only, as today.
+  - Where the files go: a folder of their own under `out/` (for example `out/uploads/<month>/`), never into `data/sample/`.
+  - Then run Dani's command with that folder added: `python -m reports.close --inbox data/sample/messy_month/inbox --inbox out/uploads/2026-09 --month 2026-09`, and rebuild the portal. Nothing in her files changes.
+  - The files to use in the demo are already in `data/sample/messy_month/late/`. Her script's third run gives the expected result: `40 files from 2 inboxes`, then `eBay OPEN; Amazon OPEN; ShopGoodwill OPEN; 12 exceptions`.
+  - Say on the page that the uploaded files are synthetic samples, and keep "Not posted".
+- **Dani's tasks (in her inbox, 11:50):** a clear place on the close page to export the Business Central import files, and a visible list of who receives the Monthly and Close emails.
 
 ## Phase 3: decision 009, plan in `docs/PLAN_PHASE_3.md` (my tasks V3.1 to V3.10)
 ### Done

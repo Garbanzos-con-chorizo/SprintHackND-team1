@@ -8,13 +8,15 @@ Standard library only.
     python -m reports.pulse --date 2026-10-02 [--src out/pulse] [--dest reports/pulse]
 """
 import argparse
+import csv
 import json
 import re
 from datetime import date, datetime
-from html import escape
+from html import escape, unescape
 from pathlib import Path
 from string import Template
 
+from reports import library
 from reports.schema import day_record, write_csv
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -144,14 +146,14 @@ ul.days a { display:block; padding:12px 16px; text-decoration:none; font-weight:
 DATA_LABEL = "Synthetic sample data"
 DATA_NOTE = "no real Goodwill file has been read"
 # The top bar: section, its landing page under reports/, the link text. A page's section is read from its title.
-NAV = [("", "index.html", "Reports"), ("pulse", "pulse/index.html", "Nightly pulse"),
-       ("scorecard", "scorecard/index.html", "Scorecards"), ("close", "close/index.html", "Month-end close")]
-SECTIONS = {"Nightly pulse": "pulse", "COO scorecard": "scorecard", "Month-end close": "close"}
+NAV = [("", "index.html", "Overview"), ("pulse", "pulse/index.html", "Daily Reports"),
+       ("scorecard", "scorecard/index.html", "COO Scorecards"), ("close", "close/index.html", "Month-end Close")]
+SECTIONS = {"nightly pulse": "pulse", "daily reports": "pulse", "coo scorecard": "scorecard", "month-end close": "close"}
 
 
 def topbar(title, root="../"):
     """The bar every page shares. `root` is the way from the page up to reports/ ("" for the portal)."""
-    here = next((key for name, key in SECTIONS.items() if title.startswith(name)), "")
+    here = next((key for name, key in SECTIONS.items() if title.lower().startswith(name)), "")
     links = "".join(f'<a href="{root}{href}"{" class=\"here\"" if key == here else ""}>{text}</a>'
                     for key, href, text in NAV)
     return (f'<div class="topbar"><div class="topbar-in"><a class="brand" href="{root}index.html">Goodwill Michiana '
@@ -218,12 +220,11 @@ $definitions
 </section>""")
 
 INDEX = Template("""<header>
-  <h1>Nightly pulse</h1>
-  <p>Goodwill Michiana e-commerce · $count report(s)</p>
+  <h1>Daily Reports</h1>
+  <p>Goodwill Michiana e-commerce · the nightly pulse, one report per day · $count report(s)</p>
 </header>
-<ul class="days">
-$items
-</ul>""")
+$tiles
+$table""")
 
 
 def money(cents):
@@ -451,14 +452,59 @@ def render_email(p):
 """
 
 
+def night(dest, day):
+    """What the list of days shows for one night, read from the CSV and the page written beside it."""
+    found = {"revenue": None, "orders": None, "gaps": [], "summary": ""}
+    try:
+        with open(dest / f"{day}.csv", encoding="utf-8", newline="") as f:
+            rows = list(csv.DictReader(f))
+        ok = [r for r in rows if r["Status"] == "ok"]
+        found.update(revenue=sum(float(r["Revenue"] or 0) for r in ok) if ok else None,
+                     orders=sum(int(r["Orders"] or 0) for r in ok) if ok else None,
+                     gaps=[r["Marketplace"] for r in rows if r["Status"] in ("missing", "stale", "unknown")])
+        m = re.search(r'<p class="summary[^"]*">(.*?)</p>', (dest / f"{day}.html").read_text(encoding="utf-8"), re.S)
+        found["summary"] = unescape(m[1]) if m else ""
+    except (OSError, KeyError, ValueError):
+        pass  # an older page without its CSV: the row shows the day and its link
+    return found
+
+
 def render_index(dest):
+    """The Daily Reports page: every night on file with its figures, newest first, grouped by month."""
     days = sorted((f.stem for f in dest.glob("*.html") if re.fullmatch(r"\d{4}-\d{2}-\d{2}", f.stem)),
                   reverse=True)
-    items = "\n".join(
-        f'  <li><a href="{d}.html">{long_date(d)}{" <span class=\"muted\">(latest)</span>" if i == 0 else ""}</a></li>'
-        for i, d in enumerate(days))
-    body = INDEX.substitute(count=len(days), items=items or '  <li class="muted">No reports yet.</li>')
-    return PAGE.substitute(title="Nightly pulse", css=CSS, body=body)
+    nights = {d: night(dest, d) for d in days}
+
+    def dollars(v):
+        return "-" if v is None else f"${v:,.2f}"
+
+    groups = {}
+    for i, d in enumerate(days):
+        n, when = nights[d], date.fromisoformat(d)
+        data = (f'<span class="pill missing">No data: {escape(", ".join(n["gaps"]))}</span>' if n["gaps"]
+                else '<span class="pill ok">Complete</span>')
+        files = "".join(f'<a href="{d}{ext}">{name}</a>' for ext, name in ((".csv", "CSV"), (".email.html", "Email"))
+                        if (dest / f"{d}{ext}").exists())
+        groups.setdefault(f"{when:%B %Y}", []).append({
+            "cells": [f'<a href="{d}.html">{when:%a}, {when:%b} {when.day}</a>{"<small>latest</small>" if i == 0 else ""}',
+                      dollars(n["revenue"]), "-" if n["orders"] is None else f'{n["orders"]:,}', data,
+                      escape(n["summary"]), files],
+            "find": f'{long_date(d)} {d} {when:%b} {"missing no data " + " ".join(n["gaps"]) if n["gaps"] else "complete"}',
+            "tags": "gaps" if n["gaps"] else "complete"})
+    top = ""
+    if days:
+        first, last = date.fromisoformat(days[-1]), date.fromisoformat(days[0])
+        gaps = sum(bool(n["gaps"]) for n in nights.values())
+        top = library.tiles([
+            ("Reports on file", f"{len(days)}", f"{first:%b} {first.day} to {last:%b} {last.day}, {last.year}", None),
+            ("Latest night", dollars(nights[days[0]]["revenue"]), f"{last:%A}, {last:%B} {last.day}", f"{days[0]}.html"),
+            ("Nights with missing data", f"{gaps}", f"of the {len(days)} on file", None)])
+    table = library.finder_table(
+        [("Day", "l"), ("Revenue", "num"), ("Orders", "num"), ("Data", "l"), ("That night", "say"), ("Files", "files")],
+        list(groups.items()), [("complete", "Complete"), ("gaps", "Missing data")],
+        'Find a day: "Oct 3", "Saturday", "missing"', noun="daily report")
+    body = INDEX.substitute(count=len(days), tiles=top, table=table)
+    return PAGE.substitute(title="Daily Reports", css=CSS + library.LIBRARY_CSS, body=body)
 
 
 def stamp(iso):

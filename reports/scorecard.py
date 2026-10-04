@@ -16,6 +16,7 @@ from datetime import date
 from html import escape
 from pathlib import Path
 
+from reports import library
 from reports.pulse import CSS, DATA_LABEL, DATA_NOTE, PAGE, money, stamp
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -243,7 +244,7 @@ def headline(kf):
     if partial:
         text += f"; {partial} partial"
     if not kf["coverage"]["complete"]:
-        text += f"; marketplace data missing on {len(kf['coverage']['gaps'])} day(s)"
+        text += f"; marketplace data missing on {len({g['date'] for g in kf['coverage']['gaps']})} day(s)"
     return text + ".", not kf["coverage"]["complete"]
 
 
@@ -289,26 +290,56 @@ def render(kf, dest=DEST):
     return PAGE.substitute(title=f"COO scorecard {period['id']}", css=CSS + SCORECARD_CSS, body=body)
 
 
-def _period_label(page):
-    """The period's name from the KPI file kept next to the page ("September 2026"); the file name if it is gone."""
+def _index_row(page):
+    """One scorecard for the list page, from the KPI file kept next to it; just its name and link if that is gone."""
     try:
-        return json.loads(page.with_suffix(".json").read_text(encoding="utf-8"))["period"]["label"]
+        kf = json.loads(page.with_suffix(".json").read_text(encoding="utf-8"))
+        period, by_id = kf["period"], {k["id"]: k for k in kf["kpis"]}
     except (OSError, ValueError, KeyError):
-        return page.stem
+        return {"cells": [f'<a href="{page.name}">{escape(page.stem)}</a>', "", "-", "", "", ""], "find": page.stem,
+                "tags": page.stem.split("-")[0], "label": page.stem, "revenue": "-"}
+    rev, growth = by_id.get("fin.revenue"), by_id.get("fin.revenue_growth")
+    revenue = money(round(rev["value"])) if rev and rev["value"] is not None else "-"
+    if growth and growth["value"] is not None:
+        g = growth["value"] * 100
+        change = (f'<span class="chg {"up" if g > 0 else "down" if g < 0 else ""}">{g:+.1f}%</span>'
+                  f'<small>vs {escape(kf["prior_period"]["label"])}</small>')
+    else:
+        change = '<span class="muted">n/a</span>'
+    gaps = kf["coverage"]["gaps"]
+    partial = sum(k["status"] in ("partial", "no_data") for k in kf["kpis"])
+    data = (f'<span class="pill missing">Data missing on {len({g["date"] for g in gaps})} day(s)</span>' if gaps
+            else '<span class="pill ok">Complete</span>')
+    data += f"<small>{partial} of {len(kf['kpis'])} KPIs partial or without data</small>" if partial else ""
+    files = "".join(f'<a href="{page.stem}.{ext}">{name}</a>' for ext, name in (("csv", "CSV"), ("pdf", "PDF"), ("json", "KPI file"))
+                    if page.with_suffix(f".{ext}").exists())
+    return {"cells": [f'<a href="{page.name}">{escape(period["label"])}</a>',
+                      f'{escape(period["start"])} to {escape(period["through"])}', revenue, change, data, files],
+            "find": f'{period["label"]} {period["type"]} {period["id"]} {period["start"]} {period["through"]} '
+                    f'{"missing partial" if gaps else "complete"}',
+            "tags": period["type"], "label": period["label"], "revenue": revenue}
 
 
 def render_index(dest):
+    """The COO Scorecards page: every scorecard on file with its revenue, growth and data state, newest first."""
     pages = sorted((f for f in dest.glob("*.html") if re.fullmatch(r"(day|week|month)-[\dW-]+", f.stem)),
                    key=lambda f: f.stem, reverse=True)
-    groups = ""
-    for kind, title in (("month", "Months"), ("week", "Weeks"), ("day", "Days")):
-        items = "\n".join(f'  <li><a href="{f.name}">{escape(_period_label(f))}</a></li>'
-                          for f in pages if f.stem.startswith(kind + "-"))
-        if items:
-            groups += f'<h2 class="sec">{title}</h2>\n<ul class="days">\n{items}\n</ul>\n'
-    body = (f'<header><h1>COO scorecards</h1><p>Goodwill Michiana e-commerce · {len(pages)} page(s)</p></header>'
-            f'{groups or "<ul class=\"days\"><li>None yet</li></ul>"}<p class="nav"><a href="../index.html">Reports</a></p>')
-    return PAGE.substitute(title="COO scorecards", css=CSS + SCORECARD_CSS, body=body)
+    kinds = (("month", "Months", "Latest month"), ("week", "Weeks", "Latest week"), ("day", "Days", "Latest day"))
+    groups, top = [], []
+    for kind, title, latest in kinds:
+        found = [(f, _index_row(f)) for f in pages if f.stem.startswith(kind + "-")]
+        groups.append((title, [row for _, row in found]))
+        if found:
+            page, row = found[0]
+            top.append((latest, row["revenue"], f'{row["label"]} · total e-commerce revenue', page.name))
+    table = library.finder_table(
+        [("Period", "l"), ("Dates", "l"), ("Revenue", "num"), ("Growth", "num"), ("Data", "l"), ("Files", "files")],
+        groups, [(kind, title) for kind, title, _ in kinds],
+        'Find: "September", "week 40", "Oct 3"', noun="scorecard")
+    body = (f'<header><h1>COO Scorecards</h1><p>Goodwill Michiana e-commerce · the 15 KPIs by day, week and month · '
+            f'{len(pages)} scorecard(s)</p></header>{library.tiles(top) if top else ""}{table}'
+            f'<p class="nav"><a href="../index.html">Reports</a></p>')
+    return PAGE.substitute(title="COO Scorecards", css=CSS + SCORECARD_CSS + library.LIBRARY_CSS, body=body)
 
 
 def build(kpi_file, dest=DEST):
