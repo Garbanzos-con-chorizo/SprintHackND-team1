@@ -60,10 +60,33 @@
       "name": "Category + Customer"
     }
   ],
+  "pillars": [
+    {
+      "id": "growth",
+      "name": "Growth"
+    },
+    {
+      "id": "profitability",
+      "name": "Profitability"
+    },
+    {
+      "id": "productivity",
+      "name": "Productivity"
+    },
+    {
+      "id": "inventory",
+      "name": "Inventory"
+    },
+    {
+      "id": "engagement",
+      "name": "Engagement"
+    }
+  ],
   "kpis": [
     {
       "id": "fin.revenue",
       "area": "financial",
+      "pillar": "growth",
       "name": "Total E-Commerce Revenue",
       "kind": "scalar",
       "unit": "cents",
@@ -95,6 +118,7 @@
     {
       "id": "fin.revenue_growth",
       "area": "financial",
+      "pillar": "growth",
       "name": "Revenue Growth %",
       "kind": "scalar",
       "unit": "ratio",
@@ -124,6 +148,7 @@
     {
       "id": "fin.net_margin",
       "area": "financial",
+      "pillar": "profitability",
       "name": "Net Margin %",
       "kind": "scalar",
       "unit": "ratio",
@@ -157,6 +182,7 @@
     {
       "id": "prod.listings_created",
       "area": "productivity",
+      "pillar": "productivity",
       "name": "Listings Created",
       "kind": "scalar",
       "unit": "count",
@@ -189,6 +215,7 @@
     {
       "id": "prod.revenue_per_labor_hour",
       "area": "productivity",
+      "pillar": "productivity",
       "name": "Revenue per Labor Hour",
       "kind": "scalar",
       "unit": "cents",
@@ -218,6 +245,7 @@
     {
       "id": "prod.listings_per_employee",
       "area": "productivity",
+      "pillar": "productivity",
       "name": "Listings per Employee",
       "kind": "scalar",
       "unit": "number",
@@ -247,6 +275,7 @@
     {
       "id": "inv.days_donation_to_listing",
       "area": "inventory",
+      "pillar": "inventory",
       "name": "Days from Donation to Listing",
       "kind": "scalar",
       "unit": "days",
@@ -275,6 +304,7 @@
     {
       "id": "inv.unlisted_backlog",
       "area": "inventory",
+      "pillar": "inventory",
       "name": "Unlisted Inventory Backlog",
       "kind": "scalar",
       "unit": "count",
@@ -303,6 +333,7 @@
     {
       "id": "inv.unsold_pct",
       "area": "inventory",
+      "pillar": "inventory",
       "name": "Unsold Inventory %",
       "kind": "scalar",
       "unit": "ratio",
@@ -334,6 +365,7 @@
     {
       "id": "sales.asp",
       "area": "sales",
+      "pillar": "growth",
       "name": "Average Selling Price",
       "kind": "scalar",
       "unit": "cents",
@@ -364,6 +396,7 @@
     {
       "id": "sales.sell_through",
       "area": "sales",
+      "pillar": "inventory",
       "name": "Sell-Through Rate",
       "kind": "scalar",
       "unit": "ratio",
@@ -394,6 +427,7 @@
     {
       "id": "sales.sales_per_employee",
       "area": "sales",
+      "pillar": "productivity",
       "name": "Sales per Employee",
       "kind": "scalar",
       "unit": "cents",
@@ -423,6 +457,7 @@
     {
       "id": "cat.top_revenue",
       "area": "category_customer",
+      "pillar": "growth",
       "name": "Top 10 Categories by Revenue",
       "kind": "ranking",
       "unit": "cents",
@@ -525,6 +560,7 @@
     {
       "id": "cat.top_margin",
       "area": "category_customer",
+      "pillar": "profitability",
       "name": "Top 10 Categories by Margin",
       "kind": "ranking",
       "unit": "cents",
@@ -541,7 +577,7 @@
         {
           "rank": 2,
           "label": "Jewelry & Watches",
-          "value": 870273,
+          "value": 870274,
           "share": 0.1745,
           "ratio": 0.82
         },
@@ -555,7 +591,7 @@
         {
           "rank": 4,
           "label": "Electronics",
-          "value": 570276,
+          "value": 570277,
           "share": 0.1144,
           "ratio": 0.62
         },
@@ -569,7 +605,7 @@
         {
           "rank": 6,
           "label": "Home & Kitchen",
-          "value": 420279,
+          "value": 420278,
           "share": 0.0843,
           "ratio": 0.66
         },
@@ -622,12 +658,13 @@
         "cogs_cents": 2088303,
         "margin_cents": 4987093,
         "categories": 12,
-        "rest_cents": 185730
+        "rest_cents": 185729
       }
     },
     {
       "id": "cust.repeat_buyer_rate",
       "area": "category_customer",
+      "pillar": "engagement",
       "name": "Repeat Buyer Rate",
       "kind": "scalar",
       "unit": "ratio",
