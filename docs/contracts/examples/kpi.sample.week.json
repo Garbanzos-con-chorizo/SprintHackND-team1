@@ -119,7 +119,12 @@
         "gross_cents": 1627458,
         "refunds_cents": -5448,
         "fees_cents": 114141,
-        "orders": 529
+        "orders": 529,
+        "by_marketplace": {
+          "shopgoodwill": 1052700,
+          "amazon": 220641,
+          "ebay": 348669
+        }
       }
     },
     {

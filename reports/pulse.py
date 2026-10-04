@@ -2,8 +2,9 @@
 
 Reads out/pulse/<date>.json (shape: docs/pitch/gemini/pulse_proposal.md) and writes
 reports/pulse/<date>.html, <date>.csv (same layout as the monthly CSV,
-see reports/schema.py), <date>.email.html (inline styles for Outlook) and index.html.
-Standard library only.
+see reports/schema.py), <date>.email.html (inline styles for Outlook), <date>.xlsx (every table of the
+day in one Excel file, reports/day_workbook.py) and index.html.
+Standard library only, except the Excel file (openpyxl, already an engine dependency).
 
     python -m reports.pulse --date 2026-10-02 [--src out/pulse] [--dest reports/pulse]
 """
@@ -30,6 +31,7 @@ NO_DATA = {
     "not_configured": "Not tracked yet",
 }
 PILL = {"ok": "OK", "missing": "Missing", "stale": "Stale", "unknown": "Unknown", "not_configured": "Not tracked"}
+BY_ORDER = "Counted by order: this marketplace's export has no unique buyer id"
 REASONS = {
     "current_not_ok": "no data today",
     "prior_unavailable": "no data for the prior day",
@@ -109,6 +111,27 @@ ul.days li { background:var(--card); border:1px solid var(--line); border-radius
   box-shadow:var(--shadow); }
 ul.days a { display:block; padding:12px 16px; text-decoration:none; font-weight:600; }
 .chg, .pill { border:1px solid transparent; }
+/* Buttons, the same on every page; .dl is a file to download. */
+.btn { display:inline-block; font:inherit; font-size:15px; font-weight:600; line-height:1.3; padding:8px 14px;
+  border-radius:var(--radius); cursor:pointer; text-decoration:none; border:1px solid var(--primary);
+  background:var(--primary); color:#fff; }
+.btn:hover { background:#00468a; }
+.btn.quiet { background:var(--card); color:var(--primary); }
+.btn.quiet:hover { background:#eaf1f9; }
+.btn.small { font-size:13px; padding:4px 10px; }
+.btn.dl::before { content:"↓"; font-weight:700; margin-right:6px; }
+.btn:disabled { opacity:.5; cursor:default; }
+.btn:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+.actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin:16px 0 0; }
+/* The asterisk after a label or a figure, and the notes it opens at the bottom of the page. */
+a.ast { color:var(--primary); font-weight:700; text-decoration:none; padding:0 1px 0 2px; cursor:help; }
+details.notes { margin:24px 0 0; background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+  font-size:14px; color:var(--muted); }
+details.notes > summary { cursor:pointer; padding:10px 14px; font-weight:700; color:var(--primary); }
+details.notes > .in { padding:0 14px 12px; }
+details.notes h3 { font-size:13px; color:var(--primary); text-transform:uppercase; letter-spacing:.05em; margin:14px 0 4px; }
+details.notes p { margin:6px 0; }
+details.notes ul { margin:6px 0; padding-left:20px; }
 .pagefoot { width:calc(100% - 32px); max-width:calc(var(--page) - 32px); margin:0 auto; padding:14px 0 28px;
   border-top:1px solid var(--line);
   font-size:13px; color:var(--muted); }
@@ -120,7 +143,7 @@ ul.days a { display:block; padding:12px 16px; text-decoration:none; font-weight:
   .topbar { background:none; color:var(--ink); border-bottom:1px solid var(--ink); margin-bottom:6px; }
   .topbar-in { max-width:none; padding:0 0 3px; }
   .topbar .brand { color:var(--ink); font-size:8pt; }
-  .topbar nav, .pagefoot { display:none; }
+  .topbar nav, .pagefoot, .actions { display:none; }
   .datalabel { border:1px solid var(--ink); font-size:6.5pt; padding:0 6px; }
   header h1 { font-size:15pt; }
   .summary, .kpi, .card, .banner, ul.days li { box-shadow:none; }
@@ -147,7 +170,7 @@ DATA_LABEL = "Synthetic sample data"
 DATA_NOTE = "no real Goodwill file has been read"
 # The top bar: section, its landing page under reports/, the link text. A page's section is read from its title.
 NAV = [("", "index.html", "Overview"), ("pulse", "pulse/index.html", "Daily Reports"),
-       ("scorecard", "scorecard/index.html", "COO Scorecards"), ("close", "close/index.html", "Month-end Close")]
+       ("scorecard", "scorecard/index.html", "COO Scorecards"), ("close", "close/index.html", "Month-End Close")]
 SECTIONS = {"nightly pulse": "pulse", "daily reports": "pulse", "coo scorecard": "scorecard", "month-end close": "close"}
 
 
@@ -157,7 +180,7 @@ def topbar(title, root="../"):
     links = "".join(f'<a href="{root}{href}"{" class=\"here\"" if key == here else ""}>{text}</a>'
                     for key, href, text in NAV)
     return (f'<div class="topbar"><div class="topbar-in"><a class="brand" href="{root}index.html">Goodwill Michiana '
-            f'e-commerce reports</a><nav>{links}</nav><span class="datalabel">{DATA_LABEL}</span></div></div>')
+            f'E-Commerce Reports</a><nav>{links}</nav><span class="datalabel">{DATA_LABEL}</span></div></div>')
 
 
 class _Page(Template):
@@ -181,27 +204,38 @@ $topbar
 <main>
 $body
 </main>
-<footer class="pagefoot">Goodwill Michiana e-commerce reports · <strong>$label</strong>: $note.</footer>
+<footer class="pagefoot">Goodwill Michiana E-Commerce Reports · <strong>$label</strong>: $note.</footer>
+<script>
+/* An asterisk opens the notes at the bottom of the page; so does printing. */
+document.addEventListener("click", function (e) {
+  var notes = document.getElementById("notes");
+  if (notes && e.target.closest && e.target.closest("a.ast")) notes.open = true;
+});
+window.addEventListener("beforeprint", function () {
+  var notes = document.getElementById("notes");
+  if (notes) notes.open = true;
+});
+</script>
 </body>
 </html>
 """)
 
 DAY = Template("""<header>
-  <h1>Nightly pulse: $day_long</h1>
-  <p>Goodwill Michiana e-commerce · compared with $prior_long · times in $tz · generated $generated$mock</p>
+  <h1>Nightly Pulse: $day_long</h1>
+  <p>Compared with $prior_long$mock</p>
 </header>
 <p class="summary$summary_class">$summary</p>
 <div class="kpis">
-  <div class="kpi"><div class="label">Enterprise revenue</div><div class="value">$ent_revenue</div><div class="sub">$ent_delta</div></div>
-  <div class="kpi"><div class="label">Orders</div><div class="value">$ent_orders</div><div class="sub muted">sale orders; refunds not counted</div></div>
-  <div class="kpi"><div class="label">Customers</div><div class="value">$ent_customers</div><div class="sub">$ent_customers_delta</div></div>
-  <div class="kpi"><div class="label">Marketplace fees</div><div class="value">$ent_fees</div><div class="sub muted">not deducted from revenue</div></div>
+  <div class="kpi"><div class="label">Enterprise Revenue</div><div class="value">$ent_revenue</div><div class="sub">$ent_delta</div></div>
+  <div class="kpi"><div class="label">Orders$ast_orders</div><div class="value">$ent_orders</div></div>
+  <div class="kpi"><div class="label">Customers$ast_customers</div><div class="value">$ent_customers</div><div class="sub">$ent_customers_delta</div></div>
+  <div class="kpi"><div class="label">Marketplace Fees$ast_fees</div><div class="value">$ent_fees</div></div>
 </div>
 $banner
 <div class="card">
 <table>
   <thead><tr>
-    <th>Marketplace</th><th class="status">Status</th><th>Revenue</th><th>vs prior day</th>
+    <th>Marketplace</th><th class="status">Status</th><th>Revenue</th><th>vs Prior Day</th>
     <th>Orders</th><th>Customers</th><th>Refunds</th><th>Fees</th>
   </tr></thead>
   <tbody>
@@ -209,19 +243,12 @@ $rows
   </tbody>
 </table>
 </div>
-<section class="foot">
-  <h2>Data quality</h2>
-  <p>$quality</p>
-  <h2>Definitions</h2>
-  <dl>
-$definitions
-  </dl>
-  <p class="nav"><a href="index.html">All days</a> · <a href="$email_name">Email version</a></p>
-</section>""")
+<div class="actions">$downloads<a class="btn quiet" href="index.html">All Days</a></div>
+$notes""")
 
 INDEX = Template("""<header>
   <h1>Daily Reports</h1>
-  <p>Goodwill Michiana e-commerce · the nightly pulse, one report per day · $count report(s)</p>
+  <p>$count nightly report(s) · search by date, day or status</p>
 </header>
 $tiles
 $table""")
@@ -234,6 +261,18 @@ def money(cents):
 def long_date(iso):
     d = date.fromisoformat(iso)
     return f"{d:%A}, {d:%B} {d.day}, {d.year}"
+
+
+def ast(tip=""):
+    """The asterisk after a label or a figure. Hovering shows `tip`; selecting it opens the notes at the bottom."""
+    return f'<a class="ast" href="#notes" title="{escape(tip)}" aria-label="Note: {escape(tip)}">*</a>'
+
+
+def notes(sections, title="Notes and Definitions"):
+    """The dropdown at the bottom of a page: what the figures mean and what is simulated, out of the way of the
+    figures themselves. `sections` is (heading or "", html); empty ones are skipped."""
+    inner = "".join((f"<h3>{escape(h)}</h3>" if h else "") + html for h, html in sections if html)
+    return f'<details class="notes" id="notes"><summary>{escape(title)}</summary><div class="in">{inner}</div></details>'
 
 
 def label(key, m=None):
@@ -252,19 +291,19 @@ def delta_html(d, note=None):
     if not d or d.get("revenue_cents") is None:
         reason = (d or {}).get("reason")
         reason = REASONS.get(reason, reason) or "no comparison"
-        return f'<span class="muted">n/a</span><small class="note">{escape(reason)}</small>'
+        return f'<span class="muted" title="{escape(reason)}">n/a</span>{ast(reason)}'
     cents, pct = d["revenue_cents"], d.get("revenue_pct")
     cls, arrow = ("up", "▲") if cents > 0 else ("down", "▼") if cents < 0 else ("", "")
     pct_txt = f" ({pct:+.1f}%)" if pct is not None else ""
     sign = "+" if cents > 0 else ""
     note = note or REASONS.get(d.get("reason"), d.get("reason"))
-    note = f'<small class="note">{escape(note)}</small>' if note else ""
+    note = ast(note) if note else ""
     return f'<span class="chg {cls}">{arrow} {sign}{money(cents)}{pct_txt}</span>{note}'
 
 
 def count_delta(n):
     if n is None:
-        return '<span class="muted">sum across marketplaces</span>'
+        return ""
     cls = "up" if n > 0 else "down" if n < 0 else ""
     return f'<span class="chg {cls}">{n:+d}</span> <span class="muted">vs prior day</span>'
 
@@ -312,20 +351,21 @@ def row_html(key, m):
         return (f'    <tr><td>{name}</td><td class="status">{pill}</td>'
                 f'<td class="nodata{" quiet" if status == "not_configured" else ""}" colspan="6">'
                 f'{NO_DATA.get(status, "No data")}</td></tr>')
-    basis = '<small class="note">counted by order</small>' if m.get("customer_basis") == "order" else ""
+    basis = ast(BY_ORDER) if m.get("customer_basis") == "order" else ""
     return (f'    <tr><td>{name}</td><td class="status">{pill}</td><td>{money(m["revenue_cents"])}</td>'
             f'<td>{delta_html(m.get("delta"))}</td><td>{m["orders"]:,}</td><td>{m["customers"]:,}{basis}</td>'
             f'<td>{money(m["refunds_cents"])}</td><td>{money(m["fees_cents"])}</td></tr>')
 
 
-def render_day(p):
+def render_day(p, workbook=False):
+    """The day's page. `workbook` says the Excel file was written beside it, so the page offers it."""
     markets, ent = p["marketplaces"], p["enterprise"]
     rows = [row_html(k, markets.get(k, {"status": "missing"})) for k in ORDER]
     excluded = [label(k, markets.get(k)) for k in excluded_keys(ent)]
     ed = ent.get("delta") or {}
     same = "same marketplaces on both days" if excluded and ed.get("revenue_cents") is not None else None
     rows.append(
-        f'    <tr class="total"><td>Enterprise total</td><td class="status">'
+        f'    <tr class="total"><td>Enterprise Total</td><td class="status">'
         f'{"Partial" if excluded else "Complete"}</td><td>{money(ent["revenue_cents"])}</td>'
         f'<td>{delta_html(ed, same)}</td><td>{ent["orders"]:,}</td><td>{ent["customers"]:,}</td>'
         f'<td>{money(ent["refunds_cents"])}</td><td>{money(ent["fees_cents"])}</td></tr>')
@@ -345,16 +385,28 @@ def render_day(p):
     if dq.get("rows_rejected"):
         quality += f" {dq['rows_rejected']} row(s) could not be read and were left out."
 
-    defs = "\n".join(f"    <dt>{escape(k.replace('_', ' ').capitalize())}</dt><dd>{escape(v)}</dd>"
-                     for k, v in (p.get("definitions") or {}).items())
+    defs = "".join(f"<dt>{escape(k.replace('_', ' ').capitalize())}</dt><dd>{escape(v)}</dd>"
+                   for k, v in (p.get("definitions") or {}).items())
+    by_order = [label(k, markets[k]) for k in ORDER if markets.get(k, {}).get("customer_basis") == "order"]
+    tz, made = escape(p.get("timezone", "America/New_York")), escape(stamp(p.get("generated_at", "")))
+    points = ["<strong>Orders:</strong> sale orders; refunds are not counted as orders.",
+              "<strong>Customers:</strong> the sum across marketplaces."
+              + (f" {escape(', '.join(by_order))}: counted by order, because the export gives no unique buyer id, "
+                 f"so each order counts as one customer." if by_order else ""),
+              "<strong>Marketplace fees:</strong> shown for reference; not deducted from revenue.",
+              "<strong>vs prior day:</strong> compared like for like. It reads n/a when a marketplace has no data on "
+              "either day; when a file is missing, the enterprise change compares the same marketplaces on both days.",
+              f"Times in {tz}" + (f" · generated {made}" if made else "") + "."]
+    day = p["business_date"]
+    downloads = "".join(
+        f'<a class="btn{cls} dl" href="{day}{ext}" download>{name}</a>' for ext, name, cls, there in (
+            (".xlsx", "Download Full Day (Excel)", "", workbook), (".csv", "CSV", " quiet", True)) if there)
+    downloads += f'<a class="btn quiet" href="{day}.email.html">Email Version</a>'
     body = DAY.substitute(
         summary=escape(summary_line(p)),
-        email_name=f"{p['business_date']}.email.html",
         summary_class=" alert" if excluded else "",
-        day_long=long_date(p["business_date"]),
+        day_long=long_date(day),
         prior_long=long_date(prior_date(p)) if prior_date(p) else "no prior day",
-        tz=escape(p.get("timezone", "America/New_York")),
-        generated=escape(stamp(p.get("generated_at", ""))),
         mock=" · <strong>mock data</strong>" if p.get("mock") else "",
         ent_revenue=money(ent["revenue_cents"]),
         ent_delta=delta_html(ed, same),
@@ -362,12 +414,16 @@ def render_day(p):
         ent_customers_delta=count_delta(ed.get("customers")),
         ent_customers=f"{ent['customers']:,}",
         ent_fees=money(ent["fees_cents"]),
+        ast_orders=ast("Sale orders; refunds are not counted"),
+        ast_customers=ast("Sum across marketplaces" + ("; some are counted by order" if by_order else "")),
+        ast_fees=ast("Not deducted from revenue"),
         banner=banner,
         rows="\n".join(rows),
-        quality=quality,
-        definitions=defs,
+        downloads=downloads,
+        notes=notes([("", "<ul>" + "".join(f"<li>{x}</li>" for x in points) + "</ul>"),
+                     ("Data Quality", f"<p>{quality}</p>"), ("Definitions", f"<dl>{defs}</dl>" if defs else "")]),
     )
-    return PAGE.substitute(title=f"Nightly pulse {p['business_date']}", css=CSS, body=body)
+    return PAGE.substitute(title=f"Nightly Pulse {day}", css=CSS, body=body)
 
 
 # Email copy: Outlook desktop renders with Word, which ignores <style> variables, grid and
@@ -412,7 +468,7 @@ def render_email(p):
                     f'<td {td}>{money(m["refunds_cents"])}</td><td {td}>{money(m["fees_cents"])}</td></tr>')
     tot = td.replace("border-bottom:1px solid", "font-weight:bold;border-top:2px solid").replace(
         f'{E["line"]};text', f'{E["primary"]};text')
-    rows.append(f'<tr><td {tot.replace("text-align:right", "text-align:left")}>Enterprise total</td>'
+    rows.append(f'<tr><td {tot.replace("text-align:right", "text-align:left")}>Enterprise Total</td>'
                 f'<td {tot}>{money(ent["revenue_cents"])}</td><td {tot}>{email_delta(ent.get("delta"))}</td>'
                 f'<td {tot}>{ent["orders"]:,}</td><td {tot}>{money(ent["refunds_cents"])}</td>'
                 f'<td {tot}>{money(ent["fees_cents"])}</td></tr>')
@@ -430,13 +486,13 @@ def render_email(p):
     mock = " &middot; mock data" if p.get("mock") else ""
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nightly pulse {p['business_date']}</title></head>
+<title>Nightly Pulse {p['business_date']}</title></head>
 <body style="margin:0;padding:0;background:{E['bg']};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{E['bg']};">
 <tr><td align="center" style="padding:16px;">
 <table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:100%;">
 <tr><td style="{EMAIL_FONT}background:{E['primary']};color:#ffffff;padding:16px 20px;">
-  <div style="font-size:20px;font-weight:bold;">Nightly pulse: {long_date(p['business_date'])}</div>
+  <div style="font-size:20px;font-weight:bold;">Nightly Pulse: {long_date(p['business_date'])}</div>
   <div style="font-size:12px;">Goodwill Michiana e-commerce{mock}</div></td></tr>
 <tr><td style="height:12px;line-height:12px;">&nbsp;</td></tr>
 <tr><td style="{EMAIL_FONT}font-size:16px;font-weight:bold;color:{E['ink']};background:#ffffff;border-left:5px solid {E['down'] if excluded else E['primary']};padding:12px 14px;">{escape(summary_line(p))}</td></tr>
@@ -483,26 +539,28 @@ def render_index(dest):
         n, when = nights[d], date.fromisoformat(d)
         data = (f'<span class="pill missing">No data: {escape(", ".join(n["gaps"]))}</span>' if n["gaps"]
                 else '<span class="pill ok">Complete</span>')
-        files = "".join(f'<a href="{d}{ext}">{name}</a>' for ext, name in ((".csv", "CSV"), (".email.html", "Email"))
-                        if (dest / f"{d}{ext}").exists())
+        files = "".join(f'<a href="{d}{ext}">{name}</a>' for ext, name in
+                        ((".xlsx", "Excel"), (".csv", "CSV"), (".email.html", "Email")) if (dest / f"{d}{ext}").exists())
         groups.setdefault(f"{when:%B %Y}", []).append({
             "cells": [f'<a href="{d}.html">{when:%a}, {when:%b} {when.day}</a>{"<small>latest</small>" if i == 0 else ""}',
                       dollars(n["revenue"]), "-" if n["orders"] is None else f'{n["orders"]:,}', data,
                       escape(n["summary"]), files],
-            "find": f'{long_date(d)} {d} {when:%b} {"missing no data " + " ".join(n["gaps"]) if n["gaps"] else "complete"}',
+            # Every way people type the date: 10/03/2026, 10/3/2026, 10/03/26, 2026-10-03, "Oct 3", "Saturday".
+            "find": f'{long_date(d)} {d} {when:%b} {when:%m/%d/%Y} {when.month}/{when.day}/{when.year} {when:%m/%d/%y} '
+                    f'{"missing no data " + " ".join(n["gaps"]) if n["gaps"] else "complete"}',
             "tags": "gaps" if n["gaps"] else "complete"})
     top = ""
     if days:
         first, last = date.fromisoformat(days[-1]), date.fromisoformat(days[0])
         gaps = sum(bool(n["gaps"]) for n in nights.values())
         top = library.tiles([
-            ("Reports on file", f"{len(days)}", f"{first:%b} {first.day} to {last:%b} {last.day}, {last.year}", None),
-            ("Latest night", dollars(nights[days[0]]["revenue"]), f"{last:%A}, {last:%B} {last.day}", f"{days[0]}.html"),
-            ("Nights with missing data", f"{gaps}", f"of the {len(days)} on file", None)])
+            ("Reports on File", f"{len(days)}", f"{first:%b} {first.day} to {last:%b} {last.day}, {last.year}", None),
+            ("Latest Night", dollars(nights[days[0]]["revenue"]), f"{last:%A}, {last:%B} {last.day}", f"{days[0]}.html"),
+            ("Nights With Missing Data", f"{gaps}", f"of the {len(days)} on file", None)])
     table = library.finder_table(
-        [("Day", "l"), ("Revenue", "num"), ("Orders", "num"), ("Data", "l"), ("That night", "say"), ("Files", "files")],
+        [("Day", "l"), ("Revenue", "num"), ("Orders", "num"), ("Data", "l"), ("That Night", "say"), ("Files", "files")],
         list(groups.items()), [("complete", "Complete"), ("gaps", "Missing data")],
-        'Find a day: "Oct 3", "Saturday", "missing"', noun="daily report")
+        'Find a day: "10/03/2026", "Oct 3", "Saturday", "missing"', noun="daily report")
     body = INDEX.substitute(count=len(days), tiles=top, table=table)
     return PAGE.substitute(title="Daily Reports", css=CSS + library.LIBRARY_CSS, body=body)
 
@@ -531,16 +589,20 @@ def main(argv=None):
     print(summary_line(pulse))
 
 
-def render(pulse, dest):
-    """Write the page, CSV, email copy and index for one pulse; return the paths written."""
+def render(pulse, dest, detail_dir=None):
+    """Write the page, CSV, email copy, Excel workbook and index for one pulse; return the paths written.
+    `detail_dir` is the engine's output folder for the night (transactions.csv, warnings.json): with it the
+    workbook also holds the night's transactions and the rows the engine flagged."""
+    from reports import day_workbook
     dest.mkdir(parents=True, exist_ok=True)
     day = pulse["business_date"]
     paths = [dest / f"{day}.html", dest / f"{day}.csv", dest / f"{day}.email.html", dest / "index.html"]
-    paths[0].write_text(render_day(pulse), encoding="utf-8")
+    book = day_workbook.write(dest / f"{day}.xlsx", pulse, detail_dir)
+    paths[0].write_text(render_day(pulse, workbook=book), encoding="utf-8")
     write_csv(paths[1], [day_record(pulse)])
     paths[2].write_text(render_email(pulse), encoding="utf-8")
     paths[3].write_text(render_index(dest), encoding="utf-8")
-    return paths
+    return paths + ([dest / f"{day}.xlsx"] if book else [])
 
 
 if __name__ == "__main__":

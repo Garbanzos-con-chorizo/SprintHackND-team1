@@ -99,9 +99,16 @@ def coverage(win, pulse):
 
 
 def file_totals(pulse):
-    """Sums over the ok marketplace-days, or None if there is none (no data is not a zero)."""
+    """Sums over the ok marketplace-days, or None if there is none (no data is not a zero).
+    `by_marketplace` is the revenue of each marketplace that has an ok day, in display order."""
     ok = [r for r in pulse if r.status == "ok"]
-    return {k: sum(getattr(r, k) or 0 for r in ok) for k in SUMS} if ok else None
+    if not ok:
+        return None
+    revenue = {}
+    for r in ok:
+        revenue[r.marketplace] = revenue.get(r.marketplace, 0) + (r.revenue_cents or 0)
+    return {**{k: sum(getattr(r, k) or 0 for r in ok) for k in SUMS},
+            "by_marketplace": {m: revenue[m] for m in MARKETPLACES if m in revenue}}
 
 
 def buyer_stats(sales):

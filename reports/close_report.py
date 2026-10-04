@@ -4,7 +4,9 @@ Reads out/close/<YYYY-MM>/ (control totals, exceptions, General Journal, AR invo
 there, the close payload, the engine's files and the run history) and writes reports/close/<YYYY-MM>.html:
 what is simulated, the reconciliation status per source, the exceptions to work with who owns each,
 shipping cost per carrier, the Cash Monkey cross-check, Goodwill's nine month-end sources with what this
-run has for each, jewelry sales by supplier, and download links to the CSV files (copied next to the page).
+run has for each, jewelry sales by supplier, and a block of download buttons for the export files (copied
+next to the page). The explanations of each table sit in a "Notes and Definitions" dropdown at the bottom;
+an asterisk beside a heading opens it.
 
 The nine sources and their wording come from reports/config/close_sources.csv (deck slide 38). `Detect`
 says how the page knows a source reached this run; `When_Absent` is what it says otherwise ("not in
@@ -22,15 +24,16 @@ from datetime import date
 from html import escape
 from pathlib import Path
 
-from reports.pulse import CSS, PAGE
+from reports.pulse import CSS, PAGE, ast, notes
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "out" / "close"
 DEST = ROOT / "reports" / "close"
 SOURCES = ROOT / "reports" / "config" / "close_sources.csv"
-FILES = [("general_journal", "General Journal lines"), ("ar_invoice", "AR invoice lines"),
-         ("control_totals", "Control totals"), ("exceptions", "Exceptions")]
-OPTIONAL = [("shipping_costs", "Shipping costs")]  # written since D3.5; a folder from before has none
+FILES = [("general_journal", "General Journal"), ("ar_invoice", "AR Invoice"),
+         ("control_totals", "Control Totals"), ("exceptions", "Exceptions")]
+OPTIONAL = [("shipping_costs", "Shipping Costs")]  # written since D3.5; a folder from before has none
+TO_IMPORT = {"general_journal", "ar_invoice"}  # the two files that go into Business Central; the rest are for review
 STATUS_CLASS = {"RECONCILED": "ok", "OPEN": "stale", "INCOMPLETE": "missing", "UNEXPLAINED": "missing",
                 "MISMATCH": "missing"}
 LABELS = {"cashmonkey": "Cash Monkey"}
@@ -44,7 +47,11 @@ td.text, th.text { white-space:normal; text-align:left; }
 td.owner { text-align:left; }
 table.tight th, table.tight td { padding-left:8px; padding-right:8px; }
 table.tight th { white-space:normal; }
-.downloads a { margin-right:14px; }
+/* The export files: one button each, right under the summary. */
+.export { padding:14px 16px; margin:16px 0 0; overflow:visible; border-left:5px solid var(--primary); }
+.export h2.sec { margin:0 0 10px; }
+.export .actions { margin:0; }
+.export .hint { margin:10px 0 0; font-size:14px; color:var(--muted); }
 .simnote { margin:12px 0 0; font-size:13px; border:1px dashed var(--ink); padding:8px 12px; border-radius:var(--radius); }
 .state { font-weight:700; }
 .state.absent { font-weight:400; color:var(--muted); }
@@ -55,7 +62,7 @@ table.tight th { white-space:normal; }
   th, td { padding:3px 5px; }
   td.detail { max-width:none; }
   .simnote { font-size:7.5pt; padding:3px 6px; }
-  .downloads, .nav { display:none; }
+  .export, .nav { display:none; }
 }
 """
 
@@ -133,7 +140,7 @@ def render(month, folder):
         f'<td class="detail">{escape(e["Detail"])}</td><td class="owner">{escape(e.get("Owner") or "")}</td>'
         f'<td class="text">{escape(e.get("Action") or "")}</td></tr>' for e in exc)
 
-    checks = ""
+    checks = note_checks = note_sources = note_shipping = note_jewelry = ""
     if payload.get("cross_checks"):
         rows = "\n".join(
             f'<tr><td>{escape(c["source"])}</td><td>{money(c["report_sales_cents"])}</td>'
@@ -141,13 +148,13 @@ def render(month, folder):
             f'<td>{c["orders_only_in_against"]}</td><td>{c["orders_only_in_report"]}</td>'
             f'<td>{c["orders_with_another_amount"]}</td></tr>' for c in payload["cross_checks"])
         other = LABELS.get(payload["cross_checks"][0]["against"], payload["cross_checks"][0]["against"])
-        checks = (f'<h2 class="sec">Cross-check: {escape(other)} against each marketplace\'s own reports</h2>'
+        note_checks = (f"Compared order by order, sales only. The journal posts each marketplace from its own reports; "
+                       f"the {escape(other)} file is never added to them.")
+        checks = (f'<h2 class="sec">Cross-check: {escape(other)} against each marketplace\'s own reports{ast(note_checks)}</h2>'
                   f'<div class="card"><table><thead><tr><th>Marketplace</th><th>Sales in its reports</th>'
                   f'<th>Sales in {escape(other)}</th><th>Difference</th><th>Orders only in {escape(other)}</th>'
                   f'<th>Orders only in the reports</th><th>Orders with another amount</th></tr></thead><tbody>\n'
-                  f'{rows}\n</tbody></table></div>'
-                  f'<p class="simnote">Compared order by order, sales only. The journal posts each marketplace from its '
-                  f'own reports; the {escape(other)} file is never added to them.</p>')
+                  f'{rows}\n</tbody></table></div>')
 
     sources = ""
     if payload:
@@ -158,13 +165,13 @@ def render(month, folder):
             f'{escape(r["Origin"] if present else r["When_Absent"])}</span>{"; " + escape(note) if note else ""}</td>'
             f'<td class="detail">{escape(r["What_We_Read"]) if present else ""}</td></tr>'
             for r, present, note in source_states(folder, payload))
-        sources = ('<h2 class="sec">Goodwill\'s nine month-end sources, and what this run has for each</h2>'
+        note_sources = ('The first three columns are Goodwill\'s own (their slide 38). "Sample file" is a synthetic file '
+                        'we generated; "simulated API" is a file written by a stand-in for an API we have not seen; '
+                        '"not in this inbox" means no file of that source reached this run.')
+        sources = (f'<h2 class="sec">Goodwill\'s nine month-end sources, and what this run has for each{ast(note_sources)}</h2>'
                    '<div class="card"><table><thead><tr><th>Source</th><th class="text">Month-end input</th>'
                    '<th class="text">Acquisition / rule</th>'
-                   f'<th class="text">In this run</th><th class="text">What we read</th></tr></thead><tbody>\n{rows}\n</tbody></table></div>'
-                   '<p class="simnote">The first three columns are Goodwill\'s own (their slide 38). "Sample file" is a '
-                   'synthetic file we generated; "simulated API" is a file written by a stand-in for an API we have not '
-                   'seen; "not in this inbox" means no file of that source reached this run.</p>')
+                   f'<th class="text">In this run</th><th class="text">What we read</th></tr></thead><tbody>\n{rows}\n</tbody></table></div>')
 
     shipping = ""
     if shipping_rows:
@@ -175,14 +182,14 @@ def render(month, folder):
             for r in shipping_rows)
         total = sum(cents(r["Net"]) for r in shipping_rows)
         charged = sum(s.get("shipping_cents", 0) + s.get("handling_cents", 0) for s in payload.get("sources", {}).values())
-        shipping = ('<h2 class="sec">Shipping cost, from the two lookups on Goodwill\'s slide 38</h2>'
+        note_shipping = (f"Net shipping cost {money(total)}; shipping and handling charged to buyers this month "
+                         f"{money(charged)}. Both lookups come from simulated APIs with layouts we made up. The carriers "
+                         f"paid from the bank post to a placeholder expense account against G/L 10009; FedEx is read from "
+                         f"the ledger, so nothing is posted for it. What entry Goodwill's workbook makes here is not known.")
+        shipping = (f'<h2 class="sec">Shipping cost, from the two lookups on Goodwill\'s slide 38{ast(note_shipping)}</h2>'
                     '<div class="card"><table><thead><tr><th>Carrier</th><th class="text">Where the figure comes from</th>'
                     '<th>Charges</th><th>Refunds</th><th>Net</th><th>Lines</th><th class="text">Journal document</th>'
-                    f'</tr></thead><tbody>\n{rows}\n</tbody></table></div>'
-                    f'<p class="simnote">Net shipping cost {money(total)}; shipping and handling charged to buyers this '
-                    f'month {money(charged)}. Both lookups come from simulated APIs with layouts we made up. The carriers '
-                    f'paid from the bank post to a placeholder expense account against G/L 10009; FedEx is read from the '
-                    f'ledger, so nothing is posted for it. What entry Goodwill\'s workbook makes here is not known.</p>')
+                    f'</tr></thead><tbody>\n{rows}\n</tbody></table></div>')
 
     jewelry = ""
     items = read_if_there(folder / "engine" / "jewelry.csv")
@@ -192,11 +199,11 @@ def render(month, folder):
             by[r["supplier"] or "(no supplier: not in the lookup)"][0] += 1
             by[r["supplier"] or "(no supplier: not in the lookup)"][1] += int(r["amount_cents"])
         rows = "\n".join(f'<tr><td>{escape(s)}</td><td>{n}</td><td>{money(c)}</td></tr>' for s, (n, c) in sorted(by.items()))
-        jewelry = ('<h2 class="sec">Jewelry sales by supplier</h2><div class="card"><table><thead><tr><th>Supplier</th>'
-                   f'<th>Items</th><th>Sales</th></tr></thead><tbody>\n{rows}\n</tbody></table></div>'
-                   '<p class="simnote">From a simulated Jewelry Report and supplier lookup. "Supplier" is read as the '
-                   'store that supplied the item. These sales are already in the marketplace reports: this table adds '
-                   'nothing to revenue and changes no journal line.</p>')
+        note_jewelry = ('From a simulated Jewelry Report and supplier lookup. "Supplier" is read as the store that '
+                        'supplied the item. These sales are already in the marketplace reports: this table adds nothing '
+                        'to revenue and changes no journal line.')
+        jewelry = (f'<h2 class="sec">Jewelry sales by supplier{ast(note_jewelry)}</h2><div class="card"><table><thead><tr><th>Supplier</th>'
+                   f'<th>Items</th><th>Sales</th></tr></thead><tbody>\n{rows}\n</tbody></table></div>')
 
     history = ""
     runs = read_if_there(folder / "runs.csv")
@@ -208,29 +215,43 @@ def render(month, folder):
                    f'<thead><tr>{head}</tr></thead><tbody>\n{rows}\n</tbody></table></div>')
 
     invoices = {line["Document No."] for line in t["ar_invoice"]}
-    downloads = " ".join(f'<a href="{month}/{k}_{month}.csv">{label}</a>'
-                         for k, label in FILES + (OPTIONAL if shipping_rows else []))
+    buttons = "".join(f'<a class="btn{"" if k in TO_IMPORT else " quiet"} dl" href="{month}/{k}_{month}.csv" download>{label} (CSV)</a>'
+                      for k, label in FILES + (OPTIONAL if shipping_rows else []))
+    export = (f'<section class="card export"><h2 class="sec">Export Files for Business Central</h2>'
+              f'<div class="actions">{buttons}</div>'
+              f'<p class="hint">Review the control totals and exceptions, then paste the General Journal and AR Invoice lines '
+              f'into Business Central (their columns are in its order). The buttons only download files: nothing is posted.</p>'
+              f'</section>')
+    statuses = ('OPEN: money still in transit or not paid out yet, fully explained by the exceptions marked "open balance". '
+                'INCOMPLETE: every cent is accounted for, but a payout paid for days no report covers; download that report '
+                'and run the close again. UNEXPLAINED: money nobody has accounted for; resolve before posting. Positive '
+                'amounts are debits. The owners are role names we chose, not Goodwill\'s.')
     label = f"{date.fromisoformat(month + '-01'):%B %Y}"
-    body = (f'<header><h1>Month-end close: {label}</h1><p>Goodwill Michiana e-commerce · Business Central import files · '
-            f'{len(t["general_journal"])} journal lines in {len(docs)} documents, {len(invoices)} invoice(s)</p></header>'
-            f'<p class="simnote"><strong>Synthetic sample data.</strong> No real Goodwill file has been read. Account, '
-            f'customer and document numbers are placeholders; only department 180 comes from Goodwill\'s own slide. '
-            f'<strong>Posting status: Not posted.</strong> These are import files in Business Central\'s column order; '
-            f'nothing here has been sent to a Business Central.</p>'
+    about = notes([
+        ("", '<p><strong>Synthetic sample data.</strong> No real Goodwill file has been read. Account, customer and document '
+             'numbers are placeholders; only department 180 comes from Goodwill\'s own slide. These are export files in '
+             'Business Central\'s column order; nothing here has been sent to a Business Central.</p>'),
+        ("Statuses and Exceptions", f"<p>{statuses}</p>"),
+        ("Shipping Cost", f"<p>{note_shipping}</p>" if note_shipping else ""),
+        ("Cross-check", f"<p>{note_checks}</p>" if note_checks else ""),
+        ("Month-End Sources", f"<p>{note_sources}</p>" if note_sources else ""),
+        ("Jewelry", f"<p>{note_jewelry}</p>" if note_jewelry else "")])
+    not_real = "Account numbers are placeholders; nothing has been sent to Business Central"
+    body = (f'<header><h1>Month-End Close: {label}</h1><p>{len(t["general_journal"])} journal lines in {len(docs)} documents · '
+            f'{len(invoices)} invoice(s)</p></header>'
+            f'<p class="simnote"><strong>Synthetic sample data.</strong> <strong>Posting status: Not posted.</strong> '
+            f'Export files only{ast(not_real)}</p>'
             f'<p class="summary{" alert" if alert else ""}">{escape(text)}</p>'
-            f'<p class="downloads"><strong>Download:</strong> {downloads}</p>'
-            f'<h2 class="sec">Reconciliation by source</h2><div class="card"><table class="tight"><thead><tr><th>Source</th><th>Path</th>'
+            f'{export}'
+            f'<h2 class="sec">Reconciliation by Source{ast("What OPEN, INCOMPLETE and UNEXPLAINED mean is in the notes")}</h2>'
+            f'<div class="card"><table class="tight"><thead><tr><th>Source</th><th>Path</th>'
             + "".join(f"<th>{c}</th>" for c in cols) + '<th class="status">Status</th></tr></thead><tbody>\n'
             f'{control_rows}\n</tbody></table></div>'
-            f'<h2 class="sec">Exceptions to work</h2><div class="card"><table><thead><tr><th>Kind</th><th>Source</th><th>Amount</th>'
+            f'<h2 class="sec">Exceptions to Work</h2><div class="card"><table><thead><tr><th>Kind</th><th>Source</th><th>Amount</th>'
             f'<th>Effect</th><th class="text">Detail</th><th class="text">Owner</th><th class="text">What to do</th></tr></thead><tbody>\n{exc_rows}\n</tbody></table></div>'
             f'{shipping}{checks}{sources}{jewelry}{history}'
-            f'<section class="foot"><p>OPEN: money still in transit or not paid out yet, fully explained by the exceptions marked '
-            f'"open balance". INCOMPLETE: every cent is accounted for, but a payout paid for days no report covers; download '
-            f'that report and run the close again. UNEXPLAINED: money nobody has accounted for; resolve before posting. '
-            f'Positive amounts are debits. The owners are role names we chose, not Goodwill\'s.</p></section>'
-            f'<p class="nav"><a href="../index.html">Reports</a></p>')
-    return PAGE.substitute(title=f"Month-end close {month}", css=CSS + CLOSE_CSS, body=body)
+            f'<div class="actions"><a class="btn quiet" href="index.html">All Months</a></div>{about}')
+    return PAGE.substitute(title=f"Month-End Close {month}", css=CSS + CLOSE_CSS, body=body)
 
 
 def build(month, src=SRC, dest=DEST):
