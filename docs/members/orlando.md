@@ -2,7 +2,7 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 23:35 · **Branch:** o/apple-ui (rebased on `main` after #35 and #42, pushed; not yet a PR)
+**Last updated:** 2026-10-04 03:50 · **Branch:** o/ui-map (worktree `.claude/worktrees/o-ui-map`: o/apple-ui + origin/main merged; not pushed)
 
 ## Done
 - **Phase 2 wiring + teammates' pages** (branch `o/apple-ui`). Tests: `python -m pytest engine recon reports -q` 356 passed, 1 skipped (after the rebase).
@@ -35,6 +35,19 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - Accepted decision 002 (engine in Python); my code is Python too.
 
 ## In progress
+- **UI map + redesign (branch `o/ui-map`, worktree `.claude/worktrees/o-ui-map`).** Done and committed: merge of
+  origin/main (main's scorecard/hub/close/weekly kept as the behaviour), Home button in every page's top bar
+  (`theme.Page`, `root="../"` in subfolders, `""` at the top), `python -m reports.sitemap` (link + button check,
+  writes `reports/map.html`, 0 problems), skill `.claude/skills/report-design/SKILL.md`. **Next, in order:**
+  (1) theme.py: motion tokens (`--ease-out`), page entrance stagger, hover vocabulary, red status lamp pulse,
+  reduced-motion and print overrides, as the skill says; (2) port the Apple design onto main's `scorecard.py`
+  (keep the `pillar` div, sell-through `parts`, `Download:` line, `render(kf, dest)`; info popovers, footnotes,
+  accordions as in commit 7fa5c2c), `close_report.py` (Dani's D3.8 content kept; action rows, ledger rows,
+  exception accordions) and `hub.py` (main's period switch + the store card from beb371d; restore the store-card
+  portal test from beb371d's `test_phase2_pages.py`); (3) rebuild (scratchpad `regen.sh` steps: `reports.close
+  --inbox data/sample/messy_month/inbox --month 2026-09`, pulse for Sep 27-Oct 4, `reports.monthly --month
+  2026-09`, scorecard day/month-to-date, `reports.weekly --week 2026-W40/W39`, `reports.hub`, `reports.sitemap`);
+  (4) verify per the skill (pytest, sitemap 0 problems, 1-page print, 1440/375 screenshots).
 - 0.4 Amanda office hours (3-5 PM): real sample exports first, then pulse questions 5-12, then MUST 1-4.
 
 ## Blocked / needs from others
