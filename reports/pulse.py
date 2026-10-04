@@ -16,6 +16,7 @@ from pathlib import Path
 from string import Template
 
 from reports.schema import day_record, write_csv
+from reports.theme import CSS, E, EMAIL_FONT, PAGE
 
 ROOT = Path(__file__).resolve().parent.parent
 ORDER = ["shopgoodwill", "amazon", "ebay", "other"]
@@ -35,99 +36,9 @@ REASONS = {
     "prior_zero": "prior day revenue was $0",
 }
 
-# Goodwill palette: blue #0054A4 and black #231F20 on white. Greys are tints of the black.
-# Green and red mark change and missing data only; green is too light for text on white
-# (about 2:1), so it is a badge background under black text; red passes as text (about 5.6:1).
-CSS = """
-:root { --primary:#0054A4; --ink:#231F20; --bg:#fff; --card:#fff; --up:#9DBB68; --down:#CC1F40;
-  --muted:#5c5859; --line:#d3d2d2; --nodata:#f4f4f4; --radius:2px; }
-* { box-sizing:border-box; }
-body { margin:0; background:var(--bg); color:var(--ink);
-  font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
-main { max-width:980px; margin:0 auto; padding:24px 16px 48px; }
-header { background:var(--primary); color:#fff; border-radius:var(--radius); padding:18px 20px; }
-header h1 { margin:0; font-size:22px; }
-header p { margin:4px 0 0; font-size:13px; opacity:.9; }
-.summary { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--primary);
-  border-radius:var(--radius); padding:12px 16px; margin:16px 0 0; font-size:17px; font-weight:600; }
-.summary.alert { border-left-color:var(--down); }
-.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:16px 0; }
-.kpi { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; }
-.kpi .label { color:var(--primary); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
-.kpi .value { font-size:24px; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums; }
-.kpi .sub { font-size:13px; margin-top:4px; }
-.banner { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--down); border-radius:var(--radius);
-  padding:10px 14px; margin:0 0 16px; font-size:14px; }
-.card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow-x:auto; }
-table { width:100%; border-collapse:collapse; min-width:720px; }
-th, td { padding:10px 12px; text-align:right; border-bottom:1px solid var(--line);
-  font-variant-numeric:tabular-nums; white-space:nowrap; }
-th { font-size:12px; color:var(--primary); font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
-th:first-child, td:first-child, td.status, th.status { text-align:left; }
-tr.total td { font-weight:700; border-top:2px solid var(--primary); border-bottom:none; }
-td.nodata { text-align:left; background:var(--nodata); color:var(--down); font-weight:600; }
-td.nodata.quiet { color:var(--muted); font-weight:400; font-style:italic; }
-.pill { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:var(--radius); }
-.pill.ok { background:var(--up); color:var(--ink); }
-.pill.missing, .pill.stale, .pill.unknown { background:var(--down); color:#fff; }
-.pill.not_configured { border:1px solid var(--line); color:var(--muted); }
-.chg { display:inline-block; padding:1px 8px; border-radius:var(--radius); font-weight:600; }
-.chg.up { background:var(--up); color:var(--ink); }
-.chg.down { background:var(--down); color:#fff; }
-.muted { color:var(--muted); }
-small.note { display:block; color:var(--muted); font-size:12px; font-weight:400; white-space:normal;
-  max-width:220px; margin-left:auto; margin-top:2px; }
-section.foot { margin-top:20px; font-size:13px; color:var(--muted); }
-section.foot h2 { font-size:13px; color:var(--primary); margin:16px 0 6px; }
-dl { display:grid; grid-template-columns:max-content 1fr; gap:4px 16px; margin:0; }
-dt { font-weight:600; color:var(--ink); }
-dd { margin:0; }
-a { color:var(--primary); }
-ul.days { list-style:none; padding:0; margin:16px 0; }
-ul.days li { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:8px; }
-ul.days a { display:block; padding:12px 16px; text-decoration:none; font-weight:600; }
-.chg, .pill { border:1px solid transparent; }
-@media print {
-  @page { size:letter; margin:0.5in; }
-  body { background:#fff; font-size:10.5pt; }
-  main { max-width:none; padding:0; }
-  /* Keep brand colors when the browser allows it... */
-  header, .summary, .pill, .chg, .banner, td.nodata { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  /* ...and borders that still read correctly if backgrounds are dropped. */
-  header { border:2px solid var(--primary); }
-  .chg.up, .pill.ok { border-color:var(--ink); }
-  .chg.down, .pill.missing, .pill.stale, .pill.unknown { border-color:var(--down); }
-  .kpi, .card, .summary, .banner { border-color:var(--muted); }
-  .card { overflow:visible; }
-  table { min-width:0; font-size:9.5pt; }
-  th, td { padding:6px 8px; }
-  .kpis { grid-template-columns:repeat(4,1fr); }
-  header, .summary, .kpis, .kpi, .banner, tr, dl { break-inside:avoid; }
-  thead { display:table-header-group; }
-  section.foot h2 { break-after:avoid; }
-  .nav { display:none; }
-}
-"""
-
-PAGE = Template("""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>$title</title>
-<style>$css</style>
-</head>
-<body>
-<main>
-$body
-</main>
-</body>
-</html>
-""")
-
 DAY = Template("""<header>
   <h1>Nightly pulse: $day_long</h1>
-  <p>Goodwill Michiana e-commerce · compared with $prior_long · times in $tz · generated $generated$mock</p>
+  <p>Compared with $prior_long · times in $tz · generated $generated$mock</p>
 </header>
 <p class="summary$summary_class">$summary</p>
 <div class="kpis">
@@ -160,7 +71,7 @@ $definitions
 
 INDEX = Template("""<header>
   <h1>Nightly pulse</h1>
-  <p>Goodwill Michiana e-commerce · $count report(s)</p>
+  <p>$count report(s)</p>
 </header>
 <ul class="days">
 $items
@@ -310,24 +221,15 @@ def render_day(p):
     return PAGE.substitute(title=f"Nightly pulse {p['business_date']}", css=CSS, body=body)
 
 
-# Email copy: Outlook desktop renders with Word, which ignores <style> variables, grid and
-# border-radius. So: nested tables, every style inline on the element, web-safe fonts, hex colors.
-E = {"primary": "#0054A4", "ink": "#231F20", "bg": "#ffffff", "up": "#9DBB68", "down": "#CC1F40",
-     "muted": "#5c5859", "line": "#d3d2d2"}
-EMAIL_FONT = "font-family:Arial,Helvetica,sans-serif;"
-
-
 def email_delta(d):
     if not d or d.get("revenue_cents") is None:
         return f'<span style="color:{E["muted"]};">n/a</span>'
     cents, pct = d["revenue_cents"], d.get("revenue_pct")
     pct_txt = f" ({pct:+.1f}%)" if pct is not None else ""
     if cents > 0:
-        return (f'<span style="background:{E["up"]};color:{E["ink"]};padding:1px 6px;">'
-                f'&#9650; +{money(cents)}{pct_txt}</span>')
+        return f'<b style="color:{E["up"]};">&#9650; +{money(cents)}{pct_txt}</b>'
     if cents < 0:
-        return (f'<span style="background:{E["down"]};color:#ffffff;padding:1px 6px;">'
-                f'&#9660; {money(cents)}{pct_txt}</span>')
+        return f'<b style="color:{E["down"]};">&#9660; {money(cents)}{pct_txt}</b>'
     return f"{money(cents)}{pct_txt}"
 
 
@@ -361,8 +263,8 @@ def render_email(p):
     alert = ""
     if excluded:
         names = " and ".join(escape(n) for n in excluded)
-        alert = (f'<tr><td style="{EMAIL_FONT}font-size:14px;color:{E["ink"]};background:#fbe8ec;'
-                 f'border-left:5px solid {E["down"]};padding:10px 14px;"><b>{names}: no data for this day.</b> '
+        alert = (f'<tr><td style="{EMAIL_FONT}font-size:14px;color:{E["ink"]};background:{E["tint"]};'
+                 f'border-left:3px solid {E["down"]};padding:10px 14px;"><b>{names}: no data for this day.</b> '
                  f'Totals exclude {names}.</td></tr>'
                  f'<tr><td style="height:12px;line-height:12px;">&nbsp;</td></tr>')
     defs = "<br>".join(f"<b>{escape(k.replace('_', ' ').capitalize())}:</b> {escape(v)}"
@@ -376,10 +278,11 @@ def render_email(p):
 <tr><td align="center" style="padding:16px;">
 <table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:100%;">
 <tr><td style="{EMAIL_FONT}background:{E['primary']};color:#ffffff;padding:16px 20px;">
-  <div style="font-size:20px;font-weight:bold;">Nightly pulse: {long_date(p['business_date'])}</div>
-  <div style="font-size:12px;">Goodwill Michiana e-commerce{mock}</div></td></tr>
+  <div style="font-size:11px;font-weight:bold;letter-spacing:1px;">GOODWILL MICHIANA &middot; E-COMMERCE REPORTING</div>
+  <div style="font-size:20px;font-weight:bold;padding-top:2px;">Nightly pulse: {long_date(p['business_date'])}</div>
+  <div style="font-size:12px;">Compared with the prior day{mock}</div></td></tr>
 <tr><td style="height:12px;line-height:12px;">&nbsp;</td></tr>
-<tr><td style="{EMAIL_FONT}font-size:16px;font-weight:bold;color:{E['ink']};background:#ffffff;border-left:5px solid {E['down'] if excluded else E['primary']};padding:12px 14px;">{escape(summary_line(p))}</td></tr>
+<tr><td style="{EMAIL_FONT}font-size:15px;font-weight:bold;color:{E['ink']};background:{E['tint']};border-left:3px solid {E['down'] if excluded else E['primary']};padding:12px 14px;">{escape(summary_line(p))}</td></tr>
 <tr><td style="height:12px;line-height:12px;">&nbsp;</td></tr>
 {alert}<tr><td style="background:#ffffff;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">

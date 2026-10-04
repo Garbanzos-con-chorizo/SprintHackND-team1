@@ -12,26 +12,29 @@ from datetime import date, datetime
 from html import escape, unescape
 from pathlib import Path
 
-from reports.pulse import CSS, PAGE
+from reports.theme import CSS, PAGE
 
 ROOT = Path(__file__).resolve().parent.parent
 
 HUB_CSS = """
-.hub-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin:18px 0 0; }
-.hub-card { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--primary);
-  border-radius:var(--radius); padding:16px 18px; }
-.hub-card.alert { border-left-color:var(--down); }
-.hub-card.empty { border-left-color:var(--line); }
-.hub-card .label { color:var(--primary); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
-.hub-card h2 { font-size:19px; margin:4px 0 8px; }
+/* One panel per report, divided by hairlines; the top rule is blue, red when the page flags missing data */
+.hub-grid { display:flex; flex-wrap:wrap; gap:1px; margin:var(--sp-5) 0 0; background:var(--rule); border:var(--bd); }
+.hub-card { flex:1 1 260px; display:flex; flex-direction:column; gap:var(--sp-3); padding:var(--sp-5) var(--sp-5) var(--sp-5);
+  background:var(--bg); border-top:3px solid var(--blue); }
+.hub-card.alert { border-top-color:var(--red); }
+.hub-card.empty { border-top-color:var(--rule-dk); background:var(--bg-1); }
+.hub-card .label { color:var(--blue); }
+.hub-card.alert .label { color:var(--red); }
+.hub-card h2 { font-size:var(--fs-lead); font-weight:var(--fw-bold); line-height:1.3; }
 .hub-card h2 a { color:var(--ink); }
-.hub-card .headline { margin:0 0 10px; font-weight:600; }
-.hub-card .links, .hub-card .built { font-size:13px; color:var(--muted); margin:4px 0 0; }
+.hub-card .headline { font-weight:var(--fw-semi); line-height:1.4; }
+.hub-card .links { font-size:var(--fs-small); color:var(--muted); margin-top:auto; padding-top:var(--sp-3); border-top:var(--bd); }
+.hub-card .built { font-size:var(--fs-small); color:var(--muted); }
 @media print {
   @page { size:letter portrait; margin:0.5in; }
-  .hub-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
-  .hub-card { padding:8px 10px; break-inside:avoid; }
-  .hub-card h2 { font-size:12pt; }
+  .hub-grid { margin-top:8pt; }
+  .hub-card { flex-basis:45%; padding:6pt 8pt; gap:3pt; break-inside:avoid; }
+  .hub-card h2 { font-size:10pt; }
   .hub-card .links { display:none; }
 }
 """
@@ -117,10 +120,10 @@ def build(root=ROOT / "reports"):
     cards, mock = zip(*(card(root, item) for item in SUITE))
     note = ("<p>Pages marked <strong>mock data</strong> are built from the synthetic sample exports; "
             "KPIs marked SIMULATED use simulated internal data.</p>") if any(mock) else ""
-    body = (f'<header><h1>Goodwill Michiana e-commerce reports</h1>'
-            f'<p>Latest reports · updated {datetime.now():%Y-%m-%d %H:%M}</p></header>'
+    body = (f'<header><h1>E-commerce reports</h1>'
+            f'<p>Latest of each report · updated {datetime.now():%Y-%m-%d %H:%M}</p></header>'
             f'<div class="hub-grid">\n' + "\n".join(cards) + '\n</div>'
-            f'<section class="foot">{note}<p>Red edge: the report flags missing data or partial totals.</p></section>')
+            f'<section class="foot">{note}<p>Red top rule: the report flags missing data or partial totals.</p></section>')
     path = root / "index.html"
     path.write_text(PAGE.substitute(title="E-commerce reports", css=CSS + HUB_CSS, body=body), encoding="utf-8")
     return path

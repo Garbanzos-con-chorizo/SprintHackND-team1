@@ -14,7 +14,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from reports import hub, kpi
-from reports.pulse import CSS, PAGE
+from reports.theme import CSS, PAGE
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -47,7 +47,7 @@ def render_index(dest):
     weeks = sorted((f.stem for f in dest.glob("*.html") if re.fullmatch(r"\d{4}-W\d{2}", f.stem)), reverse=True)
     items = "\n".join(f'  <li><a href="{w}.html">{w}{" (latest)" if i == 0 else ""}</a></li>'
                       for i, w in enumerate(weeks))
-    body = (f'<header><h1>Weekly dashboard</h1><p>Goodwill Michiana e-commerce · {len(weeks)} week(s)</p></header>'
+    body = (f'<header><h1>Weekly dashboard</h1><p>{len(weeks)} week(s)</p></header>'
             f'<ul class="days">\n{items}\n</ul>')
     return PAGE.substitute(title="Weekly dashboard", css=CSS + kpi.KPI_CSS, body=body)
 

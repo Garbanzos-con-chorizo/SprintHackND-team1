@@ -16,58 +16,83 @@ from datetime import date
 from html import escape
 from pathlib import Path
 
-from reports.pulse import CSS, PAGE, money
+from reports.pulse import money
+from reports.theme import CSS, PAGE, facts, span, stamp
 
 ROOT = Path(__file__).resolve().parent.parent
 KPI_DIR = ROOT / "out" / "kpi"
 DEST = ROOT / "reports" / "scorecard"
 
 SCORECARD_CSS = """
-.coverage { margin:12px 0 0; font-size:14px; }
-.simnote { margin:12px 0 0; font-size:13px; color:var(--muted); border:1px dashed var(--line); padding:8px 12px; border-radius:var(--radius); }
-main { max-width:1280px; }
-.areas { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin:16px 0 0; }
-.area h2 { font-size:13px; color:var(--primary); text-transform:uppercase; letter-spacing:.05em; margin:0 0 6px;
-  border-bottom:2px solid var(--primary); padding-bottom:4px; }
-.tile { border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px; margin:0 0 8px; background:var(--card); }
-.tile .name { font-size:12px; font-weight:700; color:var(--ink); }
-.tile .value { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; margin:2px 0; }
-.tile .value .per { font-size:12px; font-weight:400; color:var(--muted); }
-.tile .value.none { font-size:15px; color:var(--muted); font-weight:600; }
-.tile .change { font-size:12px; margin:2px 0; }
-.tile .note { font-size:12px; color:var(--muted); margin:4px 0 0; }
-.tile.partial { border-left:4px solid var(--down); }
-.tile.no_data { background:var(--nodata); }
-.tile .meta { font-size:11px; color:var(--muted); margin-top:4px; }
-.sim { display:inline-block; font-size:10px; color:var(--muted); border:1px dashed var(--line); border-radius:var(--radius);
-  padding:1px 5px; margin-left:4px; vertical-align:middle; letter-spacing:.02em; }
-table.rank { min-width:0; width:100%; margin-top:4px; }
-table.rank th, table.rank td { padding:3px 4px; font-size:12px; }
-table.rank th:nth-child(2), table.rank td:nth-child(2) { text-align:left; }
-details.defs { margin-top:20px; font-size:13px; color:var(--muted); }
-details.defs dt { margin-top:6px; }
+:root { --page:1520px; }
+.simnote { margin:var(--sp-3) 0 0; font-size:var(--fs-small); color:var(--muted); }
+
+/* Five areas. Wide screens and print: one aligned grid, a column per area (Category + Customer
+   takes two so its rankings sit side by side), tile rows lined up across areas via subgrid. */
+.areas { display:grid; grid-template-columns:minmax(0,1fr); gap:var(--sp-5); margin:var(--sp-5) 0 0; }
+.area { display:grid; gap:1px; min-width:0; background:var(--rule); border:var(--bd); }
+.area > h2 { padding:var(--sp-3) var(--sp-5); background:var(--blue); color:#fff; font-size:var(--fs-label);
+  font-weight:var(--fw-bold); letter-spacing:.08em; text-transform:uppercase; line-height:1.3; }
+.area.wide > h2, .area.wide > .tile:not(.ranking) { grid-column:1 / -1; }
+@media (min-width:720px) {
+  .areas { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .area.wide { grid-column:1 / -1; grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (min-width:1180px), print {
+  .areas { grid-template-columns:var(--tracks); grid-template-rows:auto repeat(var(--rows),auto);
+    gap:1px; background:var(--rule); border:var(--bd); }
+  .area { grid-row:1 / -1; grid-template-rows:subgrid; background:transparent; border:0; }
+  .area.wide { grid-column:span 2; grid-template-columns:subgrid; }
+  .area.wide > .tile.ranking { grid-row:span var(--span); }
+}
+
+/* KPI tile: name and pillar, the value, change vs the prior period, badges, note */
+.tile { min-width:0; padding:var(--sp-4) var(--sp-5) var(--sp-5); background:var(--bg); }
+.tile.no_data { background:var(--bg-1); }
+.tile.partial { border-left:3px solid var(--red); padding-left:calc(var(--sp-5) - 3px); }
+.tile .name { font-size:var(--fs-small); font-weight:var(--fw-bold); line-height:1.3; }
+.tile .pillar { color:var(--muted); padding-right:var(--sp-1); }
+.tile .value { margin-top:var(--sp-2); font-size:var(--fs-metric); font-weight:var(--fw-bold); line-height:1.1; letter-spacing:-0.02em; }
+.tile .value .per { font-size:var(--fs-small); font-weight:var(--fw-regular); letter-spacing:-0.01em; color:var(--muted); }
+.tile .value.none { font-size:var(--fs-lead); font-weight:var(--fw-semi); letter-spacing:-0.01em; color:var(--muted); }
+.tile .change { margin-top:var(--sp-1); font-size:var(--fs-small); color:var(--muted); }
+.tile .tags { display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-2) var(--sp-3); margin-top:var(--sp-3); }
+.tile .note { margin-top:var(--sp-3); font-size:var(--fs-small); color:var(--muted); line-height:1.35; }
+.tile .pillar, .sim, .flag { font-size:9.5px; font-weight:var(--fw-semi); letter-spacing:.06em; text-transform:uppercase; line-height:15px; }
+.sim, .flag { display:inline-block; padding:0 var(--sp-2); white-space:nowrap; border:1px solid; }
+.sim { color:var(--ink-2); background:var(--bg-2); border-color:var(--rule); }
+.flag { color:var(--red); background:var(--bg); border-color:currentColor; }
+
+/* Top-10 rankings: compact ledger, the amount cell carries a bar scaled to the leader */
+table.rank { min-width:0; margin-top:var(--sp-3); }
+table.rank th, table.rank td { padding:3px var(--sp-3); font-size:var(--fs-small); border-bottom-color:var(--bg-2); }
+table.rank th { font-size:9.5px; border-bottom:1px solid var(--ink); }
+table.rank th:first-child, table.rank td:first-child { padding-left:0; text-align:right; color:var(--muted); width:1.6em; }
+table.rank .cat { text-align:left; width:100%; max-width:0; overflow:hidden; text-overflow:ellipsis; }
+table.rank td.cat { background:linear-gradient(var(--blue-bar),var(--blue-bar)) left bottom / var(--w) 3px no-repeat; }
+table.rank tbody tr:first-child td { font-weight:var(--fw-semi); }
+details.defs { margin-top:var(--sp-5); font-size:var(--fs-small); color:var(--ink-2); }
+details.defs summary { cursor:pointer; font-weight:var(--fw-semi); color:var(--blue); margin-bottom:var(--sp-3); }
 @media print {
   @page { size:letter landscape; margin:0.35in; }
   body { font-size:8pt; }
-  header { padding:6px 10px; }
-  header h1 { font-size:13pt; }
-  header p { font-size:7.5pt; }
-  .summary { font-size:9pt; padding:4px 8px; margin-top:6px; }
-  .coverage, .simnote { font-size:7.5pt; margin-top:4px; padding:3px 6px; }
-  .areas { grid-template-columns:repeat(5,1fr); gap:6px; margin-top:6px; }
-  .area h2 { font-size:8pt; margin-bottom:3px; padding-bottom:2px; }
-  .tile { padding:4px 6px; margin-bottom:4px; break-inside:avoid; }
-  .tile .name { font-size:7.5pt; }
-  .tile .value { font-size:12pt; }
-  .tile .value.none { font-size:9pt; }
-  .tile .change, .tile .note, .tile .meta { font-size:6.5pt; margin-top:1px; }
-  .sim { font-size:6pt; padding:0 3px; }
-  table.rank th, table.rank td { font-size:6.5pt; padding:0 2px; line-height:1.25; }
-  table.rank td:nth-child(2) { max-width:1.1in; overflow:hidden; text-overflow:ellipsis; }
-  .gapnote { display:none; }
-  table.rank .share { display:none; }
-  details.defs, .nav { display:none; }
-  .tile, .sim, .chg { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .simnote { font-size:7pt; margin-top:3pt; }
+  .areas { margin-top:6pt; }
+  .area > h2 { padding:3pt 7pt; font-size:7pt; }
+  .tile { padding:5pt 7pt 6pt; }
+  .tile.partial { padding-left:calc(7pt - 3px); }
+  .tile .name { font-size:8pt; }
+  .tile .pillar, .sim, .flag { font-size:5.8pt; line-height:9pt; }
+  .sim, .flag { padding:0 2.5pt; }
+  .tile .value { font-size:16pt; margin-top:2pt; }
+  .tile .value .per { font-size:7pt; }
+  .tile .value.none { font-size:10pt; }
+  .tile .change, .tile .note { font-size:7pt; margin-top:2pt; }
+  .tile .tags { margin-top:3pt; gap:2pt 4pt; }
+  table.rank { margin-top:3pt; }
+  table.rank th, table.rank td { font-size:7pt; padding:1.2pt 3pt; }
+  table.rank th { font-size:6pt; }
+  .gapnote, details.defs { display:none; }
 }
 """
 
@@ -107,8 +132,9 @@ def delta_text(k):
         shown += f" ({d['pct']:+.1f}%)"
     better = (v > 0) == (k["good_direction"] == "up")
     cls = "" if v == 0 else (" up" if better else " down")
+    arrow = "" if v == 0 else ("▲ " if v > 0 else "▼ ")
     partial = ' <span class="muted">(partial period)</span>' if d.get("reason") == "partial_period" else ""
-    return f'<span class="chg{cls}">{escape(shown)}</span>{partial}'
+    return f'<span class="chg{cls}">{arrow}{escape(shown)}</span>{partial}'
 
 
 def note_html(note):
@@ -117,23 +143,40 @@ def note_html(note):
     return " ".join(f'<span class="gapnote">{escape(p)}</span>' if " has no data on " in p else escape(p) for p in parts)
 
 
-def tile(k, prior_label, sim_label):
-    badge = f'<span class="sim">{escape(sim_label)}</span>' if k["simulated"] else ""
+def pct_cell(x, places):
+    return "-" if x is None else f"{x * 100:.{places}f}%"
+
+
+def ranking_table(k):
+    """A top-10 ranking as a compact table; the rule under each category is scaled to the first row."""
+    rows = k["rows"] or []
+    if not rows:
+        return '<div class="value none">No data</div>'
+    has_ratio = any(r.get("ratio") is not None for r in rows)
+    top = max(r["value"] or 0 for r in rows) or 1
+    body = []
+    for r in rows:
+        name = escape(r["label"])
+        bar = max(r["value"] or 0, 0) / top * 100
+        ratio = f'<td>{pct_cell(r.get("ratio"), 0)}</td>' if has_ratio else ""
+        body.append(f'<tr><td>{r["rank"]}</td><td class="cat" title="{name}" style="--w:{bar:.0f}%">{name}</td>'
+                    f'<td>{fmt(r["value"], k["unit"]) or "-"}</td>'
+                    f'<td class="share">{pct_cell(r.get("share"), 1)}</td>{ratio}</tr>')
+    head = ('<tr><th>#</th><th class="cat">Category</th><th>Amount</th><th class="share">Share</th>'
+            + ("<th>Margin</th>" if has_ratio else "") + "</tr>")
+    return f'<table class="rank striped"><thead>{head}</thead><tbody>{"".join(body)}</tbody></table>'
+
+
+def tile(k, prior_label, sim_label, pillars):
     status = k["status"]
+    pillar = pillars.get(k.get("pillar"))
+    head = f'<div class="name">{escape(k["name"])}</div>'
+    tags = ((f'<span class="pillar">{escape(pillar)}</span>' if pillar else "")
+            + ('<span class="flag">Partial</span>' if status == "partial" else "")
+            + (f'<span class="sim">{escape(sim_label)}</span>' if k["simulated"] else ""))
+    tags = f'<div class="tags">{tags}</div>' if tags else ""
     if k["kind"] == "ranking":
-        rows = k["rows"] or []
-        if rows:
-            has_ratio = any(r.get("ratio") is not None for r in rows)
-            body = "".join(
-                f'<tr><td>{r["rank"]}</td><td>{escape(r["label"])}</td><td>{fmt(r["value"], k["unit"])}</td>'
-                f'<td class="share">{r["share"] * 100:.1f}%</td>'
-                + (f'<td>{r["ratio"] * 100:.0f}%</td>' if has_ratio else "") + "</tr>" for r in rows)
-            head = ('<tr><th>#</th><th>Category</th><th>Amount</th><th class="share">Share</th>'
-                    + ("<th>Margin</th>" if has_ratio else "") + "</tr>")
-            main = f'<table class="rank"><thead>{head}</thead><tbody>{body}</tbody></table>'
-        else:
-            main = '<div class="value none">No data</div>'
-        change = ""
+        main, change = tags + ranking_table(k), ""
     else:
         shown = fmt(k["value"], k["unit"])
         if shown is None:
@@ -143,11 +186,32 @@ def tile(k, prior_label, sim_label):
             main = f'<div class="value">{escape(shown)}{per}</div>'
         prior = fmt(k["prior_value"], k["unit"])
         delta = delta_text(k)
-        change = (f'<div class="change">{delta}' + (f' <span class="muted">vs {escape(prior_label)}: {escape(prior)}</span>'
-                                                     if prior is not None else "") + "</div>") if (delta or prior) else ""
+        versus = f' <span class="muted">vs {escape(prior_label)}: {escape(prior)}</span>' if prior is not None else ""
+        change = f'<div class="change">{delta}{versus}</div>' if (delta or prior) else ""
+        change += tags
     note = f'<div class="note">{note_html(k["note"])}</div>' if k.get("note") else ""
-    return (f'<div class="tile {status}" title="{escape(k["definition"])}">'
-            f'<div class="name">{escape(k["name"])}{badge}</div>{main}{change}{note}</div>')
+    kind = " ranking" if k["kind"] == "ranking" else ""
+    return (f'<div class="tile {status}{kind}" title="{escape(k["definition"])}">'
+            f'{head}{main}{change}{note}</div>')
+
+
+def areas_html(kf, sim_label):
+    """The five areas as one grid. An area holding rankings is two tracks wide; the CSS lines the
+    tile rows up across areas, so the grid is told how many tile rows there are (--rows)."""
+    pillars = {p["id"]: p["name"] for p in kf.get("pillars") or []}
+    prior = kf["prior_period"]["label"]
+    groups = [(a, [k for k in kf["kpis"] if k["area"] == a["id"]]) for a in kf["areas"]]
+    wide = {a["id"]: any(k["kind"] == "ranking" for k in ks) for a, ks in groups}
+    scalars = {a["id"]: sum(k["kind"] != "ranking" for k in ks) for a, ks in groups}
+    rows = max([len(ks) for a, ks in groups if not wide[a["id"]]]
+               + [scalars[a["id"]] + 1 for a, _ in groups if wide[a["id"]]] + [1])
+    tracks = " ".join("minmax(0,1.7fr) minmax(0,1.7fr)" if wide[a["id"]] else "minmax(0,1fr)" for a, _ in groups)
+    sections = []
+    for a, ks in groups:
+        attrs = f' class="area wide" style="--span:{rows - scalars[a["id"]]}"' if wide[a["id"]] else ' class="area"'
+        sections.append(f'<section{attrs}><h2>{escape(a["name"])}</h2>'
+                        + "".join(tile(k, prior, sim_label, pillars) for k in ks) + "</section>")
+    return f'<div class="areas" style="--tracks:{tracks};--rows:{rows}">\n' + "\n".join(sections) + "\n</div>"
 
 
 def headline(kf):
@@ -168,14 +232,25 @@ def headline(kf):
     return text + ".", not kf["coverage"]["complete"]
 
 
+def facts_html(kf):
+    period, prior, cov, internal = kf["period"], kf["prior_period"], kf["coverage"], kf.get("internal_data")
+    counts = [(sum(k["status"] == s for k in kf["kpis"]), name) for s, name in
+              (("ok", "ok"), ("partial", "partial"), ("no_data", "no data"))]
+    not_stored = "" if prior.get("available", True) else ' <span class="muted">(not stored)</span>'
+    return facts([
+        ("Period", escape(span(period["start"], period["through"])), ""),
+        ("Compared with", escape(prior["label"]) + not_stored, ""),
+        ("Marketplace data", f'{cov["days_complete"]} of {cov["days_expected"]} days complete',
+         "good" if cov["complete"] else "bad"),
+        ("KPI status", " · ".join(f"{n} {name}" for n, name in counts if n), ""),
+        ("Internal data", escape(f'{internal["label"]}, as of {internal["as_of"]}') if internal else "None stored",
+         "" if internal else "bad"),
+    ])
+
+
 def render(kf):
-    period, prior = kf["period"], kf["prior_period"]
+    period = kf["period"]
     sim_label = (kf.get("internal_data") or {}).get("label") or "Simulated internal data"
-    by_area = {a["id"]: [k for k in kf["kpis"] if k["area"] == a["id"]] for a in kf["areas"]}
-    areas = "\n".join(
-        f'<section class="area"><h2>{escape(a["name"])}</h2>'
-        + "".join(tile(k, prior["label"], sim_label) for k in by_area[a["id"]]) + "</section>"
-        for a in kf["areas"])
     text, alert = headline(kf)
     cov = kf["coverage"]
     coverage = ""
@@ -186,17 +261,18 @@ def render(kf):
                     f'KPIs that use these days are marked partial.</div>')
     simulated = sum(k["simulated"] for k in kf["kpis"])
     simnote = (f'<p class="simnote">{simulated} of {len(kf["kpis"])} KPIs use {escape(sim_label.lower())} '
-               f'(marked). {escape(kf["definitions"].get("simulated", ""))}</p>') if simulated else ""
-    internal = kf.get("internal_data")
-    if not internal:
+               f'(badged). {escape(kf["definitions"].get("simulated", ""))}</p>') if simulated else ""
+    if not kf.get("internal_data"):
         simnote = '<p class="simnote">No internal data stored for this period: KPIs that need it show "No data".</p>'
-    defs = "".join(f"<dt>{escape(k['name'])}</dt><dd>{escape(k['definition'])}</dd>" for k in kf["kpis"])
+    defs = "".join(f"<div><dt>{escape(k['name'])}</dt><dd>{escape(k['definition'])}</dd></div>" for k in kf["kpis"])
     top_defs = " ".join(escape(v) for v in kf["definitions"].values())
+    cadence = {"day": "Daily", "week": "Weekly", "month": "Monthly"}.get(period["type"], period["type"].title())
     body = (f'<header><h1>COO scorecard: {escape(period["label"])}</h1>'
-            f'<p>Goodwill Michiana e-commerce · {escape(period["start"])} to {escape(period["through"])} · '
-            f'compared with {escape(prior["label"])} · generated {escape(kf["generated_at"])}</p></header>'
-            f'<p class="summary{" alert" if alert else ""}">{escape(text)}</p>{coverage}{simnote}'
-            f'<div class="areas">\n{areas}\n</div>'
+            f'<p>{cadence} · {len(kf["kpis"])} KPIs in {len(kf["areas"])} areas · '
+            f'generated {escape(stamp(kf["generated_at"]))}</p></header>'
+            f'<p class="summary{" alert" if alert else ""}">{escape(text)}</p>'
+            f'{facts_html(kf)}{coverage}{simnote}\n'
+            f'{areas_html(kf, sim_label)}\n'
             f'<section class="foot"><p>{top_defs}</p></section>'
             f'<details class="defs"><summary>KPI definitions</summary><dl>{defs}</dl></details>'
             f'<p class="nav"><a href="index.html">All scorecards</a> · <a href="../index.html">Reports</a></p>')
@@ -207,7 +283,7 @@ def render_index(dest):
     pages = sorted((f for f in dest.glob("*.html") if re.fullmatch(r"(day|week|month)-[\dW-]+", f.stem)),
                    key=lambda f: f.stem, reverse=True)
     items = "\n".join(f'  <li><a href="{f.name}">{escape(f.stem)}</a></li>' for f in pages)
-    body = (f'<header><h1>COO scorecards</h1><p>Goodwill Michiana e-commerce · {len(pages)} page(s)</p></header>'
+    body = (f'<header><h1>COO scorecards</h1><p>{len(pages)} page(s)</p></header>'
             f'<ul class="days">\n{items or "<li>None yet</li>"}\n</ul><p class="nav"><a href="../index.html">Reports</a></p>')
     return PAGE.substitute(title="COO scorecards", css=CSS + SCORECARD_CSS, body=body)
 

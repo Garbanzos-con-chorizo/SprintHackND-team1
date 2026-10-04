@@ -19,46 +19,45 @@ SECTIONS = ["Financial", "Listings & Production", "Sales Effectiveness", "Catego
             "Customer & Marketplace"]
 
 KPI_CSS = """
-.section { margin:22px 0 0; }
-.section h2 { font-size:15px; color:var(--primary); margin:0 0 8px; text-transform:uppercase; letter-spacing:.04em; }
-.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
-.card.kpi { padding:14px 16px; overflow:visible; }
-.badge { display:inline-block; margin-top:6px; font-size:11px; font-weight:700; padding:2px 6px; border-radius:var(--radius);
-  text-transform:uppercase; letter-spacing:.03em; }
-.badge.files { color:var(--primary); border:1px solid var(--primary); }
-.badge.simulated { color:var(--ink); background:var(--nodata); border:1px dashed var(--ink); }
-.simnote { background:var(--nodata); border:1px dashed var(--ink); border-radius:var(--radius); padding:10px 14px; margin:16px 0 0; font-size:14px; }
+.section { margin:var(--sp-6) 0 0; }
+.section h2 { display:flex; align-items:center; gap:var(--sp-4); margin:0; padding-bottom:var(--sp-2);
+  border-bottom:var(--bd-blue); color:var(--ink); font-size:var(--fs-label); font-weight:var(--fw-bold);
+  letter-spacing:.06em; text-transform:uppercase; }
+.section > .badge { margin:var(--sp-3) 0 0; }
+.cards { display:flex; flex-wrap:wrap; gap:1px; background:var(--rule); border:var(--bd); border-top:0; }
+.card.kpi { flex:1 1 200px; margin:0; padding:var(--sp-4) var(--sp-5); background:var(--bg); overflow:visible; }
+.badge { display:inline-block; margin-top:var(--sp-3); padding:0 var(--sp-2); font-size:9.5px; font-weight:var(--fw-semi);
+  letter-spacing:.06em; text-transform:uppercase; line-height:15px; border:1px solid; }
+.badge.files { color:var(--blue); border-color:var(--blue); background:var(--bg); }
+.badge.simulated { color:var(--ink-2); border-color:var(--rule); background:var(--bg-2); }
+.simnote { margin:var(--sp-4) 0 0; padding:var(--sp-3) var(--sp-5); background:var(--bg-1); border:var(--bd);
+  font-size:var(--fs-small); color:var(--ink-2); }
 .card table { min-width:520px; }
 @media print {
   @page { size:letter portrait; margin:0.4in; }
-  body { font-size:8.5pt; }
-  .summary { font-size:9pt; padding:4px 8px; margin-top:8px; }
-  .simnote { font-size:7pt; padding:3px 6px; margin-top:4px; }
-  .section { margin-top:5px; }
-  .section h2 { font-size:8pt; margin-bottom:3px; }
-  .cards { grid-template-columns:repeat(4,1fr); gap:4px; }
-  .card.kpi { padding:6px 8px; break-inside:avoid; }
-  .kpi .value { font-size:13pt; }
+  body { font-size:8pt; }
+  .simnote { font-size:7pt; padding:3pt 6pt; margin-top:4pt; }
+  .section { margin-top:6pt; }
+  .section h2 { font-size:6.5pt; padding-bottom:1pt; }
+  .cards { flex-wrap:wrap; }
+  .card.kpi { flex-basis:22%; padding:3pt 6pt; break-inside:avoid; }
+  .kpi .label { font-size:6.5pt; }
+  .kpi .value { font-size:12pt; }
   .card table { min-width:0; }
-  .card th, .card td { padding:1px 6px; font-size:7pt; }
-  .badge { font-size:6pt; padding:0 4px; margin-top:2px; }
-  section.foot { font-size:7pt; margin-top:6px; }
-  section.foot h2 { margin:4px 0 2px; }
-  section.foot dl { gap:0 8px; }
-  header { padding:8px 12px; }
-  header h1 { font-size:14pt; }
-  .kpi .label { font-size:7pt; }
-  .card.kpi { padding:4px 8px; }
+  .card th, .card td { padding:1pt 5pt; font-size:7pt; }
+  .badge { font-size:5.5pt; line-height:8pt; padding:0 2.5pt; margin-top:2pt; }
+  section.foot { font-size:6.5pt; margin-top:5pt; }
+  section.foot h2 { margin:3pt 0 1pt; }
+  section.foot dl { gap:0 8pt; }
 }
 """
-
 SIMNOTE = """<p class="simnote"><strong>Simulated internal data:</strong> KPIs marked SIMULATED use labor hours, listings,
 cost of goods or category mix from a mock of Goodwill's internal systems, not Goodwill figures. KPIs marked
 FROM MARKETPLACE FILES are calculated from the exports.</p>"""
 
 PAGE_BODY = Template("""<header>
   <h1>$title</h1>
-  <p>Goodwill Michiana e-commerce · $range · $coverage$mock</p>
+  <p>$range · $coverage$mock</p>
 </header>
 <p class="summary$summary_class">$summary</p>
 $simnote
@@ -174,14 +173,14 @@ def sections_html(rows, t):
     cat_rows = "\n".join(f'<tr><td>{escape(k["kpi"])}</td><td>{fmt(k)}</td>'
                          f'<td>{(k["value"] / rev * 100 if rev else 0):.1f}%</td></tr>' for k in cats)
     parts.append(f'<div class="section"><h2>{SECTIONS[3]}</h2>{badge("simulated")}'
-                 f'<div class="card" style="margin-top:8px"><table><thead><tr><th>Category</th><th>Revenue (est.)</th>'
+                 f'<div class="card"><table class="striped"><thead><tr><th>Category</th><th>Revenue (est.)</th>'
                  f'<th>Share</th></tr></thead><tbody>\n{cat_rows}\n</tbody></table></div></div>')
     mk = {(k["marketplace"], k["kpi"]): k for k in by_section[SECTIONS[4]]}
     names = ("Revenue", "Share of revenue", "Orders", "Customers (sum of days)", "Days with data")
     m_rows = "\n".join(f'<tr><td>{LABELS[m]}</td>' + "".join(f'<td>{fmt(mk[(m, n)])}</td>' for n in names) + "</tr>"
                        for m in MARKETS)
     parts.append(f'<div class="section"><h2>{SECTIONS[4]}</h2>{badge("files")}'
-                 f'<div class="card" style="margin-top:8px"><table><thead><tr><th>Marketplace</th><th>Revenue</th>'
+                 f'<div class="card"><table><thead><tr><th>Marketplace</th><th>Revenue</th>'
                  f'<th>Share</th><th>Orders</th><th>Customers</th><th>Days with data</th></tr></thead><tbody>\n'
                  f'{m_rows}\n</tbody></table></div></div>')
     return "\n".join(parts)
