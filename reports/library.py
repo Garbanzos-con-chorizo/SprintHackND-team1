@@ -26,6 +26,7 @@ table.lib .num { white-space:nowrap; text-align:right; }
 table.lib .l, table.lib th.say, table.lib th.files { text-align:left; }
 table.lib td:first-child { white-space:nowrap; }
 table.lib td:first-child a { font-weight:700; }
+table.lib td strong { white-space:nowrap; }
 table.lib td small { display:block; color:var(--muted); font-size:13px; font-weight:400; }
 table.lib tr.group td { background:var(--bg); color:var(--primary); font-size:13px; font-weight:700;
   text-transform:uppercase; letter-spacing:.05em; padding:6px 12px; }
