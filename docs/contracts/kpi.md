@@ -1,7 +1,7 @@
 # Contract: KPI file, phase 2 (task C2)
 
 - **Owner:** Dani (`recon/kpi/`). **Consumers:** Orlando (scorecard page, print layout), Victor (KPI CSV, PDF and email exports; `kpi_values` in the store).
-- **Status:** draft v0.2, implemented in `recon/kpi/`. The tests reproduce every example file from the calculator.
+- **Status:** draft v0.3, implemented in `recon/kpi/`. The tests reproduce every example file from the calculator.
 - **Inputs:** the store, `docs/contracts/store.md` (the SQLite database of decision 007): the daily pulse, the transactions and the internal API snapshots of the period. What is read from it is under "Inputs the KPIs read".
 
 ## What this contract does
@@ -142,7 +142,7 @@ If several apply, `status` is the worst of them, `reason` is the first reason of
 | 8 | `inv.unlisted_backlog` | Unlisted Inventory Backlog | count | down | internal | Items sent to e-commerce and not yet listed, on `through` | `as_of` |
 | 9 | `inv.unsold_pct` | Unsold Inventory % | ratio | down | internal | Active listings older than 30 days / active listings, on `through` | `as_of`, `active_listings`, `active_over_threshold`, `threshold_days` |
 | 10 | `sales.asp` | Average Selling Price | cents per unit | up | files | revenue / units sold | `revenue_cents`, `units`, `orders` |
-| 11 | `sales.sell_through` | Sell-Through Rate | ratio | up | mixed | units sold / units listed, in the period (one listing = one unit) | `units_sold`, `orders`, `units_listed` |
+| 11 | `sales.sell_through` | Sell-Through Rate | ratio | up | mixed | units sold / units listed, in the period (one listing = one unit). Can exceed 1: see below | `units_sold`, `orders`, `units_listed`, `from_period`, `from_earlier`, `sold_from_earlier` |
 | 12 | `sales.sales_per_employee` | Sales per Employee | cents per employee | up | mixed | revenue / average daily e-commerce employees | `revenue_cents`, `employees` |
 | 13 | `cat.top_revenue` | Top 10 Categories by Revenue | ranking, cents | up | mixed | Revenue (KPI 1) split by the internal sales-by-category shares | `revenue_cents`, `internal_sales_cents`, `categories`, `rest_cents` |
 | 14 | `cat.top_margin` | Top 10 Categories by Margin | ranking, cents | up | mixed | Category revenue (KPI 13) minus category cost of goods; `ratio` = margin / category revenue | `revenue_cents`, `cogs_cents`, `margin_cents`, `categories`, `rest_cents` |
@@ -155,6 +155,14 @@ Variants (`basis`) and fallbacks, each stated in `definition` and `note`:
 | 10 | `per_unit`, `per_order` | `per_order` (revenue / orders) until `transactions` carries `units`: `per_unit` needs a unit count on every sale row of the period. |
 | 11 | `units`, `orders` | `orders` (orders / listings created) until `units` exists. |
 | 13, 14 | `internal_split`, `item_level` | `internal_split` today: the files carry no category, so the internal shares are applied to the files' revenue and the list adds up to KPI 1. `item_level` later, when each sale carries a category. |
+
+**Sell-through over 100% (KPI 11).** Over a short period more can sell than was listed, because items listed earlier sell too. The value is not capped; it is split, and the split is in the file:
+- `inputs.from_period`: the part the period's own listings can account for, never more than 1.
+- `inputs.from_earlier`: the rest, `value - from_period`; 0 when the value is 1 or less.
+- `inputs.sold_from_earlier`: the same thing as a count of orders (or units).
+- `note`, when the value is over 1: `"202.6% = 100% counted against what was listed in the period + 102.6% from items listed earlier (at least 40 orders)."` (the real run, Sunday October 4: 79 orders, 39 listings).
+
+We cannot tell which listings actually sold. So `from_period` is the most the period's own listings can explain and `from_earlier` the least that must be older: say "at least", never "exactly".
 
 Consistency rules: cost of goods in KPI 3 is the sum of the category cost of goods of KPI 14, so the two never disagree. KPIs 8 and 9 are snapshots on `through`; their `prior_value` is the snapshot on `prior_period.through`. KPI 15 uses `customer_id` even where the pulse counts customers by order (Upright keeps the buyer hash).
 
@@ -241,10 +249,11 @@ python -m recon.kpi --date 2026-10-03                       # a day with eBay mi
 - Growth year over year or against the prior period (KPI 2): prior period, labelled.
 - Does margin include labor and shipping (KPIs 3, 14): net margin includes both; category margin is revenue minus cost of goods only.
 - What "unsold" means (KPI 9): active listings older than 30 days; the threshold is one constant.
-- What sell-through is measured against (KPI 11): what was listed in the same period. Over a short period it can exceed 1 (on the real run, 2.03 for a Sunday on which little was listed and older listings sold; 0.78 for the month), so the page must not assume a ratio stays under 100%. The alternative, sold / (sold + still active), stays under 1 but shrinks with the period (2% for that day, 41% for the month).
+- What sell-through is measured against (KPI 11): what was listed in the same period, so it can exceed 1 over a short period (2.03 for a Sunday on the real run, 0.78 for the month) and the page must not assume a ratio stays under 100%. The part over 1 is shown as items listed earlier (above). The alternative, sold / (sold + still active), stays under 1 but shrinks with the period (2% for that day, 41% for the month).
 - Who counts as an e-commerce employee (KPIs 6, 12): full-time equivalents, as the internal API reports them.
 - Net shipping cost (KPI 3): carrier cost minus shipping charged to buyers, from the internal API until `transactions` carries shipping.
 
 ## Changelog
+- draft v0.3: sell-through over 100% is split into what the period's own listings can account for and what must have been listed earlier: three more `inputs` on KPI 11 (`from_period`, `from_earlier`, `sold_from_earlier`) and a note when the value is over 1. Additive: no field changes meaning, and the value itself is unchanged.
 - draft v0.2: implemented. The example files are now generated by the calculator (differences from v0.1: a few cents in the margin ranking, `inputs.items_listed` is `null` when there are no donation dates, a note now carries the gap sentence before a fallback sentence, and in the partial month the backlog snapshot is a day old). Two more examples, a week and a day, asked for by Orlando (C5). New fields `pillar` per KPI and `pillars` at the top level, asked for by Victor (slide 32's five pillars; mapping under Pillars). Inputs now point to `store.md` and `internal-api.md`; the KPIs are also recorded in `kpi_values`. Clarified: exit codes, `--period` alone, `through` when nothing is stored, `prior_value` across bases, `inputs` keys always present, how `status`, `reason` and `note` combine, `no_buyer_ids` as `no_data`, the `internal_data` label.
 - draft v0.1: initial. Replaces the KPI list of `docs/pitch/kpi_catalog.md` and the rows produced by `reports/kpi.py` (decision 007).

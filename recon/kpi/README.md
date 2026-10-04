@@ -63,7 +63,7 @@ Rules that hold for every KPI (they are in the contract; the tests pin them):
 - The top 10 categories add up to total revenue to the cent, and net margin uses the same cost of goods as the margin ranking.
 
 ## Tests: `recon/tests/test_kpi_*.py`
-103 tests (134 with the pulse), all passing.
+107 tests (138 with the pulse), all passing.
 
 - `test_kpi_calc.py`: all 15 KPIs against values worked out by hand on two days of a week, then one test per state: a missing day, a day never loaded, no data at all, real zeros, no prior period, a partial comparison, different bases, no internal data, internal data for some days, an old snapshot, zero divisors, more than ten categories.
 - `test_kpi_periods.py`: ids, to-date windows, comparison windows, labels.
@@ -73,7 +73,7 @@ Rules that hold for every KPI (they are in the contract; the tests pin them):
 
 ## Known limits
 - **Verified end to end on 2026-10-03** (checkpoint 1), with the real commands: `engine.store backfill` on `clean_month` (engine, pulse, store load and internal pull for 30 days), then `recon.kpi --month 2026-09`. Revenue 7,075,396, refunds, fees and orders all equal the answer key; 13 KPIs `ok`, growth `no_data` (nothing stored for August), repeat buyers `partial` (Amazon gives no buyer id). The four `day_*` nights through `reports.run_nightly` and the `messy_month` (revenue 6,850,986 = its key, the three stale marketplace-days flagged) agree too. Every scalar KPI of those files was recomputed with plain SQL on the store: no difference.
-- **Sell-through can exceed 100% over a short period.** It is sold / listed in the period, so a day on which little was listed and older listings sold reads 203% (October 4). Over a month it reads 78%. The page must not assume a ratio stays under 1.
+- **Sell-through can exceed 100% over a short period**, because it is sold / listed in the period and older listings sell too (203% on Sunday October 4, 78% for September). It is not capped: the note and `inputs` split it into the 100% the period's own listings can account for and the rest, which must have been listed earlier ("at least 40 orders"). We cannot tell which listings actually sold, so the split is a bound, not a count.
 - **The test suite writes into `out/` and `reports/`.** `reports/tests/test_run_nightly.py` runs the real nightly with a temporary store but the default output folders, so after `pytest` the files `out/kpi/day-2026-10-01.json`, `week-2026-W40.json`, `month-2026-10.json` and `latest-*.json` come from a one-night store. Run the nightly again after running the tests.
 - **11 of the 15 KPIs are simulated** until Goodwill's internal data is real.
 - Growth compares with the period before, not year over year (needs 13 months stored).

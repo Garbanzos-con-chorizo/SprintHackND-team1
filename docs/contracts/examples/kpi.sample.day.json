@@ -421,7 +421,10 @@
       "inputs": {
         "units_sold": null,
         "orders": 79,
-        "units_listed": 0
+        "units_listed": 0,
+        "from_period": null,
+        "from_earlier": null,
+        "sold_from_earlier": null
       }
     },
     {

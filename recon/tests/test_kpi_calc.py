@@ -211,7 +211,9 @@ class HandComputed(unittest.TestCase):
                    basis="per_order", per="order", note=PER_ORDER[1], definition=PER_ORDER[0])
 
     def test_sell_through_falls_back_to_orders(self):
-        self.check("sales.sell_through", 0.76, {"units_sold": None, "orders": 19, "units_listed": 25},
+        self.check("sales.sell_through", 0.76,
+                   {"units_sold": None, "orders": 19, "units_listed": 25, "from_period": 0.76, "from_earlier": 0.0,
+                    "sold_from_earlier": 0},
                    prior_value=0.65, delta={"value": 0.11, "pct": None, "reason": None},
                    basis="orders", note=BY_ORDERS[1])
 
@@ -355,12 +357,56 @@ class Units(unittest.TestCase):
         self.assertEqual((asp["value"], asp["basis"], asp["per"], asp["note"]), (921, "per_unit", "unit", None))
         self.assertEqual(asp["inputs"], {"revenue_cents": 35000, "units": 38, "orders": 19})
         self.assertEqual(asp["definition"], "Revenue / units sold.")
-        self.assertEqual((sold["value"], sold["basis"], sold["note"]), (1.52, "units", None))
+        # 38 units against 25 listings: the listings of the period account for 100%, 13 units must be older
+        self.assertEqual((sold["value"], sold["basis"]), (1.52, "units"))
+        self.assertEqual(sold["note"], "152.0% = 100% counted against what was listed in the period + 52.0% from "
+                                       "items listed earlier (at least 13 units).")
+        self.assertEqual(sold["inputs"], {"units_sold": 38, "orders": 19, "units_listed": 25, "from_period": 1.0,
+                                          "from_earlier": 0.52, "sold_from_earlier": 13})
 
     def test_one_sale_without_a_count_keeps_the_fallback(self):
         sales = [Sale(s.marketplace, s.order_id, s.customer_id, 2) for s in SALES[:-1]] + [SALES[-1]]
         _, kpis = build(sales=sales)
         self.assertEqual(kpis["sales.asp"]["basis"], "per_order")
+
+
+class SellThroughOverAHundred(unittest.TestCase):
+    """More sold than was listed in the period: the rate is split, not capped."""
+
+    def listings(self, monday, tuesday):
+        rows = without(INTERNAL, "listings_created")
+        return rows + [internal(MON, "listings_created", monday, SG), internal(TUE, "listings_created", tuesday, SG)]
+
+    def test_the_part_over_100_is_what_must_have_been_listed_earlier(self):
+        _, kpis = build(rows=self.listings(6, 4))  # 19 orders against 10 listings
+        k = kpis["sales.sell_through"]
+        self.assertEqual((k["value"], k["status"]), (1.9, "ok"))
+        self.assertEqual(k["inputs"], {"units_sold": None, "orders": 19, "units_listed": 10, "from_period": 1.0,
+                                       "from_earlier": 0.9, "sold_from_earlier": 9})
+        self.assertEqual(k["inputs"]["from_period"] + k["inputs"]["from_earlier"], k["value"])
+        self.assertEqual(k["note"], "190.0% = 100% counted against what was listed in the period + 90.0% from items "
+                                    "listed earlier (at least 9 orders). " + BY_ORDERS[1])
+
+    def test_exactly_100_needs_no_explanation(self):
+        _, kpis = build(rows=self.listings(10, 9))  # 19 orders against 19 listings
+        k = kpis["sales.sell_through"]
+        self.assertEqual((k["value"], k["note"]), (1.0, BY_ORDERS[1]))
+        self.assertEqual((k["inputs"]["from_period"], k["inputs"]["from_earlier"], k["inputs"]["sold_from_earlier"]),
+                         (1.0, 0.0, 0))
+
+    def test_the_split_follows_a_gap_note(self):
+        pulse = [r for r in PULSE if (r.business_date, r.marketplace) != (TUE, AM)] + [gap(TUE, AM)]
+        _, kpis = build(pulse=pulse, rows=self.listings(6, 4))  # 17 orders left against 10 listings
+        k = kpis["sales.sell_through"]
+        self.assertEqual((k["value"], k["status"], k["reason"]), (1.7, "partial", "missing_days"))
+        self.assertTrue(k["note"].startswith("Amazon has no data on 2026-09-29, so this is partial. 170.0% = 100% "))
+
+    def test_no_split_without_a_value(self):
+        _, kpis = build(rows=self.listings(0, 0))
+        k = kpis["sales.sell_through"]
+        self.assertEqual((k["value"], k["reason"]), (None, "zero_denominator"))
+        self.assertEqual((k["inputs"]["from_period"], k["inputs"]["from_earlier"], k["inputs"]["sold_from_earlier"]),
+                         (None, None, None))
 
 
 class InternalData(unittest.TestCase):
