@@ -81,6 +81,12 @@ def run_close(month, inbox):
           "--out", str(sources)):
         print("    close: a simulated source failed (see above); the close runs on what arrived")
     inboxes = [inbox] + [p for p in (inbox.parent / "periodic", sources / "inbox") if p.is_dir() and any(p.iterdir())]
+    return close_from(month, inboxes)
+
+
+def close_from(month, inboxes):
+    """Run the close of `month` on these inboxes, log it in the store and put its status beside the page.
+    Also what the portal's "add missing reports" runs, with the folder of added files as one more inbox."""
     print(f"    close: {month} from {', '.join(rel(p) for p in inboxes)}")
     args = [a for p in inboxes for a in ("--inbox", str(p))]
     code = sh("reports.close", *args, "--month", month, "--out", str(OUT / "close"),
