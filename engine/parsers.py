@@ -36,6 +36,10 @@ class ParseResult:
     warnings: list[dict] = field(default_factory=list)   # contract warnings
     payouts: list[dict] = field(default_factory=list)    # engine.contract.PAYOUT_COLUMNS (close inputs)
     bank: list[dict] = field(default_factory=list)       # engine.contract.BANK_COLUMNS (close inputs)
+    tables: dict[str, list[dict]] = field(default_factory=dict)  # other close inputs, by engine.contract.CLOSE_TABLES name
+
+    def table(self, name: str) -> list[dict]:
+        return self.tables.setdefault(name, [])
 
     def add(self, row: dict) -> None:
         self.rows.append(row)
@@ -56,6 +60,9 @@ class Parser:
     # Columns that must all be present (matched normalized). An entry can be a tuple of alternative
     # names, any one of which satisfies it: ("order id", ("buyer username", "buyer")).
     required_columns: tuple = ()
+    # False for a statement or a lookup that does not report day by day: source_coverage.json then lists
+    # the file but no missing days for it.
+    daily: bool = True
 
     def detect(self, table: Table) -> int:
         """Return 0 if this parser does not recognize the file, else a score (higher = surer).

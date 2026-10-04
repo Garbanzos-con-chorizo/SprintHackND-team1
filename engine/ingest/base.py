@@ -20,6 +20,11 @@ class NormalizedBatch:
     # Close inputs (docs/contracts/close-inputs.md): payouts the marketplaces report, and bank lines.
     payouts: list[dict] = field(default_factory=list)
     bank: list[dict] = field(default_factory=list)
+    tables: dict[str, list[dict]] = field(default_factory=dict)  # ledger, statements, ...: CLOSE_TABLES
+
+    def _extend_tables(self, tables: dict[str, list[dict]]) -> None:
+        for name, items in tables.items():
+            self.tables.setdefault(name, []).extend(items)
 
     def extend(self, other: "NormalizedBatch") -> None:
         self.rows.extend(other.rows)
@@ -27,6 +32,7 @@ class NormalizedBatch:
         self.files.extend(other.files)
         self.payouts.extend(other.payouts)
         self.bank.extend(other.bank)
+        self._extend_tables(other.tables)
 
     def add_result(self, file: dict, result) -> None:
         """Take in what a parser returned for one file (a ParseResult)."""
@@ -35,6 +41,7 @@ class NormalizedBatch:
         self.warnings.extend(result.warnings)
         self.payouts.extend(result.payouts)
         self.bank.extend(result.bank)
+        self._extend_tables(result.tables)
 
 
 class DataIngestAdapter(ABC):

@@ -46,5 +46,5 @@ class EmailAttachmentAdapter(DataIngestAdapter):
                 batch.warnings.append(_file_warning(path.name, "unparseable", str(exc)))
                 continue
             batch.add_result({"file": path.name, "source": parser.source, "feeds": list(parser.feeds),
-                              "simulated": path.name in simulated}, parser.parse(table))
+                              "simulated": path.name in simulated, "daily": parser.daily}, parser.parse(table))
         return batch

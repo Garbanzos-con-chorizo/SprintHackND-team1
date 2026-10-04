@@ -18,6 +18,7 @@ from pathlib import Path
 from .contract import EXPECTED_MARKETPLACES
 
 SIMULATED_MANIFEST = "_simulated.json"
+_TABLE_DATES = ("posting_date", "sold_date", "paid_date")  # the date of a close-table row, first one present
 
 
 def read_manifest(inbox: Path) -> dict:
@@ -47,11 +48,16 @@ def summarize(file: dict, result) -> dict:
     """Add to a batch's file entry what coverage needs: rows and first/last date per source key."""
     rows: dict[str, int] = {}
     dates: dict[str, list[str]] = {}
+    own = None if file["feeds"] else file["source"]  # a file that feeds no marketplace is keyed by its parser
     items = ([(r["marketplace"], r["business_date"]) for r in result.rows]
-             + [(p["marketplace"], p["paid_date"]) for p in result.payouts]
-             + [(file["source"], b["posting_date"]) for b in result.bank])
+             + [(own or p["marketplace"], p["paid_date"]) for p in result.payouts]
+             + [(file["source"], b["posting_date"]) for b in result.bank]
+             + [(file["source"], next((r[c] for c in _TABLE_DATES if r.get(c)), ""))
+                for rows in result.tables.values() for r in rows])
     for key, day in items:
         rows[key] = rows.get(key, 0) + 1
+        if not day:
+            continue
         span = dates.setdefault(key, [day, day])
         span[0], span[1] = min(span[0], day), max(span[1], day)
     return {**file, "rows": rows, "dates": dates}
@@ -104,5 +110,8 @@ def build_source_coverage(through: str, files: list[dict]) -> dict:
             if span[0]:
                 a, b = date.fromisoformat(span[0]), date.fromisoformat(span[1])
                 covered.update((a + timedelta(days=i)).isoformat() for i in range((b - a).days + 1))
-        sources[key] = {"files": entries, "days_missing": [d for d in month_days if d not in covered]}
+        # A source made only of statements or lookups (Parser.daily False) has no day-by-day coverage: null.
+        daily = not entries or any(f.get("daily", True) for f in files if key in keys_of(f))
+        sources[key] = {"files": entries,
+                        "days_missing": [d for d in month_days if d not in covered] if daily else None}
     return {"month": through[:7], "through": through, "sources": sources}

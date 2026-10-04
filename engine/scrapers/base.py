@@ -27,6 +27,10 @@ class NotConfigured(Exception):
 class Scraper:
     source: str = ""                 # file name prefix and key in out/fetch_log.json
     env_keys: tuple[str, ...] = ()   # environment variables this scraper needs (credentials, base URL)
+    # "daily": a report per business date (`engine fetch --date`). "month_end": one delivery per month for the
+    # close (`engine fetch --close-month`), through fetch_month / simulate_month below.
+    cadence: str = "daily"
+    on_request_only: bool = False    # month_end: runs only when named with --source (see its module for why)
 
     def fetch(self, business_date: str, dest_dir: Path, env: dict[str, str]) -> list[Path]:
         """Download the report(s) for `business_date` (YYYY-MM-DD) into dest_dir; return the paths."""
@@ -36,6 +40,15 @@ class Scraper:
         """Demo stand-in for the provider's API: write the report it would have emailed (synthetic data)
         into dest_dir. Used by `engine fetch --simulate`. Providers without a simulator raise NotConfigured."""
         raise NotConfigured(f"{self.source} has no simulator")
+
+    def fetch_month(self, month: str, dest_dir: Path, env: dict[str, str]) -> list[Path]:
+        """Download the month-end file(s) of `month` (YYYY-MM) into dest_dir; return the paths."""
+        raise NotConfigured(f"{self.source} has no month-end client")
+
+    def simulate_month(self, month: str, dest_dir: Path) -> tuple[list[Path], dict]:
+        """Demo stand-in for a month-end API: write the file(s) it would have delivered (synthetic data) and
+        return them with their answer key, computed from the generated records."""
+        raise NotConfigured(f"{self.source} has no month-end simulator")
 
     def target(self, dest_dir: Path, business_date: str, suffix: str) -> Path:
         """Standard file name so parser detection by file name keeps working: <source>_<date><suffix>."""
@@ -54,7 +67,7 @@ def register_scraper(cls: type[Scraper]) -> type[Scraper]:
     return cls
 
 
-_INFRASTRUCTURE = {"base", "http", "env", "runner", "simulation"}  # modules that are not portals
+_INFRASTRUCTURE = {"base", "http", "env", "runner", "simulation", "close_simulation"}  # modules that are not portals
 
 
 def load_scrapers() -> list[Scraper]:

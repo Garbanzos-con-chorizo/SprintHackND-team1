@@ -40,6 +40,20 @@ def dedupe_bank(lines: list[dict]) -> tuple[list[dict], list[dict]]:
     return _dedupe(lines, key, "bank line", ())
 
 
+# How to tell that two rows of a close table are the same row arriving twice (overlapping exports).
+# A row without the identifying value is never merged.
+_TABLE_IDS = {
+    "ledger": ("ledger entry", lambda r: r["entry_no"]),
+}
+
+
+def dedupe_table(name: str, items: list[dict]) -> tuple[list[dict], list[dict]]:
+    if name not in _TABLE_IDS:
+        return items, []
+    what, ident = _TABLE_IDS[name]
+    return _dedupe(items, lambda r: ident(r) or (r["source_file"], r["source_row"]), what, ())
+
+
 def _dedupe(items: list[dict], key, what: str, compared: tuple[str, ...]) -> tuple[list[dict], list[dict]]:
     kept: dict = {}
     warnings: list[dict] = []
