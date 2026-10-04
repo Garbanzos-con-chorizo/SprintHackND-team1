@@ -83,7 +83,7 @@ def build(key):
                                "detail": e["detail"] + ("; row left out of the totals" if e["kind"] == "malformed_row"
                                                         else "; counted once")})
     return {"month": month, "posting_date": last.isoformat(),
-            "mock": f"payload from the {key['scenario']} answer key (stand-in for reconciliation)",
+            "origin": f"payload from the {key['scenario']} answer key (stand-in for reconciliation)",
             "sources": sources, "deposits": deposits, "exceptions": exceptions}
 
 

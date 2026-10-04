@@ -86,6 +86,24 @@ class BcExportTest(unittest.TestCase):
         _, _, control, _ = self.run_build(payload)
         self.assertEqual(next(r["Status"] for r in control if r["Source"] == "Amazon"), "UNEXPLAINED")
 
+    def test_every_exception_has_an_owner_and_an_action(self):
+        payload = copy.deepcopy(self.payload)
+        payload["exceptions"] = [
+            {"kind": "payout_data_gap", "source": "amazon", "amount_cents": -100, "effect": "open_balance", "detail": "x"},
+            {"kind": "a_kind_nobody_listed", "source": "", "amount_cents": None, "effect": "info", "detail": "y"}]
+        _, _, _, exceptions = self.run_build(payload)
+        owners = bc.load_owners()
+        self.assertEqual((exceptions[0]["owner"], exceptions[0]["action"]), owners["payout_data_gap"])
+        self.assertEqual((exceptions[1]["owner"], exceptions[1]["action"]), owners["*"])  # the default row
+        self.assertNotIn("owner", payload["exceptions"][0])  # the payload itself is left as it came
+
+        with tempfile.TemporaryDirectory() as tmp:
+            journal, invoice, control, exceptions = self.run_build(payload)
+            paths = bc.write(Path(tmp), "2026-09", journal, invoice, control, exceptions, self.mapping)
+            lines = paths["exceptions"].read_text(encoding="utf-8").splitlines()
+        self.assertEqual(lines[0], "Kind,Source,Amount,Effect,Detail,Owner,Action")
+        self.assertEqual(lines[1].split(",")[-2:], list(owners["payout_data_gap"]))
+
     def test_unmapped_source_and_its_deposit_become_exceptions(self):
         payload = copy.deepcopy(self.payload)
         payload["sources"]["cashmonkey"] = {"sales_cents": 1000, "refunds_cents": 0, "shipping_cents": 0,
@@ -120,6 +138,7 @@ class MessyMonthCloseTest(unittest.TestCase):
         self.assertEqual(kinds.count("unmatched_deposit"), 1)
         self.assertEqual(kinds.count("prior_month_refund"), 2)
         self.assertIn("in_transit", kinds)
+        self.assertTrue(all(e["owner"] and e["action"] for e in exceptions))
 
 
 if __name__ == "__main__":

@@ -306,9 +306,12 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
     deposits, payouts = match_deposits(read_bank(inbox, mapping), read_payouts(inbox))
     exceptions, stopgaps = [], []
 
-    # Month totals per source from the engine (marketplace column).
+    # Month totals per source from the engine (marketplace column). A marketplace with rows but no row in
+    # bc_mapping.csv goes into the payload too: the export then lists it as `unmapped_source` and posts
+    # nothing for it, so it is never left out in silence.
     sources, month_rows = {}, {}
-    for src in mapping:
+    in_files = sorted({r["marketplace"] for r in rows if in_month(r["business_date"])} - set(mapping))
+    for src in [*mapping, *in_files]:
         mine = [r for r in rows if r["marketplace"] == src and in_month(r["business_date"])]
         if not mine:
             continue
@@ -384,6 +387,8 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
 
     # What is left open after the deposits: explained payout by payout, never as one net figure.
     for src, s in sources.items():
+        if src not in mapping:
+            continue  # unmapped: the export reports it and posts nothing
         m = mapping[src]
         tz = m.get("Payout_Timezone") or EASTERN
         no_time = sum(not payout_day(r, tz)[1] for r in month_rows[src])
@@ -406,8 +411,7 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
 
     iso = lambda v: v.isoformat() if isinstance(v, date) else v
     return {"month": month, "posting_date": last.isoformat(),
-            "mock": "reconciled from the raw inbox" + (" (shipping/handling stopgap from the answer key)" if stopgaps else ""),
-            "inbox": str(inbox), "stopgaps": stopgaps,
+            "origin": "reconciled from the raw inbox", "inbox": str(inbox), "stopgaps": stopgaps,
             "sources": sources, "deposits": payload_deposits, "exceptions": exceptions,
             "payouts": [{**{k: iso(v) for k, v in p.items()}, "deposit": iso(p.get("deposit"))} for p in payouts]}
 
