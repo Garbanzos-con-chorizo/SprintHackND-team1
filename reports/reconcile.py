@@ -142,9 +142,7 @@ def match_deposits(deposits, payouts, window_days=WINDOW_DAYS):
 
 # ---------------------------------------------------------------- payload
 
-def build(inbox, month, mapping, engine_out, answer_key=None):
-    """`answer_key` is accepted so older callers keep working; it is no longer read (shipping and handling
-    now come from the engine's files)."""
+def build(inbox, month, mapping, engine_out):
     y, m = map(int, month.split("-"))
     first, last = date(y, m, 1), date(y, m, calendar.monthrange(y, m)[1])
     in_month = lambda iso: first.isoformat() <= iso <= last.isoformat()

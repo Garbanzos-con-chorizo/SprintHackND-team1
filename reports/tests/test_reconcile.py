@@ -17,8 +17,7 @@ class MessyMonthReconcileTest(unittest.TestCase):
     def setUpClass(cls):
         cls.key = json.loads((SAMPLE / "expected.json").read_text(encoding="utf-8"))["close"]
         cls.tmp = tempfile.TemporaryDirectory()
-        cls.payload = reconcile.build(SAMPLE / "inbox", "2026-09", bc.load_mapping(), Path(cls.tmp.name) / "engine",
-                                      {"close": cls.key})
+        cls.payload = reconcile.build(SAMPLE / "inbox", "2026-09", bc.load_mapping(), Path(cls.tmp.name) / "engine")
         cls.paid = {p["id"]: p["paid_date"] for p in cls.key["payouts"]}
 
     @classmethod

@@ -20,7 +20,9 @@ from reports.theme import CSS, E, EMAIL_FONT, PAGE, accordion, expander, info, k
 
 ROOT = Path(__file__).resolve().parent.parent
 ORDER = ["shopgoodwill", "amazon", "ebay", "other"]
-LABELS = {"shopgoodwill": "ShopGoodwill", "amazon": "Amazon", "ebay": "eBay", "other": "Other"}
+# Goodwill's own row names (slide 31): the Other row is always shown, the total is "Total e-commerce".
+LABELS = {"shopgoodwill": "ShopGoodwill", "amazon": "Amazon", "ebay": "eBay", "other": "Other e-commerce channels"}
+TOTAL = "Total e-commerce"
 # Statuses and delta reasons from docs/contracts/pulse.md (schema_version 1).
 NO_DATA = {
     "missing": "No data: file not received",
@@ -42,7 +44,7 @@ DAY = Template("""<header>
 </header>
 <p class="summary$summary_class">$summary</p>
 <div class="kpis">
-  <div class="kpi"><div class="label has-tip">Enterprise revenue$tip_revenue</div><div class="value">$ent_revenue</div><div class="sub">$ent_delta</div></div>
+  <div class="kpi"><div class="label has-tip">Total e-commerce$tip_revenue</div><div class="value">$ent_revenue</div><div class="sub">$ent_delta</div></div>
   <div class="kpi"><div class="label has-tip">Orders$tip_orders</div><div class="value">$ent_orders</div></div>
   <div class="kpi"><div class="label has-tip">Customers$tip_customers</div><div class="value">$ent_customers</div><div class="sub">$ent_customers_delta</div></div>
   <div class="kpi"><div class="label has-tip">Marketplace fees$tip_fees</div><div class="value">$ent_fees</div></div>
@@ -159,9 +161,11 @@ def row_html(key, m):
     name = escape(label(key, m))
     status = m.get("status", "missing")
     pill = f'<td class="status"><span class="pill {status}">{PILL.get(status, escape(status))}</span></td>'
+    if status == "not_configured":  # no source feeds it yet: a dash in each cell, as on slide 31
+        dash = f'<td class="dash" title="{NO_DATA[status]}">–</td>'
+        return f'    <tr><td><span class="xpad"></span>{name}</td>{dash * 3}{pill}</tr>'
     if status != "ok":
-        return (f'    <tr><td><span class="xpad"></span>{name}</td>'
-                f'<td class="nodata{" quiet" if status == "not_configured" else ""}" colspan="3">'
+        return (f'    <tr><td><span class="xpad"></span>{name}</td><td class="nodata" colspan="3">'
                 f'{NO_DATA.get(status, "No data")}</td>{pill}</tr>')
     delta, note = delta_html(m.get("delta"))
     return (f'    <tr class="xrow"><td>{expander("mk-" + key)}{name}</td><td>{money(m["revenue_cents"])}</td>'
@@ -176,7 +180,7 @@ def render_day(p):
     same = "same marketplaces on both days" if excluded and ed.get("revenue_cents") is not None else None
     ent_delta, ent_note = delta_html(ed, same)
     rows.append(
-        f'    <tr class="total xrow"><td>{expander("mk-total")}Enterprise total</td><td>{money(ent["revenue_cents"])}</td>'
+        f'    <tr class="total xrow"><td>{expander("mk-total")}{TOTAL}</td><td>{money(ent["revenue_cents"])}</td>'
         f'<td>{ent_delta}</td><td>{ent["orders"]:,}</td>'
         f'<td class="status">{"Partial" if excluded else "Complete"}</td></tr>\n' + detail_row("mk-total", ent, ent_note))
 
@@ -254,8 +258,12 @@ def render_email(p):
     for k in ORDER:
         m = markets.get(k, {"status": "missing"})
         name = escape(label(k, m))
+        if m["status"] == "not_configured":
+            dash = f'<td {td} title="{NO_DATA["not_configured"]}">&ndash;</td>'
+            rows.append(f'<tr><td {td_l}>{name}</td>' + dash * 5 + '</tr>')
+            continue
         if m["status"] != "ok":
-            color = E["muted"] if m["status"] == "not_configured" else E["down"]
+            color = E["down"]
             rows.append(f'<tr><td {td_l}>{name}</td><td {td_l} colspan="5">'
                         f'<b style="color:{color};">{NO_DATA.get(m["status"], "No data")}</b></td></tr>')
             continue
@@ -264,7 +272,7 @@ def render_email(p):
                     f'<td {td}>{money(m["refunds_cents"])}</td><td {td}>{money(m["fees_cents"])}</td></tr>')
     tot = td.replace("border-bottom:1px solid", "font-weight:bold;border-top:2px solid").replace(
         f'{E["line"]};text', f'{E["primary"]};text')
-    rows.append(f'<tr><td {tot.replace("text-align:right", "text-align:left")}>Enterprise total</td>'
+    rows.append(f'<tr><td {tot.replace("text-align:right", "text-align:left")}>{TOTAL}</td>'
                 f'<td {tot}>{money(ent["revenue_cents"])}</td><td {tot}>{email_delta(ent.get("delta"))}</td>'
                 f'<td {tot}>{ent["orders"]:,}</td><td {tot}>{money(ent["refunds_cents"])}</td>'
                 f'<td {tot}>{money(ent["fees_cents"])}</td></tr>')

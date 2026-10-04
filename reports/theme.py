@@ -3,7 +3,7 @@
 Every page inlines this stylesheet and script: the pages open from disk and travel as email
 attachments, so there is no external CSS, font or script (SF Pro on Apple devices, Inter where
 installed, else Segoe UI). Page modules add their layout on top: scorecard.SCORECARD_CSS,
-close_report.CLOSE_CSS, hub.HUB_CSS, kpi.KPI_CSS.
+close_report.CLOSE_CSS, hub.HUB_CSS.
 
 Progressive disclosure: the default view is numbers and status. Definitions and context sit behind
 an info button (`info()`, a popover on hover or tap), longer notes in accordions (`accordion()`,
@@ -109,7 +109,7 @@ tbody > tr:hover > td { background:var(--hover); }
 tbody > tr:last-child > td { border-bottom:0; }
 tr.total > td { font-weight:var(--fw-bold); border-top:1px solid var(--line-2); border-bottom:0; background:transparent; }
 td.nodata { text-align:left; color:var(--bad); font-weight:var(--fw-medium); }
-td.nodata.quiet { color:var(--muted); font-weight:var(--fw-regular); }
+td.dash { color:var(--faint); }
 
 /* Expandable rows: the row toggles a detail row under it (script below; detail rows print) */
 tr.xrow { cursor:pointer; }
@@ -269,6 +269,9 @@ $body
 INFO_ICON = ('<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" '
              'stroke-width="1.3"/><path d="M8 7.3v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>'
              '<circle cx="8" cy="4.9" r="0.95" fill="currentColor"/></svg>')
+
+DOWNLOAD_ICON = ('<svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 0v6.5M2 3.8 5 6.8 8 3.8'
+                 'M0.5 9.3h9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>')
 
 # Email copy: Outlook desktop renders with Word, which ignores <style> variables, grid and
 # border-radius. So: nested tables, every style inline on the element, web-safe fonts, hex colors.

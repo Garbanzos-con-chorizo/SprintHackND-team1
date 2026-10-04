@@ -21,7 +21,7 @@ from datetime import date
 from html import escape
 from pathlib import Path
 
-from reports.theme import CSS, PAGE, accordion, expander, facts, kv, print_notes
+from reports.theme import CSS, DOWNLOAD_ICON, PAGE, accordion, expander, facts, kv, print_notes
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "out" / "close"
@@ -36,8 +36,6 @@ EFFECTS = [("open_balance", "Open balance", "in transit or not paid out yet; exp
 LEGEND = ("<b>OPEN:</b> money still in transit or not paid out yet, fully explained by the exceptions under "
           '"Open balance". <b>UNEXPLAINED:</b> money nobody has accounted for; resolve before posting. '
           "<b>RECONCILED:</b> open balance 0.00. Positive amounts are debits.")
-DOWNLOAD_ICON = ('<svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 0v6.5M2 3.8 5 6.8 8 3.8'
-                 'M0.5 9.3h9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>')
 
 CLOSE_CSS = """
 /* Action required: one row per item, opening to its full text */

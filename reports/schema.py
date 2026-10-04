@@ -3,7 +3,8 @@ import csv
 
 MARKETPLACES = ["shopgoodwill", "amazon", "ebay", "other"]
 METRICS = ["revenue_cents", "refunds_cents", "fees_cents", "orders", "customers"]
-LABELS = {"shopgoodwill": "ShopGoodwill", "amazon": "Amazon", "ebay": "eBay", "other": "Other"}
+LABELS = {"shopgoodwill": "ShopGoodwill", "amazon": "Amazon", "ebay": "eBay",
+          "other": "Other e-commerce channels"}  # slide 31 wording
 CSV_COLUMNS = ["Date", "Marketplace", "Status", "Revenue", "Refunds", "Fees", "Orders", "Customers",
                "Customer Basis"]
 

@@ -7,23 +7,35 @@ top-10 rankings as tables. Simulated KPIs carry the file's `internal_data.label`
 Default view: value, change and badges. Each KPI's formula, source, comparison and note sit behind
 its info button; the methodology and all definitions are in accordions. In print the notes become
 numbered one-line footnotes, and the page fits one landscape sheet (five area columns).
+Sell-through shows its two boxes (`parts`) instead of one number.
+
+Day, week and month pages live side by side in reports/scorecard/; each page links to the others
+(a Day / Week / Month switch, previous and next) and to its downloads (PDF, CSV, KPI file) when they
+exist. `refresh()` re-renders the pages in the folder so those links follow what is there now.
 
     python -m reports.scorecard --kpi-file out/kpi/month-2026-09.json   # -> reports/scorecard/month-2026-09.html
     python -m reports.scorecard --period month                          # out/kpi/latest-month.json
+    python -m reports.scorecard --latest                                # latest day, week and month
 """
 import argparse
 import json
 import re
 import shutil
+from datetime import date
 from html import escape
 from pathlib import Path
 
 from reports.pulse import money
-from reports.theme import CSS, PAGE, accordion, facts, info, print_notes, span, stamp
+from reports.theme import CSS, DOWNLOAD_ICON, PAGE, accordion, facts, info, print_notes, span, stamp
 
 ROOT = Path(__file__).resolve().parent.parent
 KPI_DIR = ROOT / "out" / "kpi"
 DEST = ROOT / "reports" / "scorecard"
+PERIOD_TYPES = (("day", "Day"), ("week", "Week"), ("month", "Month"))
+PAGE_NAME = r"(day-\d{4}-\d{2}-\d{2}|week-\d{4}-W\d{2}|month-\d{4}-\d{2})"
+DOWNLOADS = ((".pdf", "PDF"), (".csv", "CSV"), (".json", "KPI file"))
+SPLIT = {"listing_dates": "By listing date, from the listing system's sales.",
+         "period_first": "Assumed: what was listed in the period sold first (no sale says which listing it came from)."}
 
 SCORECARD_CSS = """
 :root { --page:1520px; --bar:rgba(0,84,164,.32); }
@@ -75,6 +87,41 @@ table.rank td.cat { background-image:linear-gradient(var(--bar),var(--bar)); bac
   background-size:var(--w) 3px; background-repeat:no-repeat; }
 table.rank tbody tr:first-child td { font-weight:var(--fw-semi); }
 .foot-accs { margin-top:var(--sp-6); }
+
+/* Sell-through in two boxes: each part's rate, a meter, what sold of what was available */
+.parts { display:grid; gap:var(--sp-2); margin-top:var(--sp-2); }
+.part .pt { display:flex; align-items:baseline; justify-content:space-between; gap:var(--sp-2); }
+.part .pn { font-size:var(--fs-small); color:var(--muted); }
+.part .pv { font-size:var(--fs-lead); font-weight:var(--fw-bold); letter-spacing:-0.02em; white-space:nowrap; }
+.part .pv.none { font-size:13px; font-weight:var(--fw-semi); color:var(--faint); }
+.meter { height:6px; margin-top:5px; border-radius:980px; background:var(--neutral-bg); overflow:hidden; }
+.meter > i { display:block; height:100%; border-radius:inherit; background:var(--accent); }
+.part .of { margin-top:3px; font-size:11px; color:var(--faint); }
+
+/* Header: title on the left, the period switch and downloads on the right */
+.sc-head > div:first-child { display:grid; gap:var(--sp-1); }
+.sc-tools { display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-2) var(--sp-3); }
+.periods { display:flex; align-items:center; gap:2px; }
+.seg { display:inline-flex; padding:2px; border-radius:9px; background:rgba(118,118,128,.12); }
+.seg > a, .seg > span { min-width:62px; padding:3px 12px; border-radius:7px; font-size:13px; font-weight:var(--fw-medium);
+  line-height:20px; text-align:center; color:var(--ink); }
+.seg > a:hover { background:rgba(0,0,0,.05); text-decoration:none; }
+.seg > .on { background:var(--card); font-weight:var(--fw-semi); box-shadow:0 1px 3px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); }
+.seg > .off { color:var(--faint); cursor:default; }
+.step { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%;
+  font-size:20px; line-height:1; color:var(--ink); }
+.step:hover { background:var(--neutral-bg); text-decoration:none; }
+.step.off { color:var(--line-2); }
+.dls { display:flex; flex-wrap:wrap; gap:6px; }
+.dls a { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 12px; border-radius:980px;
+  background:var(--neutral-bg); color:var(--ink); font-size:var(--fs-small); font-weight:var(--fw-medium); }
+.dls a:hover { background:var(--accent-tint); text-decoration:none; }
+
+/* Period picker (index): one card per period type */
+.pick { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:var(--sp-3); align-items:start; }
+.pick h2 { margin:0 0 var(--sp-2) var(--sp-1); }
+.pick ul.days a { gap:var(--sp-3); }
+.pick ul.days .muted { margin-left:auto; font-weight:var(--fw-regular); }
 @media print {
   @page { size:letter landscape; margin:0.35in; }
   body { font-size:8pt; }
@@ -94,6 +141,12 @@ table.rank tbody tr:first-child td { font-weight:var(--fw-semi); }
   table.rank { margin-top:2pt; }
   table.rank th, table.rank td { font-size:6.5pt; padding:0.8pt 2.5pt; }
   table.rank th { font-size:5.5pt; }
+  .parts { gap:2pt; margin-top:1pt; }
+  .part .pn { font-size:6pt; }
+  .part .pv { font-size:9pt; }
+  .part .pv.none { font-size:7pt; }
+  .meter { height:2.5pt; margin-top:1pt; }
+  .part .of { margin-top:0.5pt; font-size:5.5pt; line-height:1.2; }
 }
 """
 
@@ -172,14 +225,32 @@ def tip(k, prior_label, sim_label, pillars):
     prior = fmt(k.get("prior_value"), k["unit"])
     partial = " (partial period)" if (k["delta"] or {}).get("reason") == "partial_period" else ""
     source = SOURCE.get(k.get("source"), k.get("source") or "")
+    split = SPLIT.get((k.get("inputs") or {}).get("split_basis")) if k.get("parts") else None
     return info(f'tip-{k["id"].replace(".", "-")}', k["name"], [
         ("Formula", escape(k["definition"])),
         ("Source", escape(source + (f" ({sim_label.lower()})" if k["simulated"] else ""))),
         ("Compared with", escape(f"{prior_label}: {prior}{partial}") if prior is not None else ""),
+        ("How the boxes are split", escape(split) if split else ""),
         ("Pillar", escape(pillars.get(k.get("pillar"), ""))),
         ("Covers", escape(", ".join(k["covers"])) if k.get("covers") else ""),
         ("Note", escape(k["note"]) if k.get("note") else ""),
     ])
+
+
+def parts_html(k):
+    """A KPI shown as boxes (`parts`, kpi.md "Sell-through in two boxes"): each box's rate, a meter, and
+    what sold of what was available. A box without a value says "No data"."""
+    basis = k.get("basis") if k.get("basis") in ("units", "orders") else ""
+    cells = []
+    for p in k["parts"]:
+        shown = fmt(p.get("value"), k["unit"])
+        value = f'<span class="pv">{escape(shown)}</span>' if shown else '<span class="pv none">No data</span>'
+        fill = min(max(p.get("value") or 0, 0), 1) * 100
+        of = (f'<div class="of">{p["sold"]:,} of {p["available"]:,} {basis}</div>'
+              if p.get("sold") is not None and p.get("available") is not None else "")
+        cells.append(f'<div class="part"><div class="pt"><span class="pn">{escape(p["name"])}</span>{value}</div>'
+                     f'<div class="meter"><i style="width:{fill:.0f}%"></i></div>{of}</div>')
+    return f'<div class="parts">{"".join(cells)}</div>'
 
 
 def tile(k, prior_label, sim_label, pillars, mark=""):
@@ -190,6 +261,13 @@ def tile(k, prior_label, sim_label, pillars, mark=""):
     tags = f'<div class="tags">{tags}</div>' if tags else ""
     if k["kind"] == "ranking":
         main, change = tags + ranking_table(k), ""
+    elif k.get("parts"):
+        # The boxes take the number's place; the overall rate and its change stay on one quiet line.
+        shown, prior = fmt(k["value"], k["unit"]), fmt(k["prior_value"], k["unit"])
+        overall = (f'<span class="muted">Overall</span> {escape(shown)} {delta_text(k)}'
+                   + (f' <span class="muted">vs {escape(prior)}</span>' if prior is not None else "")
+                   if shown else '<span class="muted">Overall: no data</span>')
+        main, change = parts_html(k), f'<div class="change">{overall}</div>' + tags
     else:
         shown = fmt(k["value"], k["unit"])
         if shown is None:
@@ -282,7 +360,62 @@ def facts_html(kf, sim_note):
     ])
 
 
-def render(kf):
+def stem_label(stem):
+    """'day-2026-09-30' -> 'Sep 30, 2026', 'week-2026-W40' -> 'Week 40, 2026', 'month-2026-09' -> 'September 2026'."""
+    kind, _, pid = stem.partition("-")
+    if kind == "day":
+        return span(pid, pid)
+    if kind == "week":
+        year, week = pid.split("-W")
+        return f"Week {int(week)}, {year}"
+    return f"{date.fromisoformat(pid + '-01'):%B %Y}"
+
+
+def page_stems(dest):
+    """Scorecard page names in `dest` by period type, oldest first (ids sort as text)."""
+    found = {t: [] for t, _ in PERIOD_TYPES}
+    for f in Path(dest).glob("*.html") if dest and Path(dest).is_dir() else []:
+        if re.fullmatch(PAGE_NAME, f.stem):
+            found[f.stem.split("-")[0]].append(f.stem)
+    return {t: sorted(stems) for t, stems in found.items()}
+
+
+def tools_html(kf, dest):
+    """Day / Week / Month switch, previous and next, and the downloads next to this page. Each other
+    period type links to the page covering this page's last day, else its latest page, else is greyed."""
+    period = kf["period"]
+    me = f'{period["type"]}-{period["id"]}'
+    have = page_stems(dest)
+    have[period["type"]] = sorted(set(have[period["type"]]) | {me})
+    through = date.fromisoformat(period["through"])
+    iso = through.isocalendar()
+    want = {"day": f"day-{through}", "week": f"week-{iso.year}-W{iso.week:02d}", "month": f"month-{through:%Y-%m}"}
+    segs = []
+    for kind, name in PERIOD_TYPES:
+        target = want[kind] if want[kind] in have[kind] else (have[kind][-1] if have[kind] else None)
+        if kind == period["type"]:
+            segs.append(f'<span class="on" aria-current="page">{name}</span>')
+        elif target:
+            segs.append(f'<a href="{target}.html" title="{escape(stem_label(target))}">{name}</a>')
+        else:
+            segs.append(f'<span class="off" title="No {name.lower()} scorecard built yet">{name}</span>')
+    own = have[period["type"]]
+    i = own.index(me)
+
+    def step(stem, arrow, word):
+        if not stem:
+            return f'<span class="step off" aria-hidden="true">{arrow}</span>'
+        return f'<a class="step" href="{stem}.html" title="{escape(stem_label(stem))}" aria-label="{word}: {escape(stem_label(stem))}">{arrow}</a>'
+    steps = (step(own[i - 1] if i > 0 else None, "‹", "Previous"), step(own[i + 1] if i + 1 < len(own) else None, "›", "Next"))
+    dls = "".join(f'<a href="{me}{suffix}" download>{DOWNLOAD_ICON}{name}</a>' for suffix, name in DOWNLOADS
+                  if dest and (Path(dest) / f"{me}{suffix}").exists())
+    return (f'<div class="sc-tools noprint"><nav class="periods" aria-label="Period">{steps[0]}'
+            f'<div class="seg">{"".join(segs)}</div>{steps[1]}</nav>'
+            + (f'<div class="dls">{dls}</div>' if dls else "") + "</div>")
+
+
+def render(kf, dest=None):
+    """The page for one KPI file. `dest` is the folder it goes in: the switch and downloads look there."""
     period = kf["period"]
     sim_label = (kf.get("internal_data") or {}).get("label") or "Simulated internal data"
     text, alert = headline(kf)
@@ -299,9 +432,9 @@ def render(kf):
     defs = "".join(f"<div><dt>{escape(k['name'])}</dt><dd>{escape(k['definition'])}</dd></div>" for k in kf["kpis"])
     formulas = f"{len(kf['kpis'])} formulas"
     cadence = {"day": "Daily", "week": "Weekly", "month": "Monthly"}.get(period["type"], period["type"].title())
-    body = (f'<header><h1>COO scorecard: {escape(period["label"])}</h1>'
+    body = (f'<header class="sc-head"><div><h1>COO scorecard: {escape(period["label"])}</h1>'
             f'<p>{cadence} · {len(kf["kpis"])} KPIs in {len(kf["areas"])} areas · '
-            f'generated {escape(stamp(kf["generated_at"]))}</p></header>'
+            f'generated {escape(stamp(kf["generated_at"]))}</p></div>{tools_html(kf, dest)}</header>'
             f'<p class="summary{" alert" if alert else ""}">{escape(text)}</p>'
             f'{facts_html(kf, sim_note)}{coverage}\n'
             f'{areas_html(kf, sim_label, marks)}\n'
@@ -314,24 +447,52 @@ def render(kf):
 
 
 def render_index(dest):
-    pages = sorted((f for f in dest.glob("*.html") if re.fullmatch(r"(day|week|month)-[\dW-]+", f.stem)),
-                   key=lambda f: f.stem, reverse=True)
-    items = "\n".join(f'  <li><a href="{f.name}">{escape(f.stem)}</a></li>' for f in pages)
-    body = (f'<header><h1>COO scorecards</h1><p>{len(pages)} page(s)</p></header>'
-            f'<ul class="days">\n{items or "<li>None yet</li>"}\n</ul><p class="nav"><a href="../index.html">Reports</a></p>')
+    """The period picker: one card per period type, newest first, each with the page's headline."""
+    stems = page_stems(dest)
+    cards = []
+    for kind, name in PERIOD_TYPES:
+        items = []
+        for stem in reversed(stems[kind]):
+            copy = dest / f"{stem}.json"
+            text = headline(json.loads(copy.read_text(encoding="utf-8")))[0].split(";")[0] if copy.exists() else ""
+            items.append(f'  <li><a href="{stem}.html">{escape(stem_label(stem))}'
+                         f'<span class="muted">{escape(text)}</span></a></li>')
+        if items:
+            cards.append(f'<section><h2 class="label">{name}</h2><ul class="days">\n' + "\n".join(items) + "\n</ul></section>")
+    total = sum(len(s) for s in stems.values())
+    body = (f'<header><h1>COO scorecards</h1><p>{total} page(s) · day, week and month</p></header>'
+            f'<div class="pick">{"".join(cards) or "<p>None yet.</p>"}</div>'
+            '<p class="nav"><a href="../index.html">Reports</a></p>')
     return PAGE.substitute(title="COO scorecards", css=CSS + SCORECARD_CSS, body=body)
 
 
+def refresh(dest=DEST):
+    """Re-render every page in `dest` from the KPI file copy next to it, so each page's switch and
+    download links show the pages and exports that exist now; then the index."""
+    dest = Path(dest)
+    for stems in page_stems(dest).values():
+        for stem in stems:
+            copy = dest / f"{stem}.json"
+            if copy.exists():
+                kf = json.loads(copy.read_text(encoding="utf-8"))
+                (dest / f"{stem}.html").write_text(render(kf, dest), encoding="utf-8")
+    if dest.is_dir():
+        (dest / "index.html").write_text(render_index(dest), encoding="utf-8")
+
+
 def build(kpi_file, dest=DEST):
-    """Render one KPI file; keep a copy of the JSON next to the page. Returns the page path."""
+    """Render one KPI file; keep a copy of the JSON next to the page; relink the other pages.
+    Returns the page path."""
     kf = json.loads(Path(kpi_file).read_text(encoding="utf-8"))
     dest = Path(dest)
     dest.mkdir(parents=True, exist_ok=True)
     name = f"{kf['period']['type']}-{kf['period']['id']}"
+    copy = dest / f"{name}.json"
+    if Path(kpi_file).resolve() != copy.resolve():
+        shutil.copyfile(kpi_file, copy)
     page = dest / f"{name}.html"
-    page.write_text(render(kf), encoding="utf-8")
-    shutil.copyfile(kpi_file, dest / f"{name}.json")
-    (dest / "index.html").write_text(render_index(dest), encoding="utf-8")
+    page.write_text(render(kf, dest), encoding="utf-8")
+    refresh(dest)
     return page
 
 
@@ -340,15 +501,24 @@ def main(argv=None):
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--kpi-file", help="a KPI file (docs/contracts/kpi.md)")
     g.add_argument("--period", choices=["day", "week", "month"], help="render out/kpi/latest-<period>.json")
+    g.add_argument("--latest", action="store_true", help="render the latest day, week and month KPI files")
+    ap.add_argument("--kpi-dir", default=str(KPI_DIR), help="where --period and --latest look")
     ap.add_argument("--dest", default=str(DEST))
     args = ap.parse_args(argv)
-    src = Path(args.kpi_file) if args.kpi_file else KPI_DIR / f"latest-{args.period}.json"
-    if not src.exists():
-        raise SystemExit(f"no KPI file at {src}; run python -m recon.kpi first")
-    page = build(src, args.dest)
-    from reports import hub
-    hub.build()
-    print(f"wrote {page}")
+    if args.kpi_file:
+        sources = [Path(args.kpi_file)]
+    else:
+        kinds = [args.period] if args.period else [t for t, _ in PERIOD_TYPES]
+        sources = [Path(args.kpi_dir) / f"latest-{t}.json" for t in kinds]
+        if args.latest:
+            sources = [s for s in sources if s.exists()] or sources[:1]
+    for src in sources:
+        if not src.exists():
+            raise SystemExit(f"no KPI file at {src}; run python -m recon.kpi first")
+        print(f"wrote {build(src, args.dest)}")
+    if Path(args.dest).resolve() == DEST.resolve():  # a page rendered elsewhere (a PDF export) leaves the portal alone
+        from reports import hub
+        hub.build()
 
 
 if __name__ == "__main__":
