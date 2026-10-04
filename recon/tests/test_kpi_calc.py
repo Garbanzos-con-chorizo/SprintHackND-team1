@@ -106,8 +106,9 @@ class Shape(unittest.TestCase):
         self.assertEqual(len(set(self.kpis)), 15)
 
     def test_every_kpi_has_every_key(self):
-        keys = ["id", "area", "pillar", "name", "kind", "unit", "per", "value", "rows", "status", "reason", "note", "basis",
-                "covers", "prior_value", "delta", "good_direction", "source", "simulated", "definition", "inputs"]
+        keys = ["id", "area", "pillar", "name", "kind", "unit", "per", "value", "rows", "status", "reason", "note",
+                "basis", "covers", "prior_value", "delta", "good_direction", "source", "simulated", "definition",
+                "inputs"]
         for k in self.doc["kpis"]:
             self.assertEqual(list(k), keys, k["id"])
 
@@ -403,6 +404,15 @@ class InternalData(unittest.TestCase):
         _, kpis = build(rows=without(INTERNAL, "donation_to_listing_days", day=TUE))
         k = kpis["inv.days_donation_to_listing"]
         self.assertEqual((k["value"], k["status"], k["inputs"]), (2.0, "ok", {"items_listed": 5}))  # ages 2, 2, 2, 5, 5
+
+    def test_category_sales_that_are_all_zero_cannot_split_revenue(self):
+        rows = [r if r.metric != "category_sales_cents" else internal(r.business_date, r.metric, 0, r.dimension)
+                for r in INTERNAL]
+        _, kpis = build(rows=rows)
+        for kpi_id in ("fin.net_margin", "cat.top_revenue", "cat.top_margin"):
+            k = kpis[kpi_id]
+            self.assertEqual((k["status"], k["reason"], k["note"]),
+                             ("no_data", "zero_denominator", "The internal sales by category are all zero."), kpi_id)
 
     def test_donation_ages_must_be_whole_days(self):
         rows = without(INTERNAL, "donation_to_listing_days") + [internal(MON, "donation_to_listing_days", 4, "30+"),

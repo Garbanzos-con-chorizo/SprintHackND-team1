@@ -97,6 +97,12 @@ def _zero(res, what):
     return res
 
 
+def _no_split(res, f):
+    """Revenue cannot be split by category: say which side is empty."""
+    zero = f.files["revenue_cents"] <= 0
+    return _zero(res, "Revenue is zero." if zero else "The internal sales by category are all zero.")
+
+
 # ---- the 15 KPIs: each takes the facts of its window and of the comparison window ----
 
 def _revenue(f, prev):
@@ -138,7 +144,7 @@ def _net_margin(f, prev):
     if stop:
         return res
     if f.split is None:
-        return _zero(res, "Revenue is zero.")
+        return _no_split(res, f)
     _missing_cogs(res, f.split)
     revenue, fees = f.files["revenue_cents"], f.files["fees_cents"]
     cogs = sum(f.split["cogs"].values())  # the same cost of goods as the margin ranking
@@ -334,7 +340,7 @@ def _top_revenue(f, prev):
     if stop:
         return res
     if f.split is None:
-        return _zero(res, "Revenue is zero.")
+        return _no_split(res, f)
     res.value, rest = _rank(f.split["revenue"])
     res.inputs.update(internal_sales_cents=f.split["internal_sales_cents"], categories=len(f.split["revenue"]),
                       rest_cents=rest)
@@ -350,7 +356,7 @@ def _top_margin(f, prev):
     if stop:
         return res
     if f.split is None:
-        return _zero(res, "Revenue is zero.")
+        return _no_split(res, f)
     _missing_cogs(res, f.split)
     revenue, cogs = f.split["revenue"], f.split["cogs"]
     margin = {c: revenue[c] - cogs.get(c, 0) for c in revenue}
