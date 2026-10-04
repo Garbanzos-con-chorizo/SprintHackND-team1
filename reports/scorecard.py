@@ -31,8 +31,10 @@ SCORECARD_CSS = """
 :root { --page:1320px; }
 .coverage { margin:12px 0 0; }
 .areas { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin:16px 0 0; }
-/* The area that holds the two top-10 tables gets two columns, so the tables fit without scrolling. */
+/* The area that holds the two top-10 tables gets two columns, so the tables fit without scrolling;
+   on a narrower screen it takes the whole row instead of one narrow column. */
 @media (min-width:900px) { .area.wide { grid-column:span 2; } }
+@media screen and (width < 900px) { .area.wide { grid-column:1 / -1; } }
 .area h2 { font-size:14px; color:var(--primary); text-transform:uppercase; letter-spacing:.05em; margin:0 0 6px;
   border-bottom:2px solid var(--primary); padding-bottom:4px; }
 .tile { border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px; margin:0 0 8px; background:var(--card);
@@ -74,9 +76,25 @@ SCORECARD_CSS = """
 /* The simulated badge: its own line under the KPI name, in the same dashed ink as the page's note. */
 .sim { display:block; width:fit-content; font-size:11px; font-weight:600; color:var(--ink); border:1px dashed var(--ink);
   border-radius:var(--radius); padding:0 6px; margin:3px 0 2px; letter-spacing:.02em; }
-table.rank { min-width:0; width:100%; margin-top:4px; }
+/* A top-10 table always fits its tile: fixed columns for the rank and the numbers, the category takes
+   what is left and wraps instead of pushing the table past the tile's edge. The tile is a container, so a
+   narrow tile (not only a narrow window) drops the share column and tightens the type. */
+.tile { container-type:inline-size; }
+table.rank { min-width:0; width:100%; margin-top:4px; table-layout:fixed; }
 table.rank th, table.rank td { padding:3px 4px; font-size:13px; }
-table.rank th:nth-child(2), table.rank td:nth-child(2) { text-align:left; }
+table.rank th:nth-child(1) { width:2em; }
+table.rank th:nth-child(3) { width:6.4em; }
+table.rank th.share, table.rank th:nth-child(5) { width:4.4em; }
+table.rank th:nth-child(2), table.rank td:nth-child(2) { text-align:left; white-space:normal; overflow-wrap:anywhere; }
+@media screen {
+  @container (max-width:340px) {
+    table.rank .share { display:none; }
+    table.rank th, table.rank td { padding:3px 2px; font-size:12px; }
+    table.rank th:nth-child(3) { width:6em; }
+    table.rank th:nth-child(5) { width:3.4em; }
+  }
+  @container (max-width:250px) { .parts { grid-template-columns:1fr; } }
+}
 details.notes dt { margin-top:6px; }
 /* The pie: the period's revenue by marketplace. */
 .mix { max-width:620px; padding:12px 16px; margin:16px 0 0; overflow:visible; }
