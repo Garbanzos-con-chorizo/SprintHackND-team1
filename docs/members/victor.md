@@ -2,7 +2,7 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 · **Branch:** victor/v3-4-scheduled-close
+**Last updated:** 2026-10-04 · **Branch:** victor/v3-6-close-email
 
 ## Phase 3: decision 009, plan in `docs/PLAN_PHASE_3.md` (my tasks V3.1 to V3.10)
 ### Done
@@ -16,8 +16,9 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - **V3.10** (branch `victor/v3-10-jewelry`): the `jewelry` simulated source writes two files, the Jewelry Report without a supplier and a supplier lookup (both layouts ours; store names made up). Two parsers read them and `engine/enrich.py` joins them into `jewelry.csv`. **September: 36 items, $7,358.50; sales by supplier equal the answer key; the one item the simulator plants outside the lookup has an empty supplier and a `missing_supplier` warning.** Without a lookup file every item is flagged; nothing is ever guessed. `close-inputs.md` v0.6. 3 more tests.
 - **With all five sources in, Dani's close on the messy month** (`--inbox messy_month/inbox --inbox messy_month/periodic --inbox <simulated>`): 45 files from 3 inboxes, journal 56 lines in 25 documents all balanced, statuses unchanged, 18 exceptions (her 16, the Books payment as `unmatched_deposit` until D3.13, and the missing supplier). The page reads "simulated API" for four sources and "sample file" for four.
 - **V3.4** (branch `victor/v3-4-scheduled-close`): on the 1st `run_scheduled` delivers the simulated month-end sources (`engine fetch --simulate --close-month`), runs Dani's `python -m reports.close` on the sample inbox, its `periodic/` folder and the simulated inbox, and logs the run with the new `python -m engine.store log-close` (`runs.command = 'close'`, `store.md` v0.6). The status file and `runs.csv` are copied beside the page, and the portal card links them ("Run status", "Run history"). **`python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04` exits 0 in about 50 s from an empty `out/` and prints `close page: reports/close/2026-09.html`; `python -m engine.store status` ends with `last close: 2026-09 ok ... (ebay=OPEN; amazon=INCOMPLETE; shopgoodwill=INCOMPLETE; 18 exceptions; needs review; not posted)`.** A refused close is reported, logged as failed and builds nothing. 4 tests in `engine/tests/test_store_close_log.py`, 4 in `reports/tests/test_run_scheduled_close.py`.
+- **V3.6** (branch `victor/v3-6-close-email`): a `Close` report type in `reports/config/subscribers.csv` (one sample subscriber, `accounting@example.org`) and in `reports/email_gen.py`. On the 1st, after a close that wrote its files, the outbox gets one `.eml` per active subscriber: each source's status, open balance and unexplained amount from the control totals, the exceptions counted by kind, and the page plus the four CSVs attached. The subject and the body say "not posted" and "Synthetic sample data". It is a draft (`X-Unsent`): nothing is sent. **The night of September 30 writes 3 emails: Daily, Monthly, Close.** 3 tests in `reports/tests/test_close_email.py`.
 ### Next
-- V3.6 (the close email), L7 (the demo script with Orlando).
+- L7 (the demo script with Orlando).
 - Decision 009: my response line is still open (C3.4), and so are my claim rows.
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`
