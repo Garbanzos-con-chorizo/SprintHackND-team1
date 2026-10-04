@@ -46,6 +46,25 @@ class ScorecardTest(unittest.TestCase):
                 k["parts"][1].update(value=None, available=None)
         self.assertIn('pval none">No data', scorecard.render(kf))
 
+    def test_every_tile_has_an_info_button_that_opens_its_definition_and_note(self):
+        for name in ("kpi.sample.month.json", "kpi.sample.month.partial.json"):
+            with self.subTest(name):
+                kf, html = self.render(name)
+                refs = re.findall(r'<button class="info" type="button" popovertarget="([^"]+)"', html)
+                self.assertEqual(len(refs), 15)
+                self.assertEqual(len(set(refs)), 15)
+                for ref in refs:
+                    self.assertEqual(html.count(f'id="{ref}" popover'), 1)
+                for k in kf["kpis"]:
+                    about = re.search(rf'<div class="about-name">{re.escape(scorecard.escape(k["name"]))}</div>(.*?)</div>',
+                                      html, re.S)[1]
+                    self.assertIn(scorecard.escape(k["definition"]), about)
+                    if k.get("note"):
+                        self.assertIn(scorecard.escape(k["note"]), about)
+                    if k["status"] == "partial":       # the red edge is never the only sign
+                        self.assertIn("Partial data", html.split(about)[1].split('<div class="tile ')[0])
+                self.assertEqual(html.count('class="flag"'), sum(k["status"] == "partial" for k in kf["kpis"]))
+
     def test_download_links_appear_only_for_files_that_exist(self):
         kf, _ = self.render("kpi.sample.month.json")
         with tempfile.TemporaryDirectory() as tmp:

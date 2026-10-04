@@ -31,8 +31,24 @@ SCORECARD_CSS = """
 .area h2 { font-size:14px; color:var(--primary); text-transform:uppercase; letter-spacing:.05em; margin:0 0 6px;
   border-bottom:2px solid var(--primary); padding-bottom:4px; }
 .tile { border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px; margin:0 0 8px; background:var(--card);
-  box-shadow:var(--shadow); }
-.tile .name { font-size:14px; font-weight:700; color:var(--ink); line-height:1.3; }
+  box-shadow:var(--shadow); position:relative; }
+.tile .name { font-size:14px; font-weight:700; color:var(--ink); line-height:1.3; padding-right:22px; }
+/* The (i) button and its pop-out. On screen the prior value and the note live there; print shows them in the tile. */
+.info { position:absolute; top:8px; right:8px; width:20px; height:20px; padding:0; border-radius:50%;
+  border:1px solid var(--primary); background:var(--card); color:var(--primary); cursor:pointer;
+  font:italic 700 13px/18px Georgia,"Times New Roman",serif; }
+.info::before { content:""; position:absolute; inset:-8px; }
+.info:hover, .info:focus-visible { background:var(--primary); color:#fff; }
+.about { width:300px; max-width:calc(100vw - 32px); padding:12px 14px; border:1px solid var(--line); border-radius:var(--radius);
+  background:var(--card); color:var(--ink); font-size:14px; line-height:1.45; box-shadow:0 8px 28px rgba(35,31,32,.22); }
+.about-name { font-weight:700; margin-bottom:4px; }
+.about p { margin:6px 0 0; }
+@supports (top:anchor(bottom)) {
+  .about { position:absolute; inset:auto; margin:6px 0 0; top:anchor(bottom); left:anchor(left);
+    position-try-fallbacks:flip-inline, flip-block, flip-block flip-inline; }
+}
+.tile .change .prior, .tile .note, .tile.partial .change .pp { display:none; }
+.flag { font-size:12px; font-weight:700; color:var(--down); margin-top:3px; }
 .tile .value { font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; margin:2px 0; line-height:1.25; }
 .tile .value .per { font-size:13px; font-weight:400; color:var(--muted); white-space:nowrap; }
 .tile .pillar { font-size:11px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:.05em; }
@@ -45,7 +61,6 @@ SCORECARD_CSS = """
 .links a + a { margin-left:10px; }
 .tile .value.none { font-size:15px; color:var(--muted); font-weight:600; }
 .tile .change { font-size:13px; margin:2px 0; }
-.tile .change .prior { display:block; margin-top:2px; }
 .tile .chg:not(.up):not(.down) { border-color:var(--line); }
 .tile .note { font-size:13px; color:var(--muted); margin:4px 0 0; }
 .tile.partial { border-left:4px solid var(--down); }
@@ -81,7 +96,10 @@ details.defs dt { margin-top:6px; }
   .part .pval.none { font-size:8pt; }
   .links { display:none; }
   .tile .change, .tile .note, .tile .meta { font-size:6.5pt; margin-top:1px; }
-  .tile .change .prior { display:inline; }
+  .tile .change .prior, .tile.partial .change .pp { display:inline; }
+  .tile .note { display:block; }
+  .info, .about, .flag { display:none !important; }
+  .tile .name { padding-right:0; }
   .sim { display:inline-block; font-size:6pt; font-weight:400; padding:0 3px; margin:0 0 0 4px; vertical-align:middle; }
   table.rank th, table.rank td { font-size:6.5pt; padding:0 2px; line-height:1.25; }
   table.rank td:nth-child(2) { max-width:1.1in; overflow:hidden; text-overflow:ellipsis; }
@@ -128,7 +146,7 @@ def delta_text(k):
         shown += f" ({d['pct']:+.1f}%)"
     better = (v > 0) == (k["good_direction"] == "up")
     cls = "" if v == 0 else (" up" if better else " down")
-    partial = ' <span class="muted">(partial period)</span>' if d.get("reason") == "partial_period" else ""
+    partial = ' <span class="muted pp">(partial period)</span>' if d.get("reason") == "partial_period" else ""
     return f'<span class="chg{cls}">{escape(shown)}</span>{partial}'
 
 
@@ -150,9 +168,32 @@ def parts_html(parts, unit):
     return f'<div class="parts">{"".join(boxes)}</div>'
 
 
-def tile(k, prior_label, sim_label, pillars=None):
+def about_html(k, prior_label, prior, sim_label, sim_def):
+    """The (i) button of a tile and what it opens: the definition, the prior period's value, the note and what
+    "simulated" means. It needs no script: the browser opens and closes a `popover`."""
+    ref = "about-" + re.sub(r"[^a-z0-9]+", "-", k["id"].lower())
+    lines = [f'<p>{escape(k["definition"])}</p>']
+    if prior is not None:
+        lines.append(f'<p><b>{escape(prior_label)}:</b> {escape(prior)}</p>')
+    if (k.get("delta") or {}).get("reason") == "partial_period":
+        lines.append("<p><b>Change:</b> compared over a partial period.</p>")
+    if k.get("note"):
+        lines.append(f'<p><b>Note:</b> {escape(k["note"])}</p>')
+    if k["simulated"]:
+        lines.append(f'<p><b>{escape(sim_label)}.</b> {escape(sim_def)}</p>')
+    # The anchor name ties the pop-out to its own button, so it opens beside the tile and not in a page corner.
+    return (f'<button class="info" type="button" popovertarget="{ref}" style="anchor-name:--{ref}" '
+            f'aria-label="About {escape(k["name"])}">i</button>'
+            f'<div class="about" id="{ref}" popover style="position-anchor:--{ref}">'
+            f'<div class="about-name">{escape(k["name"])}</div>{"".join(lines)}</div>')
+
+
+def tile(k, prior_label, sim_label, pillars=None, sim_def=""):
+    """One KPI. On screen the tile shows the value and its change; the prior value and the note are behind the
+    (i) button. In print (the PDF) there is no button, so both are printed in the tile."""
     badge = f'<span class="sim">{escape(sim_label)}</span>' if k["simulated"] else ""
     status = k["status"]
+    prior = None
     if k["kind"] == "ranking":
         rows = k["rows"] or []
         if rows:
@@ -181,10 +222,11 @@ def tile(k, prior_label, sim_label, pillars=None):
         change = (f'<div class="change">{delta}' + (f' <span class="muted prior">vs {escape(prior_label)}: {escape(prior)}</span>'
                                                      if prior is not None else "") + "</div>") if (delta or prior) else ""
     note = f'<div class="note">{note_html(k["note"])}</div>' if k.get("note") else ""
+    flag = '<div class="flag">Partial data</div>' if status == "partial" else ""
     pillar = (pillars or {}).get(k.get("pillar"))
     tag = f'<div class="pillar">{escape(pillar)}</div>' if pillar else ""
-    return (f'<div class="tile {status}" title="{escape(k["definition"])}">{tag}'
-            f'<div class="name">{escape(k["name"])}{badge}</div>{main}{change}{note}</div>')
+    return (f'<div class="tile {status}">{about_html(k, prior_label, prior, sim_label, sim_def)}{tag}'
+            f'<div class="name">{escape(k["name"])}{badge}</div>{main}{change}{flag}{note}</div>')
 
 
 def headline(kf):
@@ -213,7 +255,8 @@ def render(kf, dest=DEST):
     areas = "\n".join(
         f'<section class="area{" wide" if any(k["kind"] == "ranking" for k in by_area[a["id"]]) else ""}">'
         f'<h2>{escape(a["name"])}</h2>'
-        + "".join(tile(k, prior["label"], sim_label, pillars) for k in by_area[a["id"]]) + "</section>"
+        + "".join(tile(k, prior["label"], sim_label, pillars, kf["definitions"].get("simulated", ""))
+                  for k in by_area[a["id"]]) + "</section>"
         for a in kf["areas"])
     text, alert = headline(kf)
     cov = kf["coverage"]
