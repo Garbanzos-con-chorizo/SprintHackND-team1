@@ -28,7 +28,7 @@ import webbrowser
 from datetime import date, datetime
 from pathlib import Path
 
-from reports import hub, mock_pulse, pulse as renderer
+from reports import hub, mock_pulse, pulse as renderer, scorecard
 
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = ROOT / "data" / "sample"
@@ -167,9 +167,15 @@ def store_and_kpis(out, day):
         failed.append("internal pull")
     iso = date.fromisoformat(day).isocalendar()
     log(f"KPIs: the 15 scorecard KPIs for the day, the week to date and the month to date -> {shown(OUT / 'kpi')}/", 6)
+    names = {"--date": f"day-{day}", "--week": f"week-{iso.year}-W{iso.week:02d}", "--month": f"month-{day[:7]}"}
     for cmd in KPI_CMDS:
         if not run(cmd, fatal=False, date=day, week=f"{iso.year}-W{iso.week:02d}", month=day[:7], kpi_dir=OUT / "kpi"):
             failed.append("KPIs " + cmd[3].lstrip("-"))
+            continue
+        # One page per period, drawn from the KPI file just written (no arithmetic here); the portal links them.
+        kpi_file = OUT / "kpi" / f"{names[cmd[2]]}.json"
+        if kpi_file.exists():
+            print(f"            {shown(scorecard.build(kpi_file, REPORTS / 'scorecard'))} (scorecard)")
     return failed
 
 
