@@ -215,6 +215,8 @@ Contract changes this needs in `transaction.md` (Victor, small PR, non-breaking)
 | O2.8 | Demo script for phases 2 and 3; check every simulated number is badged | S | |
 
 ### Phase 3: Business Central integration (separate task, **owners not assigned**)
+> **History (2026-10-04).** This part was written before any close code existed. The current plan for phase 3 is `docs/PLAN_PHASE_3.md` (split between Dani and Victor, decision 009). Also: the freeze is 16:00 Sunday, not the 15:00 this file gives in its introduction and in section 9.
+
 To be split in three when phase 2 reaches checkpoint 1. The steps are grouped into three packages of similar size that meet only at contracts, so each can go to one person. Who takes which is decided then.
 
 | ID | Task | Size | Needs |

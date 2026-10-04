@@ -1,0 +1,38 @@
+# 009 — Phase 3 split between Dani and Victor; temporary ownership of Orlando's close files
+
+- **Date / author:** 2026-10-04 00:15 EDT, Dani
+- **Status:** proposed (needs Victor's response below; Orlando may change it whenever he is back)
+- **Changes:** `007-phase-2-3-owners-database-scorecard.md`, point 1 ("phase 3 has no owner yet") and the three packages A, B, C of `docs/PLAN_PHASE_2_3.md`, section 8.
+- **Full plan:** `docs/PLAN_PHASE_3.md` (what `main` does today, the gap against deck slides 38 to 42, tasks, contracts, clock, cuts).
+
+## Context
+Orlando built the first version of the month-end close (`reports/reconcile.py`, `bc_export.py`, `close_report.py`, the mapping, the messy month and its answer key) and cannot work on it now. Phase 3 was never assigned (007). Checked on `main` at 4d8d8d9: the close runs on the messy month and balances, but Amazon is $226.78 off, ShopGoodwill hides a gap of $1,875.64 behind a net, there is no clean month for the close, and the page does not say what is simulated. Victor has L6, L7 and L8 left from phase 2; Dani has nothing left.
+
+## Decision
+1. **Two parts.** **Dani:** the rules, matching and calculation of the close and their tests; the sample months with their answer keys; the one-command close, its archive and status file; the close page; the rules document and the close demo script. **Victor:** what the engine hands the close (the order time on each transaction, the payout rows, the bank file, which days each report covers), the scheduler, the store's run history, and the rest of his phase 2 list.
+2. **The parts meet at two contracts and nowhere else.** `docs/contracts/close-inputs.md` (new, Victor owns, Dani reads) and `docs/contracts/close-outputs.md` (new, Dani owns, Victor's runner and portal read). `docs/contracts/close-payload.md` passes from Orlando to Dani. Until each side's files exist, the other keeps what works today (the readers inside `reports/reconcile.py`; the three commands in `run_scheduled`).
+3. **Temporary ownership while Orlando is away.** Nothing is moved or renamed.
+
+   | Files | Held by |
+   |---|---|
+   | `reports/reconcile.py`, `reports/bc_export.py`, `reports/close_report.py`, `reports/mock_recon.py`, `reports/config/bc_mapping.csv`, `reports/tests/test_reconcile.py`, `reports/tests/test_bc_export.py`, and new `reports/close.py`, `reports/config/close_*.csv`, `reports/tests/test_close*.py` | Dani |
+   | `data/generate.py`, `data/sample/messy_month/`, new `data/sample/tidy_month/`, `data/README.md` | Dani |
+   | `docs/contracts/close-payload.md`, new `close-outputs.md` and `close-rules.md`, new `docs/pitch/demo_script_close.md` | Dani |
+   | `reports/run_scheduled.py`, `run_nightly.py`, `email_gen.py`, `hub.py`, `scorecard.py`, `weekly.py` | Victor (already his by 007 and its last amendment) |
+   | Slides, video, submission, and everything else in `reports/`, `data/` and `docs/pitch/` | Orlando |
+
+   It ends when Orlando takes a file back (a line in `docs/CLAIMS.md` or in Dani's or Victor's requests is enough) or at the freeze. Each holder adds their own rows to `docs/CLAIMS.md`.
+4. **Two fences.** Dani does not edit `reports/run_scheduled.py` or `reports/hub.py`. Victor does not edit `data/generate.py` or `reports/reconcile.py`. `reconcile.build` keeps its signature, because `engine/tests/test_close_reads_engine_columns.py` calls it.
+5. **Tripwire, 11:00 Sunday.** The order time (`occurred_at`, task V3.1) is the one thing Dani's numbers need from the engine. If it is not on `main` at 11:00, Dani may open that PR in `engine/sources/` herself and Victor reviews it.
+6. **Phase 3 takes no features after 13:00 Sunday**, so the demo can be recorded before the 16:00 freeze. From 15:00 Dani is the one integrator.
+7. **The output stays import files, not a posting** (007 point 7, `ASSUMPTIONS.md` 1.2). The page and the files say so, and say that the data is synthetic and the account numbers are placeholders.
+
+## Consequences
+- Dani's agents edit files in Orlando's lane for the weekend; his note is in `docs/members/orlando.md`.
+- The sample generator and the parsers are written by different people, so an answer key never comes from the code it checks.
+- Six of Goodwill's nine month-end sources stay unmodeled unless the shipping task survives the cuts; the plan lists what we will say is not built.
+- **Still open, Dani's to decide:** who records the demo and submits if Orlando is still away at 11:00. The plan's default: Dani records the close and submits, Victor records phases 1 and 2.
+- `docs/PHASES.md` and `docs/TASKS.md` are out of date for phase 3 until task D3.12.
+
+## Response from Victor
+(accept or change; one line is enough)

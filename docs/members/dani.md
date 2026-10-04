@@ -2,7 +2,14 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 23:58 EDT · **Branch:** d/phase2-rest-confirmed (everything of mine is on `main`)
+**Last updated:** 2026-10-04 00:20 EDT · **Branch:** d/phase-3-plan (PR open, not merged; docs only)
+
+## Phase 3 plan (2026-10-04 00:20): proposed, waiting for Victor's answer
+- **Branch:** `d/phase-3-plan`. It holds `docs/PLAN_PHASE_3.md`, `docs/decisions/009-phase-3-split-dani-victor.md` (status: proposed), one request line each to Victor and Orlando, and my claim rows. No code.
+- **What works** (run on `main` at 4d8d8d9): `python -m pytest engine recon reports -q` gives 353 passed, 1 skipped. On `messy_month`, `reports.reconcile` gives 23 deposits (19 matched to payouts) and 14 exceptions; `reports.bc_export` gives 56 journal lines in 25 documents, each 0.00, one invoice of 3 lines, Amazon `unexplained -226.78`. `reports.run_scheduled --from 2026-09-27 --to 2026-10-04` exits 0.
+- **Known issues, found while checking** (plan, section 0): the $226.78 is $516.32 not yet paid out minus $743.10 paid for September 21-22; ShopGoodwill hides the same kind of gap ($1,875.64, September 7) behind a net that reads "explained"; the close does not run on `clean_month` (no bank file); the engine's rows have no order time, so Pacific payout windows cannot be rebuilt exactly; the close page does not say what is simulated.
+- **How to run:** this worktree has its own `.venv` (`.venv\Scripts\python.exe -m ...`).
+- **Next step:** Victor accepts or changes decision 009. Then the contracts in section 4 of the plan, then my two tracks: D3.1 (payout windows) and D3.6 (a tidy month for the close). **Open, mine to decide:** who records the demo and submits if Orlando is still away at 11:00 Sunday.
 
 ## Handoff (2026-10-03 23:45): my side of phase 2 is finished; Victor finishes the rest
 Dani's decision: Victor takes what is left of phase 2, and he has accepted (PR #45). **His list, L1 to L8 in `docs/members/victor.md`, is the one to follow**: it is the table below plus one item (the pillar names on the page). On record in decision 007 (last amendment) and `docs/PLAN_PHASE_2_3.md`, section 11.
@@ -82,7 +89,7 @@ Found on the way:
 ## Next
 - Phase 2: L1 to L8 in `docs/members/victor.md` are Victor's. Nothing of it is mine.
 - For `recon/` itself, only if Goodwill answers an open definition (`docs/contracts/kpi.md`, "Open questions"): each is one constant at the top of `recon/kpi/kpis.py`.
-- Phase 3: Orlando has the export and the reconciliation on `main` (`reports/bc_export.py`, `reports/reconcile.py`); ask what is left to split.
+- Phase 3: the split with Victor and my task list (D3.1 to D3.12) are in `docs/PLAN_PHASE_3.md`, once decision 009 is accepted.
 
 ## How to run / test my part
 - Tests: `python -m unittest discover -s recon -t .` from the repo root (144 pass). On my machine Python 3.13 is only on the `py` launcher, so `py -m ...`.
