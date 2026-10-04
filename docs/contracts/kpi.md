@@ -1,7 +1,7 @@
 # Contract: KPI file, phase 2 (task C2)
 
 - **Owner:** Dani (`recon/kpi/`). **Consumers:** Orlando (scorecard page, print layout), Victor (KPI CSV, PDF and email exports; `kpi_values` in the store).
-- **Status:** draft v0.3, implemented in `recon/kpi/`. The tests reproduce every example file from the calculator.
+- **Status:** draft v0.4, implemented in `recon/kpi/`. The tests reproduce every example file from the calculator.
 - **Inputs:** the store, `docs/contracts/store.md` (the SQLite database of decision 007): the daily pulse, the transactions and the internal API snapshots of the period. What is read from it is under "Inputs the KPIs read".
 
 ## What this contract does
@@ -76,6 +76,7 @@ Every KPI has every key, so the renderer needs no existence checks.
 | `per` | string or null | What the value is per: `"labor hour"`, `"employee"`, `"unit"`. Print as "$45.74 per labor hour". It follows `basis`: average selling price says `"order"` while it is computed per order. |
 | `value` | number or null | The KPI. `null` when `status = no_data` and always `null` for a `ranking`. |
 | `rows` | object[] or null | Only for a `ranking` (else `null`): up to 10 rows, largest first. See Rankings. `[]` when `no_data`. |
+| `parts` | object[] or null | Only for a KPI that is shown as several boxes (else `null`). Today that is sell-through, always with two. See "Sell-through in two boxes". |
 | `status` | enum | `ok`, `partial`, `no_data`. See Status. |
 | `reason` | enum or null | Why it is not `ok`. `null` when `ok`. |
 | `note` | string or null | One sentence to print under the number: what is missing, or which fallback definition was used. Can be set when `status = ok` (a fallback). |
@@ -142,7 +143,7 @@ If several apply, `status` is the worst of them, `reason` is the first reason of
 | 8 | `inv.unlisted_backlog` | Unlisted Inventory Backlog | count | down | internal | Items sent to e-commerce and not yet listed, on `through` | `as_of` |
 | 9 | `inv.unsold_pct` | Unsold Inventory % | ratio | down | internal | Active listings older than 30 days / active listings, on `through` | `as_of`, `active_listings`, `active_over_threshold`, `threshold_days` |
 | 10 | `sales.asp` | Average Selling Price | cents per unit | up | files | revenue / units sold | `revenue_cents`, `units`, `orders` |
-| 11 | `sales.sell_through` | Sell-Through Rate | ratio | up | mixed | units sold / units listed, in the period (one listing = one unit). Can exceed 1: see below | `units_sold`, `orders`, `units_listed`, `from_period`, `from_earlier`, `sold_from_earlier` |
+| 11 | `sales.sell_through` | Sell-Through Rate | ratio | up | mixed | units sold / units listed, in the period (one listing = one unit). Shown as two boxes, see below | `units_sold`, `orders`, `units_listed`, `opening_stock` |
 | 12 | `sales.sales_per_employee` | Sales per Employee | cents per employee | up | mixed | revenue / average daily e-commerce employees | `revenue_cents`, `employees` |
 | 13 | `cat.top_revenue` | Top 10 Categories by Revenue | ranking, cents | up | mixed | Revenue (KPI 1) split by the internal sales-by-category shares | `revenue_cents`, `internal_sales_cents`, `categories`, `rest_cents` |
 | 14 | `cat.top_margin` | Top 10 Categories by Margin | ranking, cents | up | mixed | Category revenue (KPI 13) minus category cost of goods; `ratio` = margin / category revenue | `revenue_cents`, `cogs_cents`, `margin_cents`, `categories`, `rest_cents` |
@@ -152,17 +153,22 @@ Variants (`basis`) and fallbacks, each stated in `definition` and `note`:
 | KPI | `basis` | Meaning |
 |---|---|---|
 | 2 | `prior_period` (default), `year_over_year` | Slide 33 says year over year. We compare with the period before until 13 months are stored. |
-| 10 | `per_unit`, `per_order` | `per_order` (revenue / orders) until `transactions` carries `units`: `per_unit` needs a unit count on every sale row of the period. |
-| 11 | `units`, `orders` | `orders` (orders / listings created) until `units` exists. |
+| 10 | `per_unit`, `per_order` | `per_unit` when every sale row of the period has a unit count (they do since `transaction.md` v0.4); otherwise `per_order` (revenue / orders), with a note. |
+| 11 | `units`, `orders` | Same rule: `orders` (orders / listings created) only when a sale row has no unit count. |
 | 13, 14 | `internal_split`, `item_level` | `internal_split` today: the files carry no category, so the internal shares are applied to the files' revenue and the list adds up to KPI 1. `item_level` later, when each sale carries a category. |
 
-**Sell-through over 100% (KPI 11).** Over a short period more can sell than was listed, because items listed earlier sell too. The value is not capped; it is split, and the split is in the file:
-- `inputs.from_period`: the part the period's own listings can account for, never more than 1.
-- `inputs.from_earlier`: the rest, `value - from_period`; 0 when the value is 1 or less.
-- `inputs.sold_from_earlier`: the same thing as a count of orders (or units).
-- `note`, when the value is over 1: `"202.6% = 100% counted against what was listed in the period + 102.6% from items listed earlier (at least 40 orders)."` (the real run, Sunday October 4: 79 orders, 39 listings).
+**Sell-through in two boxes (KPI 11).** One rate hides two different things: how fast what was just listed sells, and how fast the stock left from before sells. Over a short period the single rate can even pass 100%, because older listings sell too (207.7% on the real run for Sunday October 4: 81 units sold, 39 listed). So the page shows two boxes, from `parts`:
 
-We cannot tell which listings actually sold. So `from_period` is the most the period's own listings can explain and `from_earlier` the least that must be older: say "at least", never "exactly".
+| `parts[].id` | `name` | `value` | `sold` | `available` |
+|---|---|---|---|---|
+| `listed_in_period` | Listed in the period | `sold / available` | What sold, up to what was listed in the period | Listings created in the period |
+| `left_from_earlier` | Left from earlier | `sold / available` | The rest of what sold | Listings still active the night before the period (`inputs.opening_stock`) |
+
+- **The assumption, stated in `note`:** the data does not say which listing each sale came from, so what was listed in the period is taken to sell first. The first box is therefore the most the period's own listings can account for, and the second the least that came from older stock. The second box is 0 whenever no more sold than was listed. Exact figures need sales by listing date from the listing system (a metric to add to `internal-api.md`).
+- The rule is applied to the period as a whole: a month's box 1 is "of what was listed this month, how much sold this month".
+- There are always exactly two parts, in this order. A `value` is `null` when it cannot be computed: nothing listed in the period (first box), or no stock count for the day before the period (second box, `available` is `null` too). Without marketplace or listing data, both are `null`.
+- `value` of the KPI itself stays the overall rate, uncapped (it is the one stored in `kpi_values` and compared with the prior period). The page shows the two boxes in its place.
+- Real run, Sunday October 4: first box 100.0% (39 of 39), second box 1.2% (42 of the 3,519 left from earlier); note: "Assumes what was listed in the period sold first: 39 of the 81 units sold count against the 39 listed in the period, 42 against the 3,519 left from earlier."
 
 Consistency rules: cost of goods in KPI 3 is the sum of the category cost of goods of KPI 14, so the two never disagree. KPIs 8 and 9 are snapshots on `through`; their `prior_value` is the snapshot on `prior_period.through`. KPI 15 uses `customer_id` even where the pulse counts customers by order (Upright keeps the buyer hash).
 
@@ -198,7 +204,7 @@ The store is defined by `docs/contracts/store.md` (schema: `engine/store/schema.
 |---|---|---|
 | `pulse_daily` | `business_date`, `marketplace`, `status`, `gross_cents`, `refunds_cents`, `revenue_cents`, `fees_cents`, `orders` | **Required.** `other` counts only on a day it is `ok`; it is never an expected marketplace. |
 | `transactions` | `business_date`, `marketplace`, `type`, `order_id`, `customer_id`, `units` | Sale rows only. Without the table, or for a period with no rows, KPI 15 is `no_data`; while `units` is NULL, KPIs 10 and 11 use their per-order variants. |
-| `internal_daily` | `business_date`, `metric`, `dimension`, `value`, `source` | Without it every internal KPI is `no_data`. |
+| `internal_daily` | `business_date`, `metric`, `dimension`, `value`, `source` | Without it every internal KPI is `no_data`. Also read for the day before the period: `active_listings_by_age`, the stock that sell-through's second box is measured against. |
 
 The internal metrics read (a copy for convenience; `internal-api.md` is the authority). Flows are the day's amount; snapshots are the state at the end of the day:
 | `metric` | `dimension` | Kind | Used by |
@@ -209,7 +215,7 @@ The internal metrics read (a copy for convenience; `internal-api.md` is the auth
 | `listings_created` | marketplace | flow | 4, 6, 11 |
 | `donation_to_listing_days` | whole days as text (`"0"`, `"1"`, ...); value = items listed that day with that age | flow | 7 (a median cannot be rebuilt from daily medians; it can from daily counts). A day on which nothing was listed has no rows, so KPI 7 is `no_data` only when the whole period has none |
 | `unlisted_backlog` | `total` | snapshot | 8 |
-| `active_listings_by_age` | `0-30`, `31-60`, `61-90`, `91+` | snapshot | 9 |
+| `active_listings_by_age` | `0-30`, `31-60`, `61-90`, `91+` | snapshot | 9, and 11 (the night before the period) |
 | `shipping_net_cost_cents` | `total`: paid to carriers minus charged to buyers | flow | 3 |
 | `category_sales_cents` | category | flow | 13, 14 |
 | `category_cogs_cents` | category | flow | 3, 14 |
@@ -226,17 +232,17 @@ After writing the file, the command records the same numbers in the store, by th
 | `value`, `unit`, `status`, `source` | As in the file; `value` is NULL when `no_data` |
 | `computed_at` | `generated_at` |
 
-If the table is missing (an older database), the file is still written, the command says so on stderr and exits 0.
+If the table is missing (an older database), the file is still written, the command says so on stderr and exits 0. The two boxes of sell-through are not stored, only its overall value.
 
 ## Mock for parallel work
-Orlando builds the scorecard against the four example files. **They are the calculator's output** on a test database, so the page and the calculator cannot disagree on shape: `python -m recon.tests.kpi_samples` rewrites them, and a test fails if they drift from the code. **What is real in them:** revenue, refunds, fees and orders are the answer keys of `data/sample/clean_month` (September) and of the four `day_*` scenarios (October 1 to 4, eBay missing on the 3rd). **What is invented:** every internal number and the buyers. Three things are staged to show states: no donation dates in October (an internal `no_data`), no backlog snapshot on October 4 (an old snapshot), and no production on Sundays (real zeros and zero divisors).
+Orlando builds the scorecard against the four example files. **They are the calculator's output** on a test database, so the page and the calculator cannot disagree on shape: `python -m recon.tests.kpi_samples` rewrites them, and a test fails if they drift from the code. **What is real in them:** revenue, refunds, fees and orders are the answer keys of `data/sample/clean_month` (September) and of the four `day_*` scenarios (October 1 to 4, eBay missing on the 3rd). **What is invented:** every internal number, the buyers and the unit counts (one order in eight has two units). Three things are staged to show states: no donation dates in October (an internal `no_data`), no backlog snapshot on October 4 (an old snapshot), and no production on Sundays (real zeros and zero divisors).
 
 | Example | States it shows |
 |---|---|
-| `kpi.sample.month.json` | `ok`; `no_data` / `no_prior_period` (growth, nothing stored for August); `partial` / `no_buyer_ids`; fallback `basis` with a note; every delta `no_prior_period` |
+| `kpi.sample.month.json` | `ok`; `no_data` / `no_prior_period` (growth, nothing stored for August); `partial` / `no_buyer_ids`; sell-through's second box without a stock count; every delta `no_prior_period` |
 | `kpi.sample.month.partial.json` | A period to date; `partial` / `missing_days` and `missing_internal_days`; `no_data` / `no_internal_data`; deltas clean, `partial_period`, `current_no_data`, `not_applicable` |
-| `kpi.sample.week.json` | A complete week with one gap: `missing_days`, `missing_internal_days`, and clean deltas on the internal KPIs |
-| `kpi.sample.day.json` | `no_data` / `period_too_short` (KPI 15), `zero_denominator` (KPIs 5 and 11: no labor hours, nothing listed), `no_internal_data`; real zeros that stay `ok` (KPIs 4 and 6); a clean value whose delta is `partial_period` because the day before had a gap |
+| `kpi.sample.week.json` | A complete week with one gap: `missing_days`, `missing_internal_days`, clean deltas on the internal KPIs; both sell-through boxes with a value |
+| `kpi.sample.day.json` | `no_data` / `period_too_short` (KPI 15), `zero_denominator` (KPIs 5 and 11: no labor hours, nothing listed), `no_internal_data`; real zeros that stay `ok` (KPIs 4 and 6); sell-through with nothing listed, so only its second box has a value; a clean value whose delta is `partial_period` because the day before had a gap |
 
 To see any other period before the real database exists:
 ```
@@ -249,11 +255,12 @@ python -m recon.kpi --date 2026-10-03                       # a day with eBay mi
 - Growth year over year or against the prior period (KPI 2): prior period, labelled.
 - Does margin include labor and shipping (KPIs 3, 14): net margin includes both; category margin is revenue minus cost of goods only.
 - What "unsold" means (KPI 9): active listings older than 30 days; the threshold is one constant.
-- What sell-through is measured against (KPI 11): what was listed in the same period, so it can exceed 1 over a short period (2.03 for a Sunday on the real run, 0.78 for the month) and the page must not assume a ratio stays under 100%. The part over 1 is shown as items listed earlier (above). The alternative, sold / (sold + still active), stays under 1 but shrinks with the period (2% for that day, 41% for the month).
+- Which listings a sale came from (KPI 11): unknown, so the period's own listings are taken to sell first and the two boxes are bounds. The overall rate is sold / listed in the period and can exceed 1; the page must not assume a ratio stays under 100%.
 - Who counts as an e-commerce employee (KPIs 6, 12): full-time equivalents, as the internal API reports them.
 - Net shipping cost (KPI 3): carrier cost minus shipping charged to buyers, from the internal API until `transactions` carries shipping.
 
 ## Changelog
+- draft v0.4: sell-through is shown as two boxes (Dani's decision): new field `parts` on every KPI (`null` except KPI 11), `inputs.opening_stock`, and the note now states the assumption. This replaces v0.3's `from_period`, `from_earlier` and `sold_from_earlier` inputs and its "100% + ..." note, which nobody used yet. The examples now carry unit counts, so average selling price and sell-through are on their per-unit basis, as on the real pipeline since `transaction.md` v0.4.
 - draft v0.3: sell-through over 100% is split into what the period's own listings can account for and what must have been listed earlier: three more `inputs` on KPI 11 (`from_period`, `from_earlier`, `sold_from_earlier`) and a note when the value is over 1. Additive: no field changes meaning, and the value itself is unchanged.
 - draft v0.2: implemented. The example files are now generated by the calculator (differences from v0.1: a few cents in the margin ranking, `inputs.items_listed` is `null` when there are no donation dates, a note now carries the gap sentence before a fallback sentence, and in the partial month the backlog snapshot is a day old). Two more examples, a week and a day, asked for by Orlando (C5). New fields `pillar` per KPI and `pillars` at the top level, asked for by Victor (slide 32's five pillars; mapping under Pillars). Inputs now point to `store.md` and `internal-api.md`; the KPIs are also recorded in `kpi_values`. Clarified: exit codes, `--period` alone, `through` when nothing is stored, `prior_value` across bases, `inputs` keys always present, how `status`, `reason` and `note` combine, `no_buyer_ids` as `no_data`, the `internal_data` label.
 - draft v0.1: initial. Replaces the KPI list of `docs/pitch/kpi_catalog.md` and the rows produced by `reports/kpi.py` (decision 007).
