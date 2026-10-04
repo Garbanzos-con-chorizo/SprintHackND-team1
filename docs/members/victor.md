@@ -2,7 +2,13 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 06:00 · **Branch:** victor/listing-to-sale
+**Last updated:** 2026-10-04 · **Branch:** victor/v3-1-occurred-at
+
+## Phase 3: decision 009, plan in `docs/PLAN_PHASE_3.md` (my tasks V3.1 to V3.10)
+### Done
+- **V3.1** (branch `victor/v3-1-occurred-at`): `transactions.csv` v0.5 ends `units,occurred_at`: the moment of each sale or refund, ISO 8601 with its offset (Amazon `-07:00` from `PDT`, Upright assumed Pacific, Cash Monkey UTC). Empty for eBay (its report has dates only) and for a day taken from a file name. Several lines of one order keep the first line's time. **On `messy_month`, all six Pacific payout windows equal the answer key's `net_in_files_cents`** (Amazon 405,400 and 415,074; ShopGoodwill 1,088,878, 1,344,329, 1,329,924, 1,370,702). The store ignores the column. 4 tests in `engine/tests/test_occurred_at.py`; `transaction.md` v0.5.
+### Next
+- V3.2: `payouts.csv` and `bank.csv`, and the new `docs/contracts/close-inputs.md` (C3.1).
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`
 **Decision 007:** agreed by all three, SQLite included (Orlando's amendment at 21:30, my response appended). Tripwire: if September isn't in the store by 10:00 Sunday, the KPIs read the files instead.

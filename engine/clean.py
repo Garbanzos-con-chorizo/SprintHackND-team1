@@ -48,17 +48,20 @@ _MONTHS = {m: i for i, m in enumerate(
 
 
 def _finish(y, mo, d, clock, tzinfo, zone, assume_tz):
-    """Turn parsed pieces into the business date. `clock` is (h, m, s) or None."""
+    """Turn parsed pieces into (business date, occurred_at). `clock` is (h, m, s) or None.
+
+    occurred_at is the moment as ISO 8601 with the offset it was written in (or the assumed zone's),
+    and "" when the text gives only a date."""
     if clock is None:
-        return date(y, mo, d).isoformat()
+        return date(y, mo, d).isoformat(), ""
     dt = datetime(y, mo, d, *clock)
     if tzinfo is not None:
         dt = dt.replace(tzinfo=tzinfo)
     elif assume_tz:
         dt = dt.replace(tzinfo=ZoneInfo(assume_tz))
     else:
-        return dt.date().isoformat()  # naive time: already in business-local terms
-    return dt.astimezone(zone).date().isoformat()
+        dt = dt.replace(tzinfo=zone)  # naive time: already in business-local terms
+    return dt.astimezone(zone).date().isoformat(), dt.isoformat()
 
 
 def _clock(h, m, s, ampm):
@@ -86,14 +89,18 @@ def parse_business_date(value, tz: str = TIMEZONE, assume_tz: str | None = None)
     is taken as already local, unless the source is known to write another zone: pass that as
     `assume_tz` (Cash Monkey writes UTC). Slash dates are read US-style (month first).
     """
+    return parse_moment(value, tz, assume_tz)[0]
+
+
+def parse_moment(value, tz: str = TIMEZONE, assume_tz: str | None = None) -> tuple[str, str]:
+    """Like parse_business_date, but also returns occurred_at: the moment as ISO 8601 with its offset
+    ('2026-09-01T01:28:05-07:00'), or "" when the value is a date without a time. Raises ValueError."""
     zone = ZoneInfo(tz)
     if isinstance(value, datetime):
-        if value.tzinfo:
-            return value.astimezone(zone).date().isoformat()
         return _finish(value.year, value.month, value.day, (value.hour, value.minute, value.second),
-                       None, zone, assume_tz)
+                       value.tzinfo, zone, assume_tz)
     if isinstance(value, date):
-        return value.isoformat()
+        return value.isoformat(), ""
     text = str(value).strip()
     if not text:
         raise ValueError("empty date")
@@ -130,7 +137,7 @@ def parse_business_date(value, tz: str = TIMEZONE, assume_tz: str | None = None)
     if m and m[2].lower() in _MONTHS:
         y = int(m[3])
         y += 2000 if y < 100 else 0
-        return date(y, _MONTHS[m[2].lower()], int(m[1])).isoformat()
+        return date(y, _MONTHS[m[2].lower()], int(m[1])).isoformat(), ""
 
     raise ValueError(f"unrecognized date: {value!r}")
 
