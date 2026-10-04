@@ -63,6 +63,7 @@ def test_the_close_list_reads_the_files_beside_the_page_and_says_not_posted(tmp_
     assert "<h1>Month-End Close</h1>" in html and "Not posted" in html
     assert '<span class="pill stale">eBay OPEN</span>' in html and '<span class="pill missing">Amazon INCOMPLETE</span>' in html
     assert '<a href="2026-09.html">September 2026</a>' in html
-    assert rows(html) == [("september 2026 2026-09 ebay open amazon incomplete not posted", "review")]
+    assert rows(html) == [("september 2026 2026-09 ebay open amazon incomplete not posted needs amazon", "review")]
+    assert "Needs 1 report" in html                          # what the month still needs, seen from the list
     assert '<td class="num">2</td>' in html                 # the exceptions, counted from the file
     assert "general_journal" not in html                    # a file that is not there gets no link

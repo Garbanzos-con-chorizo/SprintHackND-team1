@@ -61,7 +61,7 @@ Numbers to expect (synthetic data):
 
 ## If there are fifteen more seconds
 Pick one, not all:
-- **Goodwill's nine sources, honestly.** The table near the bottom of the page: every source of their slide 38, with what this run has for it. Five are sample files we generated, four come from our simulators, and it says so on each line. The page also says the Controller downloads these by hand.
+- **Goodwill's nine sources, honestly.** Step 1 at the top of the page: every source of their slide 38, with what this run has for it. Five are sample files we generated, four come from our simulators, and it says so on each line. The page also says the Controller downloads these by hand.
 - **The two shipping rules on their slide.** The "Shipping cost" table: the carriers paid from bank account 0101, and FedEx from the ledger entries on G/L 40356, department 180, vendor V00122, net of the refunds that came back as deposits. Those four codes are Goodwill's own.
 - **A rule is a line of config, not code.** In `reports/config/bc_mapping.csv` change eBay's fees account from `61210` to `61215`, run the messy month again, and show the line `eBay marketplace fees Sep 2026` in the journal with the new account. Put the file back afterwards: `git checkout reports/config/bc_mapping.csv`.
 - **A second file agrees or it does not.** Add `--inbox data/sample/messy_month/cashmonkey` to the second command: the Cash Monkey month report is compared with the eBay and Amazon reports order by order, never added. eBay agrees to the order. For Amazon it finds 34 orders ($835.11) the Amazon reports do not hold: the two missing days again, seen from a different file, plus one order sold three minutes after midnight Eastern on the 1st, which is still August in Pacific time.

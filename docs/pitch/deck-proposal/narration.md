@@ -55,7 +55,7 @@ The third run is the panel in the browser, not a command.
 - **Do:** the second close command (messy month); Ctrl+F5.
 - **Say:** "The same month as it really arrives: duplicates, broken rows, and two reports nobody downloaded. Amazon paid $743.10 more than our files explain, and the page says why: no report covers September 21 and 22. ShopGoodwill, $1,875.64, September 7. And a $412.37 deposit matches nothing, so it is held out of the journal with an owner."
 - **Point at:** the two `INCOMPLETE` pills; the two `payout data gap` lines; the `Owner` column; the `unmatched deposit` line.
-- **Do:** the Month-end Close list tab. In the panel, choose the two files in `messy_month/late/`, then "Add files and run the close again" (about 5 seconds).
+- **Do:** the Month-end Close list tab. In the panel, choose the two files in `messy_month/late/`, then "Add files and generate the month-end close" (about 5 seconds).
 - **Say:** "Someone finds the two reports and adds them here. The close runs again: both gaps close, and the deposit nobody can place is still held out."
 - **Point at:** all `OPEN`; 13 exceptions.
 - **Do:** open the General Journal CSV from the close page in Excel.

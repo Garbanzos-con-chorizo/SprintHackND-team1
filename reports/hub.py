@@ -14,7 +14,7 @@ from datetime import date, datetime
 from html import escape, unescape
 from pathlib import Path
 
-from reports import charts, library
+from reports import charts, close_report, library
 from reports.pulse import CSS, DATA_LABEL, DATA_NOTE, PAGE, ast, notes, stamp
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -289,10 +289,18 @@ def _close_row(folder, month):
     review = any(r["Status"] != "RECONCILED" for r in control) or bool(exceptions)
     files = "".join(f'<a class="btn small dl" href="{month}/{key}_{month}.csv" download title="Download {name} (CSV)">{name}</a>'
                     for key, name in CLOSE_FILES if (folder / month / f"{key}_{month}.csv").exists())
-    return {"cells": [f'<a href="{month}.html">{escape(_month(month))}</a>', pills, f"{len(exceptions)}",
+    needed = close_report.missing_reports(exceptions)
+    if needed:
+        needs = (f'<span class="pill missing">Needs {len(needed)} report{"s" if len(needed) != 1 else ""}</span>'
+                 + "".join(f'<small><strong>{escape(s)}</strong> covering {escape(", ".join(d) or "missing days")}</small>'
+                           for s, d, _ in needed))
+    else:
+        needs = '<span class="pill ok">Complete</span><small>every report is in</small>'
+    return {"cells": [f'<a href="{month}.html">{escape(_month(month))}</a>', needs, pills, f"{len(exceptions)}",
                       "<strong>Not posted</strong><small>export files only</small>", files],
-            "find": f'{_month(month)} {month} {" ".join(r["Source"] + " " + r["Status"] for r in control)} not posted',
-            "tags": "review" if review else "clean", "exceptions": len(exceptions)}
+            "find": (f'{_month(month)} {month} {" ".join(r["Source"] + " " + r["Status"] for r in control)} not posted'
+                     + "".join(f" needs {s}" for s, _, _ in needed)),
+            "tags": "review" if review else "clean", "exceptions": len(exceptions), "needed": needed}
 
 
 ADD_CSS = """
@@ -303,6 +311,10 @@ ADD_CSS = """
 .addrow { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0 4px; }
 .addrow input[type=file] { font:inherit; font-size:14px; max-width:100%; }
 .addfiles [hidden] { display:none; }  /* .btn sets display, which would show a hidden button */
+.addfiles.incomplete { border-left:5px solid var(--down); }
+.addfiles .needline { font-size:17px; }
+table.lib td.need, table.lib th.need { text-align:left; white-space:normal; min-width:190px; }
+table.lib td.need small strong { color:var(--ink); }
 /* The export files of a month: one button each, in a column that wraps. */
 table.lib td.files { white-space:normal; min-width:300px; }
 table.lib td.files a.btn { margin:0 6px 6px 0; }
@@ -345,11 +357,11 @@ ADD_SCRIPT = """<script>
     files.reduce(function (before, f) { return before.then(function () {
       return fetch(api + "/uploads/" + encodeURIComponent(f.name), { method: "PUT", headers: head, body: f }).then(json)
         .then(function (d) { if (!d.ok) throw new Error(d.error || d.detail || "the file was not accepted"); });
-    }); }, Promise.resolve()).then(function () { say("Running the close again..."); return again(); }).catch(fail);
+    }); }, Promise.resolve()).then(function () { say("Generating the month-end close..."); return again(); }).catch(fail);
   });
   clear.addEventListener("click", function () {
     clear.disabled = true;
-    say("Removing the added files and running the close again...");
+    say("Removing the added files and generating the close again...");
     fetch(api + "/uploads", { method: "DELETE", headers: head }).then(json).then(again).catch(fail);
   });
 })();
@@ -360,19 +372,22 @@ def add_panel(folder, month):
     """The "add missing reports" panel for the latest month: which reports the close says are missing (from its
     exceptions file), a file picker and a button. The files go to the server, which runs the close again."""
     missing = [e for e in _rows(folder / month / f"exceptions_{month}.csv") if e.get("Kind") == "missing_report"]
-    if missing:
-        what = ("<p>The close could not check these days, because no report covers them:</p><ul>"
-                + "".join(f'<li><strong>{escape(e.get("Source") or "A source")}:</strong> {escape(e.get("Detail") or "")}</li>'
-                          for e in missing) + "</ul>")
+    needed = close_report.missing_reports(missing)
+    if needed:
+        what = (f'<p class="needline"><strong>{escape(_month(month))} needs {len(needed)} more '
+                f'report{"s" if len(needed) != 1 else ""} to be complete:</strong></p><ul>'
+                + "".join(f'<li><strong>{escape(s)}</strong> report covering {escape(", ".join(d) or "the missing days")}'
+                          f'<span class="muted">: {escape(detail)}</span></li>' for s, d, detail in needed) + "</ul>")
     else:
-        what = f"<p>No report is missing for {escape(_month(month))}. A late file can still be added.</p>"
-    return (f'<section class="card addfiles" id="add" data-month="{month}">'
-            f'<h2 class="sec">Add Missing Reports · {escape(_month(month))}</h2>{what}'
-            f'<p>Download the report from the marketplace and add it here: the close runs again with it and this page '
-            f'shows the new result. Nothing is posted.</p>'
+        what = f'<p class="needline"><strong>{escape(_month(month))} is complete:</strong> every report the close needs is in. A late file can still be added.</p>'
+    return (f'<section class="card addfiles{" incomplete" if needed else ""}" id="add" data-month="{month}">'
+            f'<h2 class="sec">Missing Reports · {escape(_month(month))}</h2>{what}'
+            f'<p>Download the report from the marketplace and choose it here. The button generates the month-end close '
+            f'again with it, and this page shows the new result. Nothing is posted. You can also choose each file beside '
+            f'its source on <a href="{month}.html">the month\'s page</a>.</p>'
             f'<div class="addrow"><input type="file" id="add-files" multiple accept=".csv,.xlsx" aria-label="Report files to add">'
-            f'<button class="btn" id="add-run" type="button">Add files and run the close again</button>'
-            f'<button class="btn quiet" id="add-clear" type="button" hidden>Remove the added files and run again</button></div>'
+            f'<button class="btn" id="add-run" type="button">Add files and generate the month-end close</button>'
+            f'<button class="btn quiet" id="add-clear" type="button" hidden>Remove the added files and generate again</button></div>'
             f'<p id="add-state" role="status"></p>'
             f'<p class="small"><strong>{DATA_LABEL}:</strong> in the demo the late reports are the synthetic samples in '
             f'<code>data/sample/messy_month/late/</code>. Added files are kept in <code>out/uploads/{month}/</code>; '
@@ -388,13 +403,19 @@ def close_index(root):
     months = sorted((f.stem for f in folder.glob("*.html") if re.fullmatch(r"\d{4}-\d{2}", f.stem)), reverse=True)
     rows = [_close_row(folder, m) for m in months]
     panel = add_panel(folder, months[0]) + ADD_SCRIPT if months else ""
+    if months:
+        needed = rows[0]["needed"]
+        files_tile = (("Reports Needed", f"{len(needed)}", "to complete " + _month(months[0]) + ": "
+                       + "; ".join(f'{s} {", ".join(d)}' for s, d, _ in needed), "#add") if needed
+                      else ("Reports Needed", "None", f"{_month(months[0])} is complete", None))
     top = library.tiles([
         ("Latest Close", _month(months[0]), "", f"{months[0]}.html"),
+        files_tile,
         ("Exceptions to Work", f'{rows[0]["exceptions"]}', f"in {_month(months[0])}", f"{months[0]}.html"),
         ("Posting Status", "Not posted", "export files only; nothing is sent", None)]) if months else ""
     table = library.finder_table(
-        [("Month", "l"), ("Reconciliation by Source", "l"), ("Exceptions", "num"), ("Posting", "l"),
-         ("Export Files for Business Central", "files")],
+        [("Month", "l"), ("To Be Complete", "need"), ("Reconciliation by Source", "l"), ("Exceptions", "num"),
+         ("Posting", "l"), ("Export Files for Business Central", "files")],
         [("", rows)], [("review", "Needs review"), ("clean", "Reconciled")],
         'Find a month: "September", "2026-09", "incomplete"', noun="close")
     body = (f'<header><h1>Month-End Close</h1><p>{len(months)} month(s) · export files for Business Central, not posted</p>'
