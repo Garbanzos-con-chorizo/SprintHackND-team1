@@ -18,6 +18,15 @@ class OrderReportParser(Parser):
     fees: tuple[str, ...] = ()           # every fee column found is summed; stored as a positive cost
     buyer: tuple[str, ...] = ()
     refund_amount: tuple[str, ...] = ()  # a column holding the refunded amount, if the report has one
+    # What the buyer was charged for shipping and handling (not revenue; the close posts them). A source
+    # with one combined "shipping and handling" column puts it in `shipping`. A missing column reads 0.
+    shipping: tuple[str, ...] = ()
+    shipping_discount: tuple[str, ...] = ()  # subtracted from shipping (Upright's "Shipping Discount")
+    handling: tuple[str, ...] = ()
+    # Units sold: a quantity column, or a fixed count per row for exports with one item per row.
+    # Neither known -> units stay empty (unknown), and the KPIs fall back to per-order figures.
+    units: tuple[str, ...] = ()
+    units_per_row: int | None = None
     row_type: tuple[str, ...] = ()       # a column saying what the row is (e.g. Order / Refund)
     refund_words: tuple[str, ...] = ("refund", "return", "reversal")
     skip_types: tuple[str, ...] = ()     # row_type values to ignore silently (e.g. payout, transfer)
@@ -81,18 +90,24 @@ class OrderReportParser(Parser):
                 gross = parse_money(table.get(row, *self.gross))
                 fee = sum(abs(parse_money(v)) for v in (table.get(row, f) for f in self.fees) if v)
                 refunded = parse_money(table.get(row, *self.refund_amount)) if self.refund_amount and table.get(row, *self.refund_amount) else 0
+                shipping = self._money(table, row, self.shipping) - abs(self._money(table, row, self.shipping_discount))
+                handling = self._money(table, row, self.handling)
+                units = self._units(table, row)
             except ValueError as exc:
                 result.warn(table, row_no, "bad_amount", str(exc))
                 continue
 
             is_refund_row = any(w in kind_text for w in self.refund_words) or gross < 0
+            # (type, gross, fee, shipping, handling, units). Refunds are always negative, with the shipping
+            # and handling refunded with them; fees stay on the sale; units count on sales only.
+            no_units = None if units is None else 0
             events = []
             if is_refund_row:
-                events.append(("refund", -abs(gross), 0))   # refunds are always negative; fees stay on the sale
+                events.append(("refund", -abs(gross), 0, -abs(shipping), -abs(handling), no_units))
             else:
-                events.append(("sale", gross, fee))
+                events.append(("sale", gross, fee, shipping, handling, units))
             if refunded:
-                events.append(("refund", -abs(refunded), 0))
+                events.append(("refund", -abs(refunded), 0, 0, 0, no_units))
 
             buyer = table.get(row, *self.buyer)
             marketplace = self.marketplace
@@ -101,11 +116,15 @@ class OrderReportParser(Parser):
                 if self.strict_channels and channel_name not in self.channel_marketplaces:
                     continue
                 marketplace = self.channel_marketplaces.get(channel_name, self.marketplace)
-            for typ, amount, event_fee in events:
+            for typ, amount, event_fee, ship, hand, n in events:
                 key = (order_id, typ, day, marketplace)
                 if key in grouped:  # several lines of one order in one file: one row per order
-                    grouped[key]["gross_cents"] += amount
-                    grouped[key]["fee_cents"] += event_fee
+                    g = grouped[key]
+                    g["gross_cents"] += amount
+                    g["fee_cents"] += event_fee
+                    g["shipping_cents"] += ship
+                    g["handling_cents"] += hand
+                    g["units"] = None if g["units"] is None or n is None else g["units"] + n
                     continue
                 grouped[key] = {
                     "txn_id": f"{self.source}:{order_id}:{typ}",
@@ -120,10 +139,31 @@ class OrderReportParser(Parser):
                     "fee_cents": event_fee,
                     "source_file": table.name,
                     "source_row": row_no,
+                    "shipping_cents": ship,
+                    "handling_cents": hand,
+                    "units": n,
                 }
         for item in grouped.values():
+            if item["units"] is None:
+                item["units"] = ""  # unknown: an empty cell, never 0
             result.add(item)
         return result
+
+    @staticmethod
+    def _money(table: Table, row: dict, aliases: tuple[str, ...]) -> int:
+        text = table.get(row, *aliases) if aliases else ""
+        return parse_money(text) if text else 0
+
+    def _units(self, table: Table, row: dict) -> int | None:
+        if self.units and any(norm(a) in table.norm_header for a in self.units):
+            text = table.get(row, *self.units).replace(",", "").strip()
+            if not text:
+                return None
+            value = float(text)
+            if value != int(value):
+                raise ValueError(f"units {text!r} is not a whole number")
+            return abs(int(value))
+        return self.units_per_row
 
     @property
     def feeds(self) -> tuple[str, ...]:

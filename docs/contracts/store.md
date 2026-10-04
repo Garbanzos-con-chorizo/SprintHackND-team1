@@ -32,7 +32,7 @@ internal API (mock)                                         ──> python -m en
 ## Tables and views
 | Name | One row per | Key | Written by |
 |---|---|---|---|
-| `transactions` | sale or refund: the columns of `transaction.md`, plus `units` (NULL until V2.7) and `run_id` | `txn_id` | `store load` |
+| `transactions` | sale or refund: the columns of `transaction.md` (v0.4: with `shipping_cents`, `handling_cents`, `units`; `units` is NULL when the export has no unit count) and `run_id` | `txn_id` | `store load` |
 | `pulse_daily` | business date and marketplace, from the pulse: `status` and the money/count fields. Measures are NULL when `status <> 'ok'` | `(business_date, marketplace)` | `store load` |
 | `internal_daily` | business date, metric, dimension: `value`, `unit`, `source` (`mock` or `api`). Metric list: `internal-api.md` | `(business_date, metric, dimension)` | `internal_api pull` |
 | `runs` | command that wrote to the store: when, which date, files read, rows written, warnings, result | `run_id` | every writer |
@@ -75,6 +75,7 @@ How the store helps on the rubric. Every claim below is true of what we build; s
 - **Don't claim:** live Azure, multi-user access, or real internal data. The rubric's overclaim flag drops Working Evidence to level 1.
 
 ## Changelog
+- v0.5 (2026-10-04, Victor): schema version 2: `transactions.shipping_cents` and `handling_cents` (default 0). `init` adds them to an existing database in place (rows kept), so nobody has to rebuild. `load` still reads a `transactions.csv` written before v0.4 (0, 0, units unknown).
 - v0.4 (2026-10-04, Victor): backfill also pulls the internal snapshot; status shows internal coverage; `runs.command` is `load` or `pull` so far.
 - v0.3 (2026-10-03, Victor): `status` and `backfill` built.
 - v0.2 (2026-10-03, Victor): `init` and `load` built (`engine/store/`, tests in `engine/tests/test_store.py`). Wording: a re-run gives the same data, not the same file. Load's required and optional inputs are listed.

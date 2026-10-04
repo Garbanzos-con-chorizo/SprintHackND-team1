@@ -28,6 +28,10 @@ class Upright(OrderReportParser):
     gross = ("Subtotal",)
     fees = ("Final Value Fee",)
     buyer = ("Channel Buyer",)
+    shipping = ("Shipping Charged",)
+    shipping_discount = ("Shipping Discount",)
+    handling = ("Handling",)
+    units = ("Order Items",)
     currency = ("Currency",)
     channel = ("Channel",)
     channel_marketplaces = {"shopgoodwill": "shopgoodwill"}
