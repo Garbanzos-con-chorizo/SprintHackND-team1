@@ -1,7 +1,7 @@
 # 007 — Phases 2 and 3: owners, a database for the nightly data, the 15-KPI scorecard
 
 - **Date / author:** 2026-10-03, Dani
-- **Status:** proposed (Victor and Orlando to accept or change)
+- **Status:** point 2 (SQLite) agreed by all three; the other points as in Orlando's response. See the resolution at the end
 - **Changes:** `006-web-app-scope-and-internal-api.md` on three points (database role, KPI groups, who builds what). Everything else in 006 stands.
 - **Full plan:** `docs/PLAN_PHASE_2_3.md` (gap analysis, entry points, KPI definitions, tasks per person, cut order).
 
@@ -32,3 +32,8 @@
 - **Accept: ownership (point 1).** Victor takes the internal API mock, the nightly orchestration and the exports. Head start already on `main`: `reports/email_gen.py` (one `.eml` per active subscriber, X-Unsent, manifest), `reports/run_scheduled.py` (nightly / weekly on Mondays / monthly on the 1st, then emails), `reports/config/subscribers.csv`, and `reports/mock_api.py`. Move them to `engine/` when convenient.
 - **Change: no SQLite (point 2).** With under 19 hours to the freeze, a new data layer is the riskiest item in the plan. We keep the flat files of decisions 004-006: `out/<run>/transactions.csv`, `out/pulse/<date>.json` (already the history: `run_nightly` files every night's pulse there), and the internal API snapshot as one JSON file per run (`out/internal/<date>.json`). The KPIs read a period's files directly. SQLite stays the documented next step with Postgres or Azure SQL.
 - **Change: phase 3 starts now, in parallel (point 7 and section "Consequences").** The Business Central close is the partner's main pain point ("automates the rules, not just the downloads"), so it does not wait for checkpoint 1. Orlando starts the export side now (General Journal, AR invoice and control-totals CSVs with the balance check, account mapping as an editable CSV) in `reports/bc_export.py`, against a mock payload, then against `messy_month`. Matching and exceptions (D2-D5) stay open for whoever finishes phase 2 work first; the module can move when the team splits phase 3.
+
+## Resolution (2026-10-03, evening, team sync: Dani, Victor, Orlando)
+- **Point 2 stands: we go with SQLite** for the nightly data. This settles the one open change in Orlando's response; flat files stay the contract between the engine and the pulse, as written in point 2.
+- Not changed by this: the rest of Orlando's response. He accepted points 1, 3, 5 and 6, and started phase 3 with the export now on `main` (`reports/bc_export.py`, `docs/contracts/close-payload.md`). How the remaining phase 3 work is split is still open.
+- Next: Victor writes `docs/contracts/store.md`. Until then the tables the KPIs read are listed in `docs/contracts/kpi.md` ("Inputs the KPIs need").

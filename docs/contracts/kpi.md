@@ -2,20 +2,20 @@
 
 - **Owner:** Dani (`recon/kpi/`). **Consumers:** Orlando (scorecard page, print layout), Victor (KPI CSV, PDF and email exports).
 - **Status:** draft
-- **Inputs:** a period of stored nightly data: the daily pulse, the transactions and the internal API snapshots. **Where they are stored is not settled** (decision 007 proposes a SQLite database; Orlando's response to it proposes flat files). The KPI file below is the same either way; only "Inputs the KPIs need" and the `--db` option depend on it.
+- **Inputs:** the SQLite database of decision 007 (agreed by all three on 2026-10-03): the daily pulse, the transactions and the internal API snapshots of the period. Victor's `docs/contracts/store.md` will define it; until it exists, the tables and columns the KPIs read are listed under "Inputs the KPIs need".
 
 ## What this contract does
 Turns a period of stored nightly data into Goodwill's own scorecard (deck slide 35): **15 KPIs, five areas, three each**. The page, the PDF and the CSV all render this one file, so they cannot disagree, and none of them does arithmetic or decides what missing data means.
 
 ```
-stored nightly data (daily pulse, transactions, internal snapshots)
+database (pulse_daily, transactions, internal_daily)
    └─> python -m recon.kpi --period month --month 2026-09  ─> out/kpi/month-2026-09.json   + latest-month.json
        python -m recon.kpi --period week  --week 2026-W38  ─> out/kpi/week-2026-W38.json   + latest-week.json
        python -m recon.kpi --period day   --date 2026-10-02 ─> out/kpi/day-2026-10-02.json + latest-day.json
 ```
-- Options: `--out-dir` (default `out/kpi`), `--through YYYY-MM-DD` (see Period), and where to read from: `--db PATH` with a database, or `--in-dir` (default `out`) with flat files.
+- Options: `--db PATH` (default: the `ECOM_DB` environment variable, else `out/store/ecom.db`), `--out-dir` (default `out/kpi`), `--through YYYY-MM-DD` (see Period). Without `--date`, `--week` or `--month`, the period is the one containing the latest stored business date.
 - Re-running a period overwrites its file. `latest-<type>.json` is a copy of the file with the greatest period of that type.
-- Exit code 0 whenever a file is written, including when KPIs are `partial` or `no_data`. Non-zero only if the stored data is absent or unreadable.
+- Exit code 0 whenever a file is written, including when KPIs are `partial` or `no_data`. Non-zero only if the database is absent or unreadable.
 
 ## File
 JSON, UTF-8. Money is integer USD cents. Examples: `examples/kpi.sample.month.json` (September, complete) and `examples/kpi.sample.month.partial.json` (October to date, one eBay day missing).
@@ -169,14 +169,16 @@ Rounding: cents and counts are integers; `ratio` has four decimals; `number` and
   "inputs": { "gross_cents": 986909, "refunds_cents": -5448, "fees_cents": 66661, "orders": 321 } }
 ```
 
-## Inputs the KPIs need (request to Victor: storage and `internal-api.md`)
-The same data is needed whichever storage the team picks. With the database of decision 007 these are the tables `pulse_daily`, `transactions` and `internal_daily`; with flat files they are `out/pulse/<date>.json`, the transactions of the period and `out/internal/<date>.json`.
+## Inputs the KPIs need (request to Victor: `store.md` and `internal-api.md`)
+The calculator opens the database read-only and reads three tables. These are the names and columns it is coded against until `store.md` says otherwise; `recon/kpi/store.py` is the only module that knows them, so a rename costs one file.
 
-From the marketplace side, already defined by `transaction.md` and `pulse.md`:
-- The daily pulse, every day of the period: per marketplace `status`, `gross_cents`, `refunds_cents`, `revenue_cents`, `fees_cents`, `orders`. Already kept as `out/pulse/<date>.json`.
-- **The transactions of the whole period**, not only the last run: `business_date`, `marketplace`, `type`, `order_id`, `customer_id`, and `units` when it exists. KPI 15 (repeat buyers) and the per-unit variants of KPIs 10 and 11 cannot be computed from the pulse. Today each run writes its own `transactions.csv`, so nothing holds a month of them yet; this is the one input that needs new storage in either option.
+| Table | Columns read | Notes |
+|---|---|---|
+| `pulse_daily` | `business_date`, `marketplace`, `status`, `gross_cents`, `refunds_cents`, `revenue_cents`, `fees_cents`, `orders` | One row per day and marketplace, copied from `out/pulse/<date>.json`. Numbers are NULL when `status` is not `ok`. **Required.** |
+| `transactions` | `business_date`, `marketplace`, `type`, `order_id`, `customer_id`, and `units` if the column exists | The rows of `transaction.md`, **accumulated over the whole period** (today each run rewrites `transactions.csv`, so nothing holds a month of them yet). Without this table KPI 15 is `no_data` and KPIs 10 and 11 use their per-order variants. |
+| `internal_daily` | `business_date`, `metric`, `dimension`, `value`, `source` | One row per night, metric and dimension; `source` is `mock` or `api`. Without it every internal KPI is `no_data`. |
 
-From the internal API, one snapshot per night with these values (`business_date`, `metric`, `dimension`, `value`, `source`). Flows are the day's amount; snapshots are the state at the end of the day.
+Dates are `YYYY-MM-DD` text. The metrics the KPIs read from `internal_daily` (flows are the day's amount; snapshots are the state at the end of the day):
 | `metric` | `dimension` | Kind | Used by |
 |---|---|---|---|
 | `labor_hours` | `total` (activities optional) | flow | 5 |
