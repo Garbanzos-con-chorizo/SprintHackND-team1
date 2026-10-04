@@ -22,6 +22,14 @@ Our brief is broad and we have no real Goodwill files yet, so we decided early t
 | 2.5 | Upright rows have a **payment date** (header spelling guessed: `Payment Date`), written **without a timezone in Pacific time**, the report form's default (slide 7: "Use America/Los_Angeles for SGW"). We convert it to Eastern. If the file has no date column, the day falls back to the file name. | The form's timezone field defaults to Pacific; exported timestamps carry no zone. If staff pick another zone, it is one line in `engine/sources/upright.py`. | guess |
 | 2.6 | **Other Upright channels are ignored**: only `Shopgoodwill` rows count. | If Upright also carried eBay or Amazon orders, counting them would double-count against Cash Monkey. | decision |
 
+## 2b. Goodwill's internal data (the internal API)
+| # | Assumption | Why | Confidence |
+|---|---|---|---|
+| 2b.1 | **All of Goodwill's internal company data comes from an internal API**: inventory and backlog, listings, donation and listing dates, labor hours and employee headcount, cost of goods, product categories, the Business Central chart of accounts. | The marketplace exports contain none of it, and 11 of the 15 scorecard KPIs (slide 35) need it. Assuming one API keeps every such input in one replaceable place. | decision (`006` point 9, `007`), **not confirmed with Amanda** |
+| 2b.2 | **We have not seen that API, so it is a mock with synthetic values.** Every response carries `"source": "mock"` and every number built on it is badged "Simulated internal data" on the page, in the PDF and in the CSV. | Inventing figures and presenting them as Goodwill's would be an overclaim. | decision (`reports/mock_api.py` today, `engine/internal_api/` in the plan) |
+| 2b.3 | The API answers **read-only JSON for a date or a date range**, and for stock-like figures (backlog, active listings, headcount) it gives **only the current state**. The nightly run stores a snapshot in our database so those figures have history. | Typical of operational systems; it is also why the KPIs read the database and never call the API directly. | guess |
+| 2b.4 | The synthetic values are **sized to the sample order volume**, not to Goodwill's real operation. | So the simulated ratios look plausible next to the sample revenue; they prove the calculation, not the result. | decision |
+
 ## 3. How the data gets in (acquisition)
 | # | Assumption | Why | Confidence |
 |---|---|---|---|
@@ -87,3 +95,4 @@ Open questions for Amanda are in `docs/OFFICE_HOURS.md` and `docs/office-hours-v
 2. **One real Upright download** settles 2.5 and the Upright column names.
 3. **The Upright API documentation** replaces 3.1 and 3.2 with facts.
 4. **Amanda's answers** on revenue, the day boundary, customers and the run time (3b.3) settle sections 3b and 4.
+5. **Where the internal data really lives** (Upright's listing and productivity reports, payroll hours, cost data) replaces section 2b: each real source becomes one client behind the same interface as the mock.

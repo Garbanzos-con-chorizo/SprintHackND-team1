@@ -4,3 +4,4 @@ Add a row before editing anything outside your lane (shared config, dependency f
 
 | Path | Who | Since | Why |
 |------|-----|-------|-----|
+| `docs/ASSUMPTIONS.md` (new section 2b only) | Dani | 2026-10-03 20:30 | Internal API assumption for the phase 2 KPIs; released when the plan PR merges |
