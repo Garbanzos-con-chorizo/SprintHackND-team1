@@ -10,7 +10,7 @@ Standard library only.
 import argparse
 import json
 import re
-from datetime import date
+from datetime import date, datetime
 from html import escape
 from pathlib import Path
 from string import Template
@@ -39,35 +39,50 @@ REASONS = {
 # Green and red mark change and missing data only; green is too light for text on white
 # (about 2:1), so it is a badge background under black text; red passes as text (about 5.6:1).
 CSS = """
-:root { --primary:#0054A4; --ink:#231F20; --bg:#fff; --card:#fff; --up:#9DBB68; --down:#CC1F40;
-  --muted:#5c5859; --line:#d3d2d2; --nodata:#f4f4f4; --radius:2px; }
+:root { --primary:#0054A4; --ink:#231F20; --bg:#f5f6f8; --card:#fff; --up:#9DBB68; --down:#CC1F40;
+  --muted:#5c5859; --line:#d3d2d2; --nodata:#eff0f2; --radius:6px; --page:1100px;
+  --shadow:0 1px 2px rgba(35,31,32,.07); }
 * { box-sizing:border-box; }
 body { margin:0; background:var(--bg); color:var(--ink);
-  font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
-main { max-width:980px; margin:0 auto; padding:24px 16px 48px; }
-header { background:var(--primary); color:#fff; border-radius:var(--radius); padding:18px 20px; }
-header h1 { margin:0; font-size:22px; }
-header p { margin:4px 0 0; font-size:13px; opacity:.9; }
+  font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
+/* The bar every page shares: where you are in the suite, and what the data is. */
+.topbar { background:var(--primary); color:#fff; }
+.topbar-in { max-width:var(--page); margin:0 auto; padding:10px 16px; display:flex; flex-wrap:wrap;
+  align-items:center; gap:6px 22px; }
+.topbar .brand { color:#fff; font-weight:700; text-decoration:none; margin-right:auto; }
+.topbar nav { display:flex; flex-wrap:wrap; gap:4px 18px; }
+.topbar nav a { color:#fff; text-decoration:none; font-size:14px; padding:3px 0; border-bottom:2px solid transparent; }
+.topbar nav a:hover, .topbar nav a.here { border-bottom-color:#fff; }
+.topbar nav a.here { font-weight:700; }
+.datalabel { background:#fff; color:var(--ink); font-size:12px; font-weight:700; letter-spacing:.04em;
+  text-transform:uppercase; padding:3px 10px; border-radius:999px; white-space:nowrap; }
+main { max-width:var(--page); margin:0 auto; padding:20px 16px 32px; }
+header h1 { margin:0; font-size:26px; line-height:1.2; }
+header p { margin:4px 0 0; font-size:14px; color:var(--muted); }
 .summary { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--primary);
-  border-radius:var(--radius); padding:12px 16px; margin:16px 0 0; font-size:17px; font-weight:600; }
+  border-radius:var(--radius); padding:12px 16px; margin:16px 0 0; font-size:18px; font-weight:600;
+  box-shadow:var(--shadow); }
 .summary.alert { border-left-color:var(--down); }
 .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:16px 0; }
-.kpi { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; }
-.kpi .label { color:var(--primary); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
-.kpi .value { font-size:24px; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums; }
-.kpi .sub { font-size:13px; margin-top:4px; }
+.kpi { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px;
+  box-shadow:var(--shadow); }
+.kpi .label { color:var(--primary); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+.kpi .value { font-size:26px; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums; }
+.kpi .sub { font-size:14px; margin-top:4px; }
 .banner { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--down); border-radius:var(--radius);
-  padding:10px 14px; margin:0 0 16px; font-size:14px; }
-.card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow-x:auto; }
-table { width:100%; border-collapse:collapse; min-width:720px; }
+  padding:10px 14px; margin:0 0 16px; font-size:15px; box-shadow:var(--shadow); }
+.card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow-x:auto;
+  box-shadow:var(--shadow); }
+table { width:100%; border-collapse:collapse; min-width:720px; font-size:15px; }
 th, td { padding:10px 12px; text-align:right; border-bottom:1px solid var(--line);
   font-variant-numeric:tabular-nums; white-space:nowrap; }
-th { font-size:12px; color:var(--primary); font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+th { font-size:13px; color:var(--primary); font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+tbody tr:last-child td { border-bottom:none; }
 th:first-child, td:first-child, td.status, th.status { text-align:left; }
 tr.total td { font-weight:700; border-top:2px solid var(--primary); border-bottom:none; }
 td.nodata { text-align:left; background:var(--nodata); color:var(--down); font-weight:600; }
 td.nodata.quiet { color:var(--muted); font-weight:400; font-style:italic; }
-.pill { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:var(--radius); }
+.pill { display:inline-block; font-size:12px; font-weight:700; padding:2px 9px; border-radius:var(--radius); }
 .pill.ok { background:var(--up); color:var(--ink); }
 .pill.missing, .pill.stale, .pill.unknown { background:var(--down); color:#fff; }
 .pill.not_configured { border:1px solid var(--line); color:var(--muted); }
@@ -75,26 +90,41 @@ td.nodata.quiet { color:var(--muted); font-weight:400; font-style:italic; }
 .chg.up { background:var(--up); color:var(--ink); }
 .chg.down { background:var(--down); color:#fff; }
 .muted { color:var(--muted); }
-small.note { display:block; color:var(--muted); font-size:12px; font-weight:400; white-space:normal;
+small.note { display:block; color:var(--muted); font-size:13px; font-weight:400; white-space:normal;
   max-width:220px; margin-left:auto; margin-top:2px; }
-section.foot { margin-top:20px; font-size:13px; color:var(--muted); }
-section.foot h2 { font-size:13px; color:var(--primary); margin:16px 0 6px; }
+h2.sec, section.foot h2 { font-size:13px; color:var(--primary); text-transform:uppercase; letter-spacing:.05em;
+  margin:20px 0 6px; }
+section.foot { margin-top:20px; font-size:14px; color:var(--muted); }
+/* What is simulated or synthetic on a page: the same dashed box everywhere. */
+.simnote { margin:12px 0 0; font-size:13px; border:1px dashed var(--ink); padding:8px 12px; border-radius:var(--radius); }
+.nav, .links, .downloads { font-size:14px; }
 dl { display:grid; grid-template-columns:max-content 1fr; gap:4px 16px; margin:0; }
 dt { font-weight:600; color:var(--ink); }
 dd { margin:0; }
 a { color:var(--primary); }
-ul.days { list-style:none; padding:0; margin:16px 0; }
-ul.days li { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:8px; }
+ul.days { list-style:none; padding:0; margin:12px 0 16px; }
+ul.days li { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:8px;
+  box-shadow:var(--shadow); }
 ul.days a { display:block; padding:12px 16px; text-decoration:none; font-weight:600; }
 .chg, .pill { border:1px solid transparent; }
+.pagefoot { width:calc(100% - 32px); max-width:calc(var(--page) - 32px); margin:0 auto; padding:14px 0 28px;
+  border-top:1px solid var(--line);
+  font-size:13px; color:var(--muted); }
 @media print {
   @page { size:letter; margin:0.5in; }
   body { background:#fff; font-size:10.5pt; }
   main { max-width:none; padding:0; }
+  /* The bar prints as one line: the name and the data label, no links. */
+  .topbar { background:none; color:var(--ink); border-bottom:1px solid var(--ink); margin-bottom:6px; }
+  .topbar-in { max-width:none; padding:0 0 3px; }
+  .topbar .brand { color:var(--ink); font-size:8pt; }
+  .topbar nav, .pagefoot { display:none; }
+  .datalabel { border:1px solid var(--ink); font-size:6.5pt; padding:0 6px; }
+  header h1 { font-size:15pt; }
+  .summary, .kpi, .card, .banner, ul.days li { box-shadow:none; }
   /* Keep brand colors when the browser allows it... */
-  header, .summary, .pill, .chg, .banner, td.nodata { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .summary, .pill, .chg, .banner, td.nodata { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   /* ...and borders that still read correctly if backgrounds are dropped. */
-  header { border:2px solid var(--primary); }
   .chg.up, .pill.ok { border-color:var(--ink); }
   .chg.down, .pill.missing, .pill.stale, .pill.unknown { border-color:var(--down); }
   .kpi, .card, .summary, .banner { border-color:var(--muted); }
@@ -109,7 +139,34 @@ ul.days a { display:block; padding:12px 16px; text-decoration:none; font-weight:
 }
 """
 
-PAGE = Template("""<!doctype html>
+# On every page, in the top bar and the footer. Everything the suite reads today is synthetic (sample
+# files and simulated APIs); change these two when a real Goodwill export is read.
+DATA_LABEL = "Synthetic sample data"
+DATA_NOTE = "no real Goodwill file has been read"
+# The top bar: section, its landing page under reports/, the link text. A page's section is read from its title.
+NAV = [("", "index.html", "Reports"), ("pulse", "pulse/index.html", "Nightly pulse"),
+       ("scorecard", "scorecard/index.html", "Scorecards"), ("close", "close/index.html", "Month-end close")]
+SECTIONS = {"Nightly pulse": "pulse", "COO scorecard": "scorecard", "Month-end close": "close"}
+
+
+def topbar(title, root="../"):
+    """The bar every page shares. `root` is the way from the page up to reports/ ("" for the portal)."""
+    here = next((key for name, key in SECTIONS.items() if title.startswith(name)), "")
+    links = "".join(f'<a href="{root}{href}"{" class=\"here\"" if key == here else ""}>{text}</a>'
+                    for key, href, text in NAV)
+    return (f'<div class="topbar"><div class="topbar-in"><a class="brand" href="{root}index.html">Goodwill Michiana '
+            f'e-commerce reports</a><nav>{links}</nav><span class="datalabel">{DATA_LABEL}</span></div></div>')
+
+
+class _Page(Template):
+    """The page shell. `substitute(title=, css=, body=)` as before; the top bar and footer come with it."""
+
+    def substitute(self, *, title, css, body, root="../"):
+        return super().substitute(title=title, css=css, body=body, topbar=topbar(title, root),
+                                  label=DATA_LABEL, note=DATA_NOTE)
+
+
+PAGE = _Page("""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -118,9 +175,11 @@ PAGE = Template("""<!doctype html>
 <style>$css</style>
 </head>
 <body>
+$topbar
 <main>
 $body
 </main>
+<footer class="pagefoot">Goodwill Michiana e-commerce reports · <strong>$label</strong>: $note.</footer>
 </body>
 </html>
 """)
@@ -294,7 +353,7 @@ def render_day(p):
         day_long=long_date(p["business_date"]),
         prior_long=long_date(prior_date(p)) if prior_date(p) else "no prior day",
         tz=escape(p.get("timezone", "America/New_York")),
-        generated=escape(p.get("generated_at", "")),
+        generated=escape(stamp(p.get("generated_at", ""))),
         mock=" · <strong>mock data</strong>" if p.get("mock") else "",
         ent_revenue=money(ent["revenue_cents"]),
         ent_delta=delta_html(ed, same),
@@ -400,6 +459,15 @@ def render_index(dest):
         for i, d in enumerate(days))
     body = INDEX.substitute(count=len(days), items=items or '  <li class="muted">No reports yet.</li>')
     return PAGE.substitute(title="Nightly pulse", css=CSS, body=body)
+
+
+def stamp(iso):
+    """A `generated_at` timestamp as people write it: "Oct 4, 2026, 10:17 AM". Anything unreadable is kept as is."""
+    try:
+        t = datetime.fromisoformat(iso)
+    except (TypeError, ValueError):
+        return iso or ""
+    return f"{t:%b} {t.day}, {t.year}, {t.hour % 12 or 12}:{t:%M} {'AM' if t.hour < 12 else 'PM'}"
 
 
 def main(argv=None):

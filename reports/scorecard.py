@@ -16,50 +16,55 @@ from datetime import date
 from html import escape
 from pathlib import Path
 
-from reports.pulse import CSS, PAGE, money
+from reports.pulse import CSS, DATA_LABEL, DATA_NOTE, PAGE, money, stamp
 
 ROOT = Path(__file__).resolve().parent.parent
 KPI_DIR = ROOT / "out" / "kpi"
 DEST = ROOT / "reports" / "scorecard"
 
 SCORECARD_CSS = """
-.coverage { margin:12px 0 0; font-size:14px; }
-.simnote { margin:12px 0 0; font-size:13px; color:var(--muted); border:1px dashed var(--line); padding:8px 12px; border-radius:var(--radius); }
-main { max-width:1280px; }
-.areas { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin:16px 0 0; }
-.area h2 { font-size:13px; color:var(--primary); text-transform:uppercase; letter-spacing:.05em; margin:0 0 6px;
+:root { --page:1320px; }
+.coverage { margin:12px 0 0; }
+.areas { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin:16px 0 0; }
+/* The area that holds the two top-10 tables gets two columns, so the tables fit without scrolling. */
+@media (min-width:900px) { .area.wide { grid-column:span 2; } }
+.area h2 { font-size:14px; color:var(--primary); text-transform:uppercase; letter-spacing:.05em; margin:0 0 6px;
   border-bottom:2px solid var(--primary); padding-bottom:4px; }
-.tile { border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px; margin:0 0 8px; background:var(--card); }
-.tile .name { font-size:12px; font-weight:700; color:var(--ink); }
-.tile .value { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; margin:2px 0; }
-.tile .value .per { font-size:12px; font-weight:400; color:var(--muted); }
-.tile .pillar { font-size:10px; font-weight:600; color:var(--primary); text-transform:uppercase; letter-spacing:.05em; }
+.tile { border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px; margin:0 0 8px; background:var(--card);
+  box-shadow:var(--shadow); }
+.tile .name { font-size:14px; font-weight:700; color:var(--ink); line-height:1.3; }
+.tile .value { font-size:24px; font-weight:700; font-variant-numeric:tabular-nums; margin:2px 0; line-height:1.25; }
+.tile .value .per { font-size:13px; font-weight:400; color:var(--muted); white-space:nowrap; }
+.tile .pillar { font-size:11px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:.05em; }
 .parts { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:4px 0; }
 .part { border:1px solid var(--line); border-radius:var(--radius); padding:4px 6px; }
-.part .pname { font-size:11px; color:var(--muted); }
+.part .pname { font-size:12px; color:var(--muted); }
 .part .pval { font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; }
 .part .pval.none { font-size:13px; color:var(--muted); font-weight:600; }
-.part .pof { font-size:11px; color:var(--muted); }
+.part .pof { font-size:12px; color:var(--muted); }
 .links a + a { margin-left:10px; }
 .tile .value.none { font-size:15px; color:var(--muted); font-weight:600; }
-.tile .change { font-size:12px; margin:2px 0; }
-.tile .note { font-size:12px; color:var(--muted); margin:4px 0 0; }
+.tile .change { font-size:13px; margin:2px 0; }
+.tile .change .prior { display:block; margin-top:2px; }
+.tile .chg:not(.up):not(.down) { border-color:var(--line); }
+.tile .note { font-size:13px; color:var(--muted); margin:4px 0 0; }
 .tile.partial { border-left:4px solid var(--down); }
 .tile.no_data { background:var(--nodata); }
-.tile .meta { font-size:11px; color:var(--muted); margin-top:4px; }
-.sim { display:inline-block; font-size:10px; color:var(--muted); border:1px dashed var(--line); border-radius:var(--radius);
-  padding:1px 5px; margin-left:4px; vertical-align:middle; letter-spacing:.02em; }
+.tile .meta { font-size:12px; color:var(--muted); margin-top:4px; }
+/* The simulated badge: its own line under the KPI name, in the same dashed ink as the page's note. */
+.sim { display:block; width:fit-content; font-size:11px; font-weight:600; color:var(--ink); border:1px dashed var(--ink);
+  border-radius:var(--radius); padding:0 6px; margin:3px 0 2px; letter-spacing:.02em; }
 table.rank { min-width:0; width:100%; margin-top:4px; }
-table.rank th, table.rank td { padding:3px 4px; font-size:12px; }
+table.rank th, table.rank td { padding:3px 4px; font-size:13px; }
 table.rank th:nth-child(2), table.rank td:nth-child(2) { text-align:left; }
-details.defs { margin-top:20px; font-size:13px; color:var(--muted); }
+details.defs { margin-top:20px; font-size:14px; color:var(--muted); }
 details.defs dt { margin-top:6px; }
 @media print {
   @page { size:letter landscape; margin:0.35in; }
   body { font-size:8pt; }
-  header { padding:6px 10px; }
   header h1 { font-size:13pt; }
   header p { font-size:7.5pt; }
+  .area.wide { grid-column:auto; }
   .summary { font-size:9pt; padding:4px 8px; margin-top:6px; }
   .coverage, .simnote { font-size:7.5pt; margin-top:4px; padding:3px 6px; }
   .areas { grid-template-columns:repeat(5,1fr); gap:6px; margin-top:6px; }
@@ -76,7 +81,8 @@ details.defs dt { margin-top:6px; }
   .part .pval.none { font-size:8pt; }
   .links { display:none; }
   .tile .change, .tile .note, .tile .meta { font-size:6.5pt; margin-top:1px; }
-  .sim { font-size:6pt; padding:0 3px; }
+  .tile .change .prior { display:inline; }
+  .sim { display:inline-block; font-size:6pt; font-weight:400; padding:0 3px; margin:0 0 0 4px; vertical-align:middle; }
   table.rank th, table.rank td { font-size:6.5pt; padding:0 2px; line-height:1.25; }
   table.rank td:nth-child(2) { max-width:1.1in; overflow:hidden; text-overflow:ellipsis; }
   .gapnote { display:none; }
@@ -172,7 +178,7 @@ def tile(k, prior_label, sim_label, pillars=None):
             main = f'<div class="value">{escape(shown)}{per}</div>'
         prior = fmt(k["prior_value"], k["unit"])
         delta = delta_text(k)
-        change = (f'<div class="change">{delta}' + (f' <span class="muted">vs {escape(prior_label)}: {escape(prior)}</span>'
+        change = (f'<div class="change">{delta}' + (f' <span class="muted prior">vs {escape(prior_label)}: {escape(prior)}</span>'
                                                      if prior is not None else "") + "</div>") if (delta or prior) else ""
     note = f'<div class="note">{note_html(k["note"])}</div>' if k.get("note") else ""
     pillar = (pillars or {}).get(k.get("pillar"))
@@ -205,7 +211,8 @@ def render(kf, dest=DEST):
     pillars = {p["id"]: p["name"] for p in kf.get("pillars", [])}
     by_area = {a["id"]: [k for k in kf["kpis"] if k["area"] == a["id"]] for a in kf["areas"]}
     areas = "\n".join(
-        f'<section class="area"><h2>{escape(a["name"])}</h2>'
+        f'<section class="area{" wide" if any(k["kind"] == "ranking" for k in by_area[a["id"]]) else ""}">'
+        f'<h2>{escape(a["name"])}</h2>'
         + "".join(tile(k, prior["label"], sim_label, pillars) for k in by_area[a["id"]]) + "</section>"
         for a in kf["areas"])
     text, alert = headline(kf)
@@ -217,11 +224,12 @@ def render(kf, dest=DEST):
         coverage = (f'<div class="banner coverage"><strong>Data missing:</strong> {escape(gaps)}{more}. '
                     f'KPIs that use these days are marked partial.</div>')
     simulated = sum(k["simulated"] for k in kf["kpis"])
-    simnote = (f'<p class="simnote">{simulated} of {len(kf["kpis"])} KPIs use {escape(sim_label.lower())} '
-               f'(marked). {escape(kf["definitions"].get("simulated", ""))}</p>') if simulated else ""
+    data = f"<strong>{DATA_LABEL}:</strong> {DATA_NOTE}."
+    simnote = (f'<p class="simnote">{data} {simulated} of {len(kf["kpis"])} KPIs use {escape(sim_label.lower())} '
+               f'(marked). {escape(kf["definitions"].get("simulated", ""))}</p>') if simulated else f'<p class="simnote">{data}</p>'
     internal = kf.get("internal_data")
     if not internal:
-        simnote = '<p class="simnote">No internal data stored for this period: KPIs that need it show "No data".</p>'
+        simnote = f'<p class="simnote">{data} No internal data stored for this period: KPIs that need it show "No data".</p>'
     defs = "".join(f"<dt>{escape(k['name'])}</dt><dd>{escape(k['definition'])}</dd>" for k in kf["kpis"])
     top_defs = " ".join(escape(v) for v in kf["definitions"].values())
     files = "".join(f'<a href="{period["type"]}-{period["id"]}.{ext}">{label}</a>' for ext, label in
@@ -229,7 +237,7 @@ def render(kf, dest=DEST):
     downloads = f'<p class="links">Download: {files}</p>' if files else ""
     body = (f'<header><h1>COO scorecard: {escape(period["label"])}</h1>'
             f'<p>Goodwill Michiana e-commerce · {escape(period["start"])} to {escape(period["through"])} · '
-            f'compared with {escape(prior["label"])} · generated {escape(kf["generated_at"])}</p></header>'
+            f'compared with {escape(prior["label"])} · generated {escape(stamp(kf["generated_at"]))}</p></header>'
             f'<p class="summary{" alert" if alert else ""}">{escape(text)}</p>{coverage}{simnote}'
             f'<div class="areas">\n{areas}\n</div>'
             f'<section class="foot"><p>{top_defs}</p></section>'
@@ -238,12 +246,25 @@ def render(kf, dest=DEST):
     return PAGE.substitute(title=f"COO scorecard {period['id']}", css=CSS + SCORECARD_CSS, body=body)
 
 
+def _period_label(page):
+    """The period's name from the KPI file kept next to the page ("September 2026"); the file name if it is gone."""
+    try:
+        return json.loads(page.with_suffix(".json").read_text(encoding="utf-8"))["period"]["label"]
+    except (OSError, ValueError, KeyError):
+        return page.stem
+
+
 def render_index(dest):
     pages = sorted((f for f in dest.glob("*.html") if re.fullmatch(r"(day|week|month)-[\dW-]+", f.stem)),
                    key=lambda f: f.stem, reverse=True)
-    items = "\n".join(f'  <li><a href="{f.name}">{escape(f.stem)}</a></li>' for f in pages)
+    groups = ""
+    for kind, title in (("month", "Months"), ("week", "Weeks"), ("day", "Days")):
+        items = "\n".join(f'  <li><a href="{f.name}">{escape(_period_label(f))}</a></li>'
+                          for f in pages if f.stem.startswith(kind + "-"))
+        if items:
+            groups += f'<h2 class="sec">{title}</h2>\n<ul class="days">\n{items}\n</ul>\n'
     body = (f'<header><h1>COO scorecards</h1><p>Goodwill Michiana e-commerce · {len(pages)} page(s)</p></header>'
-            f'<ul class="days">\n{items or "<li>None yet</li>"}\n</ul><p class="nav"><a href="../index.html">Reports</a></p>')
+            f'{groups or "<ul class=\"days\"><li>None yet</li></ul>"}<p class="nav"><a href="../index.html">Reports</a></p>')
     return PAGE.substitute(title="COO scorecards", css=CSS + SCORECARD_CSS, body=body)
 
 

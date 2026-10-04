@@ -12,21 +12,22 @@ from datetime import date, datetime
 from html import escape, unescape
 from pathlib import Path
 
-from reports.pulse import CSS, PAGE
+from reports.pulse import CSS, DATA_LABEL, DATA_NOTE, PAGE, stamp
 
 ROOT = Path(__file__).resolve().parent.parent
 
 HUB_CSS = """
-.hub-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin:18px 0 0; }
+.hub-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr)); gap:14px; margin:18px 0 0; }
 .hub-card { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--primary);
-  border-radius:var(--radius); padding:16px 18px; }
+  border-radius:var(--radius); padding:16px 20px; box-shadow:var(--shadow); }
 .hub-card.alert { border-left-color:var(--down); }
 .hub-card.empty { border-left-color:var(--line); }
-.hub-card .label { color:var(--primary); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
-.hub-card h2 { font-size:19px; margin:4px 0 8px; }
+.hub-card .label { color:var(--primary); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+.hub-card h2 { font-size:22px; margin:2px 0 8px; }
 .hub-card h2 a { color:var(--ink); }
 .hub-card .headline { margin:0 0 10px; font-weight:600; }
-.hub-card .links, .hub-card .built { font-size:13px; color:var(--muted); margin:4px 0 0; }
+.hub-card .links, .hub-card .built { font-size:14px; color:var(--muted); margin:4px 0 0; }
+.hub-card .links { line-height:1.8; }
 @media print {
   @page { size:letter portrait; margin:0.5in; }
   .hub-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
@@ -67,9 +68,11 @@ SUITE = [
     {"title": "COO scorecard (monthly)", "what": "Goodwill's 15 KPIs in five areas, from the KPI file.",
      "folder": "scorecard", "pattern": r"month-\d{4}-\d{2}", "period": lambda s: _month(s[6:]),
      "extras": lambda s: [(f"{s}.csv", "KPI table (CSV)"), (f"{s}.pdf", "PDF"), (f"{s}.json", "KPI file"),
-                          (f"../monthly/{s[6:]}.csv", "Daily CSV")],
+                          (f"../monthly/{s[6:]}.csv", "Daily CSV"),
+                          (f"../monthly/index.html?month={s[6:]}", "Daily table", f"../monthly/{s[6:]}.json")],
      "archive": ("index.html", "All scorecards"),
      "switch": [("day", "Day"), ("week", "Week to date"), ("month", "Month to date")],
+     "previous": "Previous month",
      "build": "python -m recon.kpi --month 2026-09, then python -m reports.monthly --month 2026-09"},
     {"title": "Month-end close", "what": "Business Central import files, reconciliation and exceptions.",
      "folder": "close", "pattern": r"\d{4}-\d{2}", "period": _month,
@@ -102,40 +105,58 @@ def card(root, item):
     pages = sorted(f for f in folder.glob("*.html") if re.fullmatch(item["pattern"], f.stem)) if folder.is_dir() else []
     if not pages:
         return (f'<div class="hub-card empty"><div class="label">{item["title"]}</div>'
-                f'<h2>Not built yet</h2><p class="links">Build it with <code>{escape(item["build"])}</code></p></div>'), False
+                f'<h2>Not built yet</h2><p class="links">Build it with <code>{escape(item["build"])}</code></p></div>')
     latest = pages[-1]
     text, alert = headline(latest)
     href = f'{item["folder"]}/{latest.name}'
-    links = [f'<a href="{item["folder"]}/{name}">{label}</a>' for name, label in item["extras"](latest.stem)
-             if (folder / name).exists()]
+    # An extra is (file, label) or (link, label, the file that must exist for the link to work).
+    links = [f'<a href="{item["folder"]}/{name}">{label}</a>' for name, label, *needs in item["extras"](latest.stem)
+             if (folder / (needs[0] if needs else name)).exists()]
     if item["archive"] and (folder / item["archive"][0]).exists():
         links.append(f'<a href="{item["folder"]}/{item["archive"][0]}">{item["archive"][1]} ({len(pages)})</a>')
     elif len(pages) > 1:
         links.append("Earlier: " + ", ".join(f'<a href="{item["folder"]}/{p.name}">{escape(item["period"](p.stem))}</a>'
                                              for p in reversed(pages[:-1])))
+    if item.get("previous") and len(pages) > 1:
+        before = pages[-2]
+        links.insert(0, f'{item["previous"]}: <a href="{item["folder"]}/{before.name}">{escape(item["period"](before.stem))}</a>')
     if item.get("switch"):
         links.insert(0, "Period: " + " · ".join(_period_link(item, folder, kind, label) for kind, label in item["switch"]))
     built = datetime.fromtimestamp(latest.stat().st_mtime)
-    mock = "mock data" in latest.read_text(encoding="utf-8")
     return (f'<div class="hub-card{" alert" if alert else ""}"><div class="label">{item["title"]}</div>'
             f'<h2><a href="{href}">{escape(item["period"](latest.stem))}</a></h2>'
             f'<p class="headline">{escape(text)}</p>'
             f'<p class="links">{" · ".join(links)}</p>'
-            f'<p class="built">{escape(item["what"])} Built {built:%Y-%m-%d %H:%M}.</p></div>'), mock
+            f'<p class="built">{escape(item["what"])} Built {stamp(built.isoformat())}.</p></div>')
+
+
+def close_index(root):
+    """<root>/close/index.html, the months closed (newest first): where the top bar's "Month-end close" lands."""
+    folder = root / "close"
+    folder.mkdir(parents=True, exist_ok=True)
+    months = sorted((f.stem for f in folder.glob("*.html") if re.fullmatch(r"\d{4}-\d{2}", f.stem)), reverse=True)
+    items = "\n".join(f'  <li><a href="{m}.html">{escape(_month(m))}{" <span class=\"muted\">(latest)</span>" if i == 0 else ""}'
+                      f'</a></li>' for i, m in enumerate(months))
+    body = (f'<header><h1>Month-end close</h1><p>Goodwill Michiana e-commerce · {len(months)} month(s) · '
+            f'Business Central import files, not posted</p></header>'
+            f'<ul class="days">\n{items or '  <li><a class="muted">None yet</a></li>'}\n</ul>')
+    (folder / "index.html").write_text(PAGE.substitute(title="Month-end close", css=CSS, body=body), encoding="utf-8")
 
 
 def build(root=ROOT / "reports"):
-    """Write <root>/index.html and return its path."""
+    """Write <root>/index.html (and the close's list of months) and return the portal's path."""
     root = Path(root)
-    cards, mock = zip(*(card(root, item) for item in SUITE))
-    note = ("<p>Pages marked <strong>mock data</strong> are built from the synthetic sample exports; "
-            "KPIs marked SIMULATED use simulated internal data.</p>") if any(mock) else ""
-    body = (f'<header><h1>Goodwill Michiana e-commerce reports</h1>'
-            f'<p>Latest reports · updated {datetime.now():%Y-%m-%d %H:%M}</p></header>'
+    cards = [card(root, item) for item in SUITE]
+    close_index(root)
+    body = (f'<header><h1>Latest reports</h1>'
+            f'<p>Goodwill Michiana e-commerce · updated {stamp(datetime.now().isoformat())}</p></header>'
             f'<div class="hub-grid">\n' + "\n".join(cards) + '\n</div>'
-            f'<section class="foot">{note}<p>Red edge: the report flags missing data or partial totals.</p></section>')
+            f'<p class="simnote"><strong>{DATA_LABEL}.</strong> Every figure on these pages comes from synthetic sample '
+            f'files and simulated APIs: {DATA_NOTE}. KPIs marked "Simulated internal data" use a mock of Goodwill\'s '
+            f'internal systems. The month-end close writes Business Central import files: nothing is posted.</p>'
+            f'<section class="foot"><p>Red edge: the report flags missing data or partial totals.</p></section>')
     path = root / "index.html"
-    path.write_text(PAGE.substitute(title="E-commerce reports", css=CSS + HUB_CSS, body=body), encoding="utf-8")
+    path.write_text(PAGE.substitute(title="E-commerce reports", css=CSS + HUB_CSS, body=body, root=""), encoding="utf-8")
     return path
 
 
