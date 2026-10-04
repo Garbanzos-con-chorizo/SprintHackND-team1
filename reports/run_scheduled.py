@@ -8,7 +8,7 @@ For business date D (the day that just ended; the job runs on D+1 at 00:15 Easte
      scorecard page, and the month-end close: reconciliation from the month's raw inbox, the
      Business Central files (`bc_export`) and the close page.
   4. Emails to the active subscribers of each report built (reports/config/subscribers.csv).
-Each night is also loaded into the store (`engine.store load`), which the KPIs read. The first run
+Each night is also loaded into the store by run_nightly (V2.11), which the KPIs read. The first run
 seeds September: mock pulse history for the weekly page, and the real engine into the store.
 In production Windows Task Scheduler or cron starts this once a night; nothing here waits for a clock.
 
@@ -67,9 +67,7 @@ def night(day):
     sc = scenario_for(day)
     if sc:
         run_nightly.main(["--scenario", sc])
-        built["daily"] = day.isoformat()
-        print("    store: loading the night")
-        sh("engine.store", "load", "--in-dir", f"out/{sc}", "--date", day.isoformat())
+        built["daily"] = day.isoformat()  # run_nightly also loads the store and computes the KPIs (V2.11)
     elif (HISTORY / f"{day}.json").exists():
         p = json.loads((HISTORY / f"{day}.json").read_text(encoding="utf-8"))
         pulse.render(p, ROOT / "reports" / "pulse")
