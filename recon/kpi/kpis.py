@@ -2,6 +2,7 @@
 import math
 import re
 from dataclasses import dataclass, field
+from datetime import date
 
 from . import periods
 from .facts import LABELS, MARKETPLACES, total
@@ -284,14 +285,36 @@ def _asp(f, prev):
     return res
 
 
-def _boxes(sold=None, listed=None, opening=None):
+def _listed_in_period_share(f):
+    """Share of what sold in the window that had been listed inside it, or None if the store cannot tell.
+
+    The listing system knows each item's listing date. Its snapshot gives, per day, the units sold by
+    days since listing (`listing_to_sale_days`): a unit sold on day d after a days was listed on d - a,
+    so it belongs to the window when d - a is on or after the window's first day.
+    """
+    inside, everything = [], []
+    for day, ages in f.internal.daily("listing_to_sale_days").items():
+        if not all(re.fullmatch(r"\d+", age) for age in ages):
+            return None
+        reach = (date.fromisoformat(day) - f.win.start).days
+        everything += ages.values()
+        inside += [n for age, n in ages.items() if int(age) <= reach]
+    whole = math.fsum(everything)
+    return math.fsum(inside) / whole if whole > 0 else None
+
+
+def _boxes(sold=None, listed=None, opening=None, share=None):
     """Sell-through in two boxes: of what was listed in the period, and of what was left from earlier.
 
-    The data does not say which listing each sale came from, so the period's own listings are
-    taken to sell first: they explain at most `listed` of what sold, and the rest came from the
-    stock that was still active the night before.
+    With `share` (from the listing dates), that share of what sold goes to the period's own
+    listings. Without it the data does not say which listing each sale came from, and the
+    period's own listings are taken to sell first. Either way they cannot account for more
+    than was listed; the rest came from the stock that was still active the night before.
     """
-    mine = None if sold is None or listed is None else min(sold, listed)
+    if sold is None or listed is None:
+        mine = None
+    else:
+        mine = min(sold if share is None else round(sold * share), listed)
     older = None if mine is None else sold - mine
 
     def rate(part, available):
@@ -303,17 +326,21 @@ def _boxes(sold=None, listed=None, opening=None):
     ]
 
 
-def _boxes_note(boxes, sold, things):
+def _boxes_note(boxes, sold, things, by_dates):
     mine, older = boxes
     stock = (f"the {older['available']:,} left from earlier" if older["available"] is not None
              else "what was left from earlier (no stock count for the day before the period)")
+    if by_dates:
+        return (f"By listing date: {mine['sold']:,} of the {sold:,} {things} sold had been listed in the period "
+                f"({mine['available']:,} listed), {older['sold']:,} came from {stock}.")
     return (f"Assumes what was listed in the period sold first: {mine['sold']:,} of the {sold:,} {things} sold count "
             f"against the {mine['available']:,} listed in the period, {older['sold']:,} against {stock}.")
 
 
 def _sell_through(f, prev):
     res = Result(parts=_boxes(), inputs={"units_sold": f.units, "orders": f.files and f.files["orders"],
-                                         "units_listed": None, "opening_stock": f.opening_stock})
+                                         "units_listed": None, "opening_stock": f.opening_stock,
+                                         "split_basis": None})
     stop = _no_files(res, f)
     stop |= _no_internal(res, f, "listings_created")
     if stop:
@@ -325,8 +352,10 @@ def _sell_through(f, prev):
     else:
         res.basis = "units"
     sold = f.files["orders"] if f.units is None else f.units
-    res.parts = _boxes(sold, listed, f.opening_stock)
-    split = _boxes_note(res.parts, sold, "orders" if f.units is None else "units")
+    share = _listed_in_period_share(f)
+    res.inputs["split_basis"] = "period_first" if share is None else "listing_dates"
+    res.parts = _boxes(sold, listed, f.opening_stock, share)
+    split = _boxes_note(res.parts, sold, "orders" if f.units is None else "units", share is not None)
     res.note = f"{split} {res.note}" if res.note else split
     if listed <= 0:
         return _zero(res, "No listings were created in the period.")

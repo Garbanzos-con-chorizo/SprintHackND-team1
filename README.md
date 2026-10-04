@@ -12,13 +12,13 @@ Built at **SprintHack@ND, October 3-4 2026**, by three people with AI coding age
 | Part of the brief | Status | Try it |
 |---|---|---|
 | **Nightly pulse:** revenue and customers by marketplace (ShopGoodwill, Amazon, eBay, Other), then the e-commerce total | **Done**, runs end to end | [Nightly pulse](#1-the-nightly-pulse) |
-| **Monthly dashboard:** the 15-KPI scorecard (growth, profitability, productivity, inventory, engagement) | **Runs** on a synthetic month. Some KPIs need company data we don't have and use a **mock internal API**, labelled "Simulated internal data" | [A month](#2-a-month-and-its-scorecard) |
+| **Monthly dashboard:** the 15-KPI scorecard (growth, profitability, productivity, inventory, engagement) | **Runs** on a synthetic month, kept in a SQLite store night by night, with a **one-page PDF** and a **CSV for Excel / Power BI** attached to the monthly email draft. Some KPIs need company data we don't have and use a **mock internal API**, labelled "Simulated internal data" | [A month](#2-a-month-and-its-scorecard) |
 | **Month-end close to Business Central:** bank deposits matched to marketplace payouts, an exceptions list, a balanced journal file | **Runs** on a synthetic messy month and writes Business Central **import files** (CSV), not a live posting. It reads only the engine's files and the bank file, never an answer key | [Month-end close](#3-month-end-close-to-business-central) |
 
 ## Quick start
 Needs **Python 3.12 or newer**; the repo pins **3.13** (`.python-version`, and the Docker image). The engine alone also runs on 3.11, but the report pages and the PDF export need 3.12.
 ```bash
-pip install -r engine/requirements.txt          # openpyxl, tzdata, pytest
+pip install -r engine/requirements.txt          # openpyxl, tzdata, pytest  (or: uv venv; uv pip install -r engine/requirements.txt)
 python -m pytest engine recon reports -q        # every test, all three lanes
 ```
 Everything below writes to `out/`, `inbox/` and `reports/` (generated, git-ignored).
@@ -29,7 +29,7 @@ python -m reports.run_nightly --scenario gw_day_clean            # a normal nigh
 python -m reports.run_nightly --scenario gw_day_cashmonkey_missing   # a report never arrived
 python -m reports.run_nightly --scenario gw_day_duplicates       # the same report saved twice
 ```
-Each run checks the inbox, parses the reports, calculates, and writes a page (`reports/pulse/<date>.html`), an Excel-ready CSV and an email-ready copy. Add `--open` to open the page. `reports/index.html` links the pages. The scenarios are synthetic nights in `data/sample/`, each with an answer key the output is checked against.
+Each run checks the inbox, parses the reports, calculates, loads the night into the store (with the day's simulated internal data), updates the KPIs for the day, the week and the month to date, and writes a page (`reports/pulse/<date>.html`), an Excel-ready CSV and an email-ready copy. If the store or KPI step fails, the page is still written and the run says so. Add `--open` to open the page. `reports/index.html` links the pages. The scenarios are synthetic nights in `data/sample/`, each with an answer key the output is checked against.
 
 The same thing, step by step:
 ```bash
@@ -42,9 +42,12 @@ python -m recon.pulse --date 2026-10-02                 # out/ -> out/pulse/2026
 ```bash
 python -m engine.store backfill --inbox data/sample/clean_month/inbox --from 2026-09-01 --to 2026-09-30
 python -m recon.kpi --month 2026-09                     # the 15 KPIs -> out/kpi/month-2026-09.json
-python -m reports.monthly --month 2026-09               # the scorecard page and a KPI CSV
+python -m reports.monthly --month 2026-09               # the scorecard page -> reports/scorecard/month-2026-09.html
+python -m engine.export kpi-csv --kpi-file out/kpi/month-2026-09.json   # the same KPIs as one CSV for Excel / Power BI
+python -m engine.export pdf --kpi-file out/kpi/month-2026-09.json       # the page as a one-page PDF
+python -m engine.store status                           # which days are in the store, per marketplace
 ```
-About 15 seconds. On the sample month, 13 KPIs are complete, 1 is partial and 1 has no data, and the page says which.
+About 15 seconds. On the sample month, 13 KPIs are complete, 1 is partial and 1 has no data, and the page says which. Revenue matches the sample's answer key to the cent ($70,753.96). The page, the CSV and the PDF render the same KPI file, so they can't disagree. Both land next to the page in `reports/scorecard/`. (`--period month` instead of `--kpi-file` takes the newest month computed, which after a nightly run is the current month to date.) The PDF is printed by a browser already on the machine (Edge, Chrome or Chromium; `PDF_BROWSER` points to another one); without one, open the page and use Print, Save as PDF, as it's laid out for one landscape page. `python -m reports.run_scheduled --from 2026-09-30 --to 2026-10-04` plays five nights as the scheduler would, including the month end: scorecard, CSV, PDF, close and the email drafts in `out/outbox/`.
 
 ### 3. Month-end close to Business Central
 ```bash
@@ -59,7 +62,7 @@ The messy September has missing and duplicated files, malformed rows, refunds fr
 pip install -r requirements-server.txt          # fastapi, uvicorn (only for this step)
 python server.py                                # then open http://127.0.0.1:8000/
 ```
-A thin server that only serves `reports/`; it computes nothing, has no login and listens on localhost. Or as one image: `docker build -t goodwill-reports .` then `docker run --rm -p 127.0.0.1:8000:8000 goodwill-reports` (the image builds its pages from the synthetic samples; see [`docs/decisions/008-static-server-for-docker.md`](docs/decisions/008-static-server-for-docker.md)).
+A thin server that only serves `reports/`; it computes nothing, has no login and listens on localhost. Only pages, data files, CSVs and PDFs are served, never the code or `reports/config/`. Or as one image: `docker build -t goodwill-reports .` then `docker run --rm -p 127.0.0.1:8000:8000 goodwill-reports` (about 40 s to build; the image builds its pages from the synthetic samples and has no browser, so it has no PDF; see [`docs/decisions/008-static-server-for-docker.md`](docs/decisions/008-static-server-for-docker.md)).
 
 ## How it works
 ```
@@ -97,7 +100,7 @@ Files are the contract between the three parts (`docs/contracts/`), so each part
 ## Where things are
 | Folder | What | Owner |
 |---|---|---|
-| [`engine/`](engine/README.md) | Parsers, cleaning, the SQLite store, the internal-API mock, the provider simulators | Victor |
+| [`engine/`](engine/README.md) | Parsers, cleaning, the SQLite store, the internal-API mock, the provider simulators, the KPI exports (CSV, PDF) | Victor |
 | [`recon/`](recon/README.md) | The pulse calculation and the 15 KPIs | Dani |
 | `reports/` | The pages, CSV and email layouts, reconciliation, the Business Central export, the nightly run | Orlando |
 | `data/` | Synthetic sample inboxes, each with an answer key | Orlando |
@@ -115,4 +118,4 @@ Files are the contract between the three parts (`docs/contracts/`), so each part
 - [`CLAUDE.md`](CLAUDE.md): how the team and its AI agents work together.
 
 ## Sources and tools
-Python and its standard library (including SQLite); [`openpyxl`](https://openpyxl.readthedocs.io) to read Excel; `tzdata` for timezones on Windows; `pytest` for tests. Built with AI coding agents (Claude Code); we wrote the design and can explain every part.
+Python and its standard library (including SQLite); [`openpyxl`](https://openpyxl.readthedocs.io) to read Excel; `tzdata` for timezones on Windows; `pytest` for tests; [FastAPI](https://fastapi.tiangolo.com) and Uvicorn for the optional page server only; the machine's own Edge or Chrome (headless) to print the PDF; Docker for the optional image. Built with AI coding agents (Claude Code); we wrote the design and can explain every part.

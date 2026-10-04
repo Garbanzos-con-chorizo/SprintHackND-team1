@@ -28,6 +28,10 @@ SUBSCRIBERS = REPORTS / "config" / "subscribers.csv"
 OUTBOX = ROOT / "out" / "outbox"
 SENDER = "Goodwill Michiana E-commerce Reports <ecommerce-reports@example.org>"
 TYPES = ("Daily", "Weekly", "Monthly")
+# Fixed types for what we attach: mimetypes reads the Windows registry, where Excel maps .csv to
+# application/vnd.ms-excel, so the same email would differ from one PC to the next.
+CONTENT_TYPES = {".pdf": "application/pdf", ".csv": "text/csv", ".json": "application/json",
+                 ".html": "text/html"}
 SEND_TIME = (6, 0)  # Eastern; reports are built after midnight, mail goes out before the workday
 
 
@@ -158,7 +162,7 @@ def message(sub, report, sent):
         f'<div style="{EMAIL_FONT}font-size:12px;color:{E["muted"]};padding:0 0 8px;">{escape(for_line)}</div>'
         f'{report["html"]}</body></html>', subtype="html")
     for path in report["attachments"]:
-        ctype = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+        ctype = CONTENT_TYPES.get(path.suffix.lower()) or mimetypes.guess_type(path.name)[0] or "application/octet-stream"
         maintype, subtype = ctype.split("/")
         msg.add_attachment(path.read_bytes(), maintype=maintype, subtype=subtype, filename=path.name)
     return msg

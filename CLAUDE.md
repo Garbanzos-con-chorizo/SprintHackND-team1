@@ -17,7 +17,7 @@ Hackathon project, 3 humans, each driving their own AI agent(s) in parallel. The
   pip install -r requirements-server.txt && python server.py    # serve reports/ at http://127.0.0.1:8000
   ```
   No linter or formatter is configured. Everything in the samples and simulators is **synthetic**.
-- **Demo deadline:** submit by **4:00 PM Sunday Oct 4** (nothing pushed after that counts; the last submission wins). Team code freeze 3:00 PM (`docs/PLAN_PHASE_2_3.md`). Demo 4:30 PM, Pod B, Room 154: a recorded video in Google Slides. **Demo flow:** `docs/PROBLEM.md#demo`, `docs/pitch/`.
+- **Demo deadline:** submit by **4:00 PM Sunday Oct 4** (nothing pushed after that counts; the last submission wins). **Code freeze is 4:00 PM, the same moment** (decided 2026-10-04; `docs/PLAN_PHASE_2_3.md` still says 15:00, ignore that). Demo 4:30 PM, Pod B, Room 154: a recorded video in Google Slides. **Demo flow:** `docs/PROBLEM.md#demo`, `docs/pitch/`.
 
 ## Team and lanes
 Each person owns a **lane** = a set of directories. You edit freely inside your lane; anything outside it needs a claim or a contract change (below).
@@ -53,7 +53,7 @@ Shared ground (touch carefully): root config, `package.json`/lockfiles/dependenc
 - Each agent uses its own **git worktree/branch**, never the same working directory as another agent.
 - Flow: branch → commit often → `git pull --rebase origin main` → PR → teammate (or you, if blocked >10 min and CI-less) merges with squash. Use `.github/pull_request_template.md`.
 - Conflict in a file you don't own? Take the owner's version and message them; don't resolve by overwriting.
-- Last hour before demo: **feature freeze** — only bug fixes and demo polish, one designated integrator merges.
+- Code freeze is **4:00 PM Sunday**, the submission deadline: nothing pushed after that counts. In the last hour before it, **feature freeze** — only bug fixes and demo polish, one designated integrator merges.
 
 ## Where things live
 ```

@@ -40,6 +40,10 @@ class Internal:
         days = [total(dims) for dims in self._days.get(metric, {}).values()]
         return math.fsum(days) / len(days) if days else None
 
+    def daily(self, metric):
+        """{day: {dimension: value}} for the days that have the metric."""
+        return self._days.get(metric, {})
+
     def snapshot(self, metric):
         """(day, {dimension: value}) of the newest day with the metric, or (None, {})."""
         days = self._days.get(metric)

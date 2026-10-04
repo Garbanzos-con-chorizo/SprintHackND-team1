@@ -73,6 +73,13 @@ Open questions for Amanda are in `docs/OFFICE_HOURS.md` and `docs/office-hours-v
 | 4.8 | A **missing or empty source is shown as "no data", never as $0**. | A $0 would look like a real quiet day and hide a failed download. | decision |
 | 4.9 | **Cash Monkey customers are counted as distinct orders.** Its export is one line per unit, so if staff count its rows (as they do Upright's), a 3-unit order is 3 customers to them and 1 to us. | Slide 26 only says how Upright is counted. | **open question** (`docs/PHASE1_ALIGNMENT.md`) |
 
+## 4b. What the scorecard KPIs mean
+The open definitions of the 15 KPIs (growth against the prior period, what "unsold" means, who counts as an employee, what margin includes) are listed with their defaults in `docs/contracts/kpi.md`, "Open questions". One is a real assumption about the data:
+
+| # | Assumption | Why | Confidence |
+|---|---|---|---|
+| 4b.1 | **Sell-through's two boxes assume that what was listed in a period sells first.** "Listed in the period" is then the most the period's own listings can account for, and "Left from earlier" the least that came from older stock. | No export says which listing a sale came from. Goodwill's listing system knows each item's listing date; once the internal API gives sales by listing date (`listing_to_sale_days`, requested), the split is read instead of assumed. The page states which one was used. | assumption, replaced by data when the metric exists (`recon/kpi/kpis.py`, `_boxes`) |
+
 ## 5. How we clean the data
 | # | Assumption | Why | Confidence |
 |---|---|---|---|

@@ -1,4 +1,5 @@
 """V2.9: the scorecard page printed to a one-page PDF with a browser already on the machine."""
+import sys
 from pathlib import Path
 
 import pytest
@@ -51,3 +52,52 @@ def test_cli_pdf(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     assert export_main(["pdf", "--kpi-file", str(EXAMPLES / "kpi.sample.day.json"), "--dest", "out"]) == 0
     assert "(1 page)" in capsys.readouterr().out
+
+
+# --- robustness (Dani's report: "the browser wrote no PDF (exit 0)") with a fake browser -------------
+
+FAKE_BROWSER = '''
+import os, subprocess, sys, time
+args = sys.argv[1:]
+target = next(a.split("=", 1)[1] for a in args if a.startswith("--print-to-pdf="))
+mode = os.environ["FAKE_BROWSER"]
+pdf = b"%PDF-1.4 fake page /Type /Page %%EOF"
+if mode == "late":       # exits 0 at once while a child process writes the file a second later (Windows Edge)
+    subprocess.Popen([sys.executable, "-c", "import sys, time; time.sleep(1); open(sys.argv[1], 'wb').write(sys.argv[2].encode())",
+                      target, pdf.decode()])
+elif mode == "old_only" and "--headless" in args:  # only the old headless mode prints
+    open(target, "wb").write(pdf)
+elif mode == "never":
+    print("[1004:ERROR] printing blocked by policy", file=sys.stderr)
+'''
+
+
+@pytest.fixture
+def fake_browser(tmp_path, monkeypatch):
+    script = tmp_path / "fake_browser.py"
+    script.write_text(FAKE_BROWSER, encoding="utf-8")
+    page = tmp_path / "page.html"
+    page.write_text("<p>scorecard</p>", encoding="utf-8")
+
+    def run(mode, settle=5):
+        monkeypatch.setenv("FAKE_BROWSER", mode)
+        from engine.export.pdf import print_pdf
+        return print_pdf(page, tmp_path / "out.pdf", [sys.executable, str(script)], timeout=30, settle=settle)
+    return run
+
+
+def test_waits_for_a_pdf_written_after_the_browser_exits(fake_browser):
+    assert fake_browser("late").read_bytes().startswith(b"%PDF")
+
+
+def test_falls_back_to_the_old_headless_mode(fake_browser):
+    assert fake_browser("old_only").exists()
+
+
+def test_says_which_browser_and_what_each_try_did(fake_browser):
+    with pytest.raises(PdfError) as e:
+        fake_browser("never", settle=0.5)
+    text = str(e.value)
+    assert "fake_browser.py wrote no PDF" in text
+    assert "--headless=new: exit 0, no file" in text and "--headless: exit 0" in text
+    assert "printing blocked by policy" in text and "Save as PDF" in text
