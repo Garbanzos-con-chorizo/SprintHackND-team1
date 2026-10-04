@@ -97,6 +97,8 @@ def night(day):
                 built["monthly"] = month
                 # the same KPI file as one CSV for Excel / Power BI, next to the page (V2.8)
                 sh("engine.export", "kpi-csv", "--kpi-file", f"out/kpi/month-{month}.json")
+                # and printed to a one-page PDF for the email (V2.9); without a browser it says how to print by hand
+                sh("engine.export", "pdf", "--kpi-file", f"out/kpi/month-{month}.json")
         except SystemExit as e:
             print(f"    monthly: skipped ({e})")
         inbox = month_inbox(month)
