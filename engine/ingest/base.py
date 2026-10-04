@@ -7,6 +7,8 @@ messy part (reading, detecting the source, cleaning) is shared, so a new adapter
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
+from ..coverage import summarize
+
 
 @dataclass
 class NormalizedBatch:
@@ -28,7 +30,7 @@ class NormalizedBatch:
 
     def add_result(self, file: dict, result) -> None:
         """Take in what a parser returned for one file (a ParseResult)."""
-        self.files.append(file)
+        self.files.append(summarize(file, result))
         self.rows.extend(result.rows)
         self.warnings.extend(result.warnings)
         self.payouts.extend(result.payouts)

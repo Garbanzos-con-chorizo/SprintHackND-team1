@@ -6,6 +6,7 @@ reported as a warning, not skipped silently.
 """
 from pathlib import Path
 
+from ..coverage import read_manifest
 from ..parsers import Ambiguous, NoMatch, Parser, detect_source, load_sources
 from ..table import SUPPORTED_SUFFIXES, UnreadableFile, read_table
 from .base import DataIngestAdapter, NormalizedBatch
@@ -36,6 +37,7 @@ class EmailAttachmentAdapter(DataIngestAdapter):
     def fetch_and_normalize(self, business_date: str | None = None) -> NormalizedBatch:
         parsers = load_sources() if self.parsers is None else self.parsers
         batch = NormalizedBatch()
+        simulated = read_manifest(self.inbox)
         for path in self.files():
             try:
                 table = read_table(path)
@@ -43,6 +45,6 @@ class EmailAttachmentAdapter(DataIngestAdapter):
             except (UnreadableFile, NoMatch, Ambiguous) as exc:
                 batch.warnings.append(_file_warning(path.name, "unparseable", str(exc)))
                 continue
-            batch.add_result({"file": path.name, "source": parser.source, "feeds": list(parser.feeds)},
-                             parser.parse(table))
+            batch.add_result({"file": path.name, "source": parser.source, "feeds": list(parser.feeds),
+                              "simulated": path.name in simulated}, parser.parse(table))
         return batch

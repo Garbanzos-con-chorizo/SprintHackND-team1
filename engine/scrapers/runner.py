@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 
+from ..coverage import update_manifest
 from .base import NotConfigured, Scraper
 
 
@@ -19,6 +20,8 @@ def run_scrapers(scrapers: list[Scraper], business_date: str, inbox: Path, env: 
         if simulate:
             try:
                 files = scraper.simulate(business_date, inbox)
+                update_manifest(inbox, {p.name: {"source": scraper.source, "business_date": business_date}
+                                        for p in files})
                 log["sources"][scraper.source] = {"status": "ok", "files": [p.name for p in files],
                                                   "detail": "simulated: synthetic data, no real API", "simulated": True}
             except NotConfigured as exc:
@@ -36,6 +39,7 @@ def run_scrapers(scrapers: list[Scraper], business_date: str, inbox: Path, env: 
             continue
         try:
             files = scraper.fetch(business_date, inbox, env)
+            update_manifest(inbox, {}, real=[p.name for p in files])
             log["sources"][scraper.source] = {"status": "ok", "files": [p.name for p in files], "detail": ""}
         except NotConfigured as exc:
             log["sources"][scraper.source] = {"status": "not_configured", "files": [], "detail": str(exc)}
