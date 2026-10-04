@@ -5,7 +5,7 @@ doesn't fit this shape subclasses Parser directly and implements parse() itself.
 """
 import re
 
-from ..clean import buyer_key, parse_business_date, parse_money
+from ..clean import buyer_key, parse_business_date, parse_moment, parse_money
 from ..parsers import ParseResult, Parser
 from ..table import Table, norm
 
@@ -82,7 +82,10 @@ class OrderReportParser(Parser):
                     continue
             try:
                 date_text = table.get(row, *self.date) if any(norm(a) in table.norm_header for a in self.date) else ""
-                day = parse_business_date(date_text, assume_tz=self.date_assume_tz) if date_text or file_day is None else file_day
+                if date_text or file_day is None:
+                    day, occurred_at = parse_moment(date_text, assume_tz=self.date_assume_tz)
+                else:
+                    day, occurred_at = file_day, ""
             except ValueError as exc:
                 result.warn(table, row_no, "bad_date", str(exc))
                 continue
@@ -118,7 +121,7 @@ class OrderReportParser(Parser):
                 marketplace = self.channel_marketplaces.get(channel_name, self.marketplace)
             for typ, amount, event_fee, ship, hand, n in events:
                 key = (order_id, typ, day, marketplace)
-                if key in grouped:  # several lines of one order in one file: one row per order
+                if key in grouped:  # several lines of one order in one file: one row per order (first line's time)
                     g = grouped[key]
                     g["gross_cents"] += amount
                     g["fee_cents"] += event_fee
@@ -142,6 +145,7 @@ class OrderReportParser(Parser):
                     "shipping_cents": ship,
                     "handling_cents": hand,
                     "units": n,
+                    "occurred_at": occurred_at,
                 }
         for item in grouped.values():
             if item["units"] is None:

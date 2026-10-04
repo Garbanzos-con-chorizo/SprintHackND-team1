@@ -20,6 +20,9 @@ COLUMNS = [
     "shipping_cents",
     "handling_cents",
     "units",
+    # v0.5 (V3.1), appended: the moment of the sale or refund, ISO 8601 with its offset; empty when the
+    # export gives only a date or the day comes from the file name. The close rebuilds Pacific payout days.
+    "occurred_at",
 ]
 
 # Marketplaces the pulse expects data for each day (keys of source_status.json). `other` is not

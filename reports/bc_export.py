@@ -38,6 +38,8 @@ EXCEPTION_COLUMNS = ["Kind", "Source", "Amount", "Effect", "Detail"]
 # Effect of an exception: "open_balance" explains part of a source's open balance (money in transit,
 # activity not paid yet, a payout for activity missing from our files); "not_posted" = held out of BC;
 # "info" = nothing to post, someone should look.
+# Status of a source, worst first: MISMATCH (posted revenue differs from the input), UNEXPLAINED (money
+# nobody has accounted for), INCOMPLETE (accounted for, but a report is missing), OPEN, RECONCILED.
 
 
 def _mock_payload():
@@ -172,7 +174,11 @@ def build(payload, mapping):
         explained = sum(e.get("amount_cents", 0) for e in exceptions
                         if e.get("effect") == "open_balance" and e.get("source") == src)
         unexplained = open_balance - explained
-        status = ("MISMATCH" if diff else "UNEXPLAINED" if unexplained else "OPEN" if open_balance else "RECONCILED")
+        # INCOMPLETE: every cent is accounted for, but a payout paid for days no report covers, so the
+        # revenue posted for this source is known to be short until that report is downloaded.
+        incomplete = any(e.get("kind") == "payout_data_gap" and e.get("source") == src for e in exceptions)
+        status = ("MISMATCH" if diff else "UNEXPLAINED" if unexplained else "INCOMPLETE" if incomplete
+                  else "OPEN" if open_balance else "RECONCILED")
         control.append({"Source": m["Label"], "Path": m["Path"], "Revenue In": rev_in, "Revenue Posted": rev_posted,
                         "Difference": diff, "Receivable Posted": receivable, "Deposits": deposits,
                         "Open Balance": open_balance, "Explained": explained, "Unexplained": unexplained,
