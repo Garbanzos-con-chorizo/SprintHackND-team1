@@ -241,6 +241,7 @@ python -m recon.kpi --date 2026-10-03                       # a day with eBay mi
 - Growth year over year or against the prior period (KPI 2): prior period, labelled.
 - Does margin include labor and shipping (KPIs 3, 14): net margin includes both; category margin is revenue minus cost of goods only.
 - What "unsold" means (KPI 9): active listings older than 30 days; the threshold is one constant.
+- What sell-through is measured against (KPI 11): what was listed in the same period. Over a short period it can exceed 1 (on the real run, 2.03 for a Sunday on which little was listed and older listings sold; 0.78 for the month), so the page must not assume a ratio stays under 100%. The alternative, sold / (sold + still active), stays under 1 but shrinks with the period (2% for that day, 41% for the month).
 - Who counts as an e-commerce employee (KPIs 6, 12): full-time equivalents, as the internal API reports them.
 - Net shipping cost (KPI 3): carrier cost minus shipping charged to buyers, from the internal API until `transactions` carries shipping.
 
