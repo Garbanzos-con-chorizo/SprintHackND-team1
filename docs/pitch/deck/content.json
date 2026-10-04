@@ -1,0 +1,61 @@
+{
+ "title": "Goodwill Reporting Pitch",
+ "no_numbers": true,
+ "chrome": "Chorizo Power · Goodwill Michiana · synthetic data",
+ "sections": [
+  {"description": "Goodwill's problem in their words", "start": "problem"},
+  {"description": "What the program does", "start": "what"},
+  {"description": "Honesty and the ask", "start": "real"}
+ ],
+ "slides": [
+  {"id": "problem", "layout": "quotes",
+   "title": "Goodwill builds three reports *by hand*.",
+   "quotes": [
+    {"label": "Monthly", "text": "From manual reporting to management visibility. A monthly E-Commerce dashboard should balance growth, profitability, productivity, inventory management and customer engagement."},
+    {"label": "Nightly", "text": "A nightly report creates a daily pulse. Each nightly report should show both revenue and customer count by marketplace, followed by enterprise totals."},
+    {"label": "Month-end", "text": "From manual month-end close to Business Central integration. The current close combines portal downloads, emailed reports, bank activity, spreadsheet rules and manual Business Central entries."}],
+   "attribution": "Debie Coble, President and CEO, Goodwill Industries of Michiana",
+   "notes": "Goodwill's words, from Debie Coble's deck. Three reports, all by hand today. Their goal: automate the rules, not just the downloads."},
+
+  {"id": "what", "layout": "system", "surface": "dark",
+   "title": "One program builds *all three*.",
+   "in_label": "What Goodwill receives",
+   "inputs": ["Upright orders", "Cash Monkey orders", "Marketplace payouts", "Bank activity"],
+   "core": {"label": "Our program", "head": "Clean, check, calculate", "lines": ["Every night", "Again at month-end"]},
+   "out_label": "What people get",
+   "outputs": ["Nightly pulse", "Monthly scorecard", "Business Central files"],
+   "notes": "Left: the files Goodwill already gets. Middle: our program cleans, checks and calculates, every night and again at month-end. Right: the nightly pulse, the monthly scorecard, and the files Business Central imports."},
+
+  {"id": "demo", "layout": "statement", "surface": "accent",
+   "label": "Demo",
+   "title": "Here it is, *running*.",
+   "notes": "Switch to terminal and browser. Pulse, scorecard, close. One continuous recording."},
+
+  {"id": "checks", "layout": "points",
+   "title": "It *checks its own work*.",
+   "points": ["Matches totals to a separate answer key", "Writes a journal only if it balances", "Shows “no data,” not zero"],
+   "notes": "Expected totals are computed from the generated orders, apart from the program. The journal is refused unless it balances. A missing report shows as missing, not as zero."},
+
+  {"id": "gaps", "layout": "timeline", "surface": "dark",
+   "title": "A missing report gets *named*, not hidden.",
+   "steps": [
+    {"head": "A payout arrives", "text": "From the marketplace"},
+    {"head": "No report covers it", "text": "The close notices", "flag": true},
+    {"head": "It gets an owner", "text": "Listed, kept out of the journal"},
+    {"head": "Rerun", "text": "Drop in the report"}],
+   "notes": "Every payout is checked against the files for its own days, so errors can't cancel out in a total. If a report is missing, the close names it and gives it an owner. Drop the report in, run again, and it clears."},
+
+  {"id": "real", "layout": "duo",
+   "title": "What is real, and what we *simulated*.",
+   "left": {"label": "Built by us", "marked": true, "items": ["Cleaning and checks", "Pulse, scorecard, close", "Business Central files", "Pages and Docker image"]},
+   "right": {"label": "Simulated for now", "color": "muted", "items": ["All input data", "Provider APIs, mailbox", "Internal KPI data", "Posting to Business Central"]},
+   "notes": "Read it plainly. Nothing real from Goodwill has gone through it yet. The Business Central files are import files; nothing is posted."},
+
+  {"id": "ask", "layout": "closing",
+   "label": "The ask",
+   "title": "Send us one real month of files.",
+   "then_label": "Then we",
+   "then": ["Run your close on it", "Compare it with your workbook", "Fix what differs"],
+   "notes": "One real month and last month's allocation workbook. Then we compare our journal with theirs, line by line."}
+ ]
+}
