@@ -2,12 +2,14 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 03:45 · **Branch:** victor/pdf-export
+**Last updated:** 2026-10-04 04:00 · **Branch:** victor/shipping-units
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`
 **Decision 007:** agreed by all three, SQLite included (Orlando's amendment at 21:30, my response appended). Tripwire: if September isn't in the store by 10:00 Sunday, the KPIs read the files instead.
 
 ### Done
+- **V2.7 + Orlando's request** (branch `victor/shipping-units`): `transactions.csv` v0.4 has `shipping_cents`, `handling_cents` and `units` from every parser (Upright, Cash Monkey, eBay, Amazon, ShopGoodwill). Refund rows carry negative shipping and 0 units; an export with no quantity column leaves units empty, never 0. Store schema v2 adds the two money columns, and `init` migrates an existing database in place. **On `messy_month` the shipping and handling totals per marketplace equal the answer key to the cent**, which removes the reason for the STOPGAP in `reports/reconcile.py` (Orlando's lane; request sent). With units in the store, Dani's KPIs switch by themselves: average selling price per unit $28.67 (was $29.21 per order), sell-through by units 79.1%. 6 tests in `engine/tests/test_shipping_units.py`.
+- **Fixed (Dani's report):** `pytest` no longer touches the real `out/` and `reports/`. `run_nightly` writes through `OUT`/`REPORTS` and its tests redirect them; a test checks the real folders are untouched.
 - **V2.9 + V2.10** (branch `victor/pdf-export`): `python -m engine.export pdf (--kpi-file F | --period P) [--dest DIR]` re-renders Orlando's scorecard page from the KPI file and prints it with headless Edge, Chrome or Chromium (`PDF_BROWSER` overrides) to `reports/scorecard/<type>-<id>.pdf`, next to the page and the CSV. No new dependency; without a browser it says to use Print, Save as PDF. September: 1 page, about 2 s. `run_scheduled` writes the CSV and the PDF after the monthly scorecard, and the monthly email (`reports/email_gen.py`) attaches the PDF and CSV first. 8 tests in `engine/tests/test_export_pdf.py` (the four contract examples each print on exactly one page) and 1 in `reports/tests/test_email_exports.py`.
 - **V2.8** (branch `victor/kpi-csv`): `python -m engine.export kpi-csv (--kpi-file F | --period day|week|month) [--dest DIR]` writes `reports/scorecard/<type>-<id>.csv`, next to the scorecard page of the same name (for O2.6's download link). It's a long format: one row per KPI and one per category of the two top 10s, so Excel and Power BI need no reshaping. Money is in dollars, no data is blank (not 0), the simulated label is on every simulated row, and the period, area, pillar, status, note, prior value, change, source and definition are all there. It renders the KPI file and computes nothing. `run_scheduled` writes it after the monthly scorecard. 8 tests in `engine/tests/test_export_kpi_csv.py` (the four contract examples). On September from the store: 33 rows.
 - Also checked: a fresh copy of `main` with a new 3.13 venv runs backfill -> `recon.kpi` -> scorecard -> `run_nightly` in about 45 s with all suites passing, so Dani (or anyone) can run the full pipeline once `engine/requirements.txt` is installed.
@@ -29,7 +31,6 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 ### Next, in order (sizes S < 30 min, M 30-90 min)
 | ID | Task | Size | Target |
 |---|---|---|---|
-| V2.7 | `units`, plus Orlando's `shipping_cents` / `handling_cents` (for `reports/reconcile.py`), in the parsers and `transaction.md` | S-M | after CP1 |
 | V2.12 | August sample for growth | M | cut first |
 Then phase 3, with Orlando's `reports/bc_export.py` already on `main`.
 

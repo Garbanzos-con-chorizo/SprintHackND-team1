@@ -23,6 +23,8 @@ class Amazon(OrderReportParser):
     gross = ("item-price", "product sales", "Item subtotal")
     fees = ("selling fees", "referral fee", "fba fees", "other transaction fees")
     buyer = ("buyer-email", "buyer email")
+    shipping = ("shipping credits", "shipping-price")
+    units = ("quantity", "quantity-purchased")
     row_type = ("type", "transaction type")
     skip_types = ("transfer",)
     currency = ("currency",)

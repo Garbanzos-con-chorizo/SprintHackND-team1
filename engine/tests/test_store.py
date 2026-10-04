@@ -72,7 +72,7 @@ def test_init_creates_every_table_and_view_and_is_safe_to_repeat(tmp_path):
     names = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')")}
     assert names == {"transactions", "pulse_daily", "internal_daily", "runs", "warnings", "kpi_values",
                      "v_daily", "v_weekly", "v_monthly"}
-    assert c.execute("PRAGMA user_version").fetchone()[0] == 1
+    assert c.execute("PRAGMA user_version").fetchone()[0] == 2
     c.close()
 
 
