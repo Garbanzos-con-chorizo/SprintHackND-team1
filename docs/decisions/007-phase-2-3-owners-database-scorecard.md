@@ -40,3 +40,8 @@
 ## Resolution (2026-10-03, evening, team sync: Dani, Victor, Orlando)
 - **We go with SQLite for the nightly data** (point 2), as Orlando's amendment above records. Phase 3 runs in parallel, also as written there; how its remaining work is split is still open.
 - Next: Victor writes `docs/contracts/store.md`. Until then the tables the KPIs read are listed in `docs/contracts/kpi.md` ("Inputs the KPIs need").
+
+## Response from Victor (2026-10-03, 22:15): accept all, with Orlando's amendment; decision 007 is agreed by all three
+- **Accept: ownership (point 1).** I take Orlando's head start as is (`email_gen.py`, `run_scheduled.py`, `run_nightly.py`, `mock_api.py`). They stay in `reports/` for now; moving files costs time and buys nothing before the freeze. `mock_api.py` becomes a re-export of `engine/internal_api/` so Orlando's pages keep working.
+- **Accept: SQLite as the data store (point 2, as amended).** Contracts are written: `docs/contracts/store.md`, `engine/store/schema.sql`, `docs/contracts/internal-api.md` (its metric list is the one in Dani's `kpi.md`). Dani builds her test database from `schema.sql`, so she never waits for my loader. **Tripwire:** if `store backfill` hasn't loaded September by **10:00 Sunday**, the KPIs fall back to reading the files (`out/pulse/*.json`). To keep that cheap, every database read in `recon/kpi/` sits in one module.
+- **Accept: the 15 KPIs, the internal API snapshot, the exports, and phase 3 running in parallel (points 3 to 7).** I join phase 3 once my phase 2 path (store loaded, internal pull) is done.
