@@ -1,24 +1,31 @@
-"""Nightly run, end to end, with step-by-step logging (task P-O4).
+"""Nightly run, end to end, with step-by-step logging (task P-O4; store and KPI steps V2.11).
 
 Stand-in for a scheduler: it runs once when called. In production, Windows Task Scheduler
 or cron would call it after staff drop the day's exports into the inbox.
 
     python -m reports.run_nightly --scenario day_ebay_missing [--open] [--pace 0.5]
 
-Steps: check the inbox -> engine (parse, clean) -> pulse (calculate) -> render (HTML, CSV, email).
-Runs the real pipeline: `python -m engine run` (Victor) then `python -m recon.pulse` (Dani), each
-scenario in its own folder `out/<scenario>/`, emptied first, so one scenario's pulse files never
-serve as another's "prior day". --simulated is a fallback for a live demo if something breaks:
-it builds the pulse from the scenario's answer key instead, and the log says SIMULATED.
+Steps: check the inbox -> engine (parse, clean) -> pulse (calculate) -> store (load the night)
+-> internal API (snapshot into the store) -> KPIs (day, week to date, month to date)
+-> render (HTML, CSV, email).
+Runs the real pipeline: `python -m engine run` (Victor), `python -m recon.pulse` (Dani),
+`python -m engine.store load` and `python -m engine.internal_api pull` (Victor), `python -m recon.kpi`
+(Dani). Each scenario runs in its own folder `out/<scenario>/`, emptied first, so one scenario's pulse
+files never serve as another's "prior day"; the store (`ECOM_DB`, default out/store/ecom.db) keeps
+every night. A failure in the store, internal or KPI step is logged and the night goes on, because the
+pulse page doesn't depend on them; the command then exits 1. --simulated is a fallback for a live demo
+if something breaks: it builds the pulse from the scenario's answer key instead, skips the store and
+KPI steps (there are no transactions to store), and the log says SIMULATED.
 """
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
 import time
 import webbrowser
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from reports import hub, mock_pulse, pulse as renderer
@@ -29,11 +36,15 @@ SAMPLES = ROOT / "data" / "sample"
 # (Upright "paid_orders_*" for ShopGoodwill, Cash Monkey "orders2023-*" for eBay and Amazon).
 EXPECTED_SOURCES = {"shopgoodwill": ("shopgoodwill", "sg_", "paid_orders"), "ebay": ("ebay", "orders2023"),
                     "amazon": ("amazon", "orders2023")}
-# Real commands, used once the modules are merged (integration task I1).
 ENGINE_CMD = ["-m", "engine", "run", "--inbox", "{inbox}", "--out", "{out}", "--date", "{date}"]
 PULSE_CMD = ["-m", "recon.pulse", "--date", "{date}", "--in-dir", "{out}"]
+STORE_CMD = ["-m", "engine.store", "load", "--in-dir", "{out}", "--date", "{date}"]
+PULL_CMD = ["-m", "engine.internal_api", "pull", "--date", "{date}"]
+KPI_CMDS = [["-m", "recon.kpi", "--date", "{date}"],
+            ["-m", "recon.kpi", "--week", "{week}", "--through", "{date}"],
+            ["-m", "recon.kpi", "--month", "{month}", "--through", "{date}"]]
 
-STEPS = 4
+STEPS = 7
 PACE = 0.0
 
 
@@ -43,13 +54,17 @@ def log(msg, step=None):
     time.sleep(PACE)
 
 
-def run(cmd, **fmt):
+def run(cmd, fatal=True, **fmt):
+    """Run one pipeline command. A fatal step stops the night; a non-fatal one returns False."""
     args = [sys.executable] + [a.format(**fmt) for a in cmd]
     result = subprocess.run(args, cwd=ROOT, capture_output=True, text=True)
     for line in (result.stdout + result.stderr).strip().splitlines():
         print(f"            | {line}")
     if result.returncode:
-        raise SystemExit(f"step failed: {' '.join(args[1:])} (exit {result.returncode})")
+        if fatal:
+            raise SystemExit(f"step failed: {' '.join(args[1:])} (exit {result.returncode})")
+        print(f"            FAILED: {' '.join(args[1:])} (exit {result.returncode}); the night goes on")
+    return result.returncode == 0
 
 
 def check_inbox(inbox):
@@ -113,17 +128,41 @@ def main(argv=None):
     if dq:
         print("            data quality: " + ", ".join(f"{n} {k} rows" for k, n in dq.items()))
 
-    log("Render: dashboard page, CSV, email copy", 4)
+    failed = [] if args.simulated else store_and_kpis(out, day)
+    if args.simulated:
+        log("Store, internal API, KPIs: SKIPPED (simulated pulse; no transactions to store)", 4)
+
+    log("Render: dashboard page, CSV, email copy", 7)
     paths = renderer.render(p, ROOT / "reports" / "pulse")
     for path in paths:
         print(f"            {path.relative_to(ROOT).as_posix()}")
     print(f"            {hub.build().relative_to(ROOT).as_posix()} (portal)")
 
     print(f"\n   {renderer.summary_line(p)}\n")
-    log(f"Done in {time.perf_counter() - started:.1f}s")
+    log(f"Done in {time.perf_counter() - started:.1f}s"
+        + (f"; FAILED: {', '.join(failed)} (the pulse page is up to date, the KPIs may not be)" if failed else ""))
     if args.open:
         webbrowser.open(paths[0].resolve().as_uri())
+    return 1 if failed else 0
+
+
+def store_and_kpis(out, day):
+    """Steps 4 to 6: load the night into the store, pull the internal snapshot, compute the KPIs.
+    Returns the names of the steps that failed."""
+    failed = []
+    log(f"Store: load the night into the database ({os.environ.get('ECOM_DB') or 'out/store/ecom.db'})", 4)
+    if not run(STORE_CMD, fatal=False, out=out, date=day):
+        return ["store load", "internal pull", "KPIs"]  # nothing new to pull or compute from
+    log("Internal API: labor, listings, costs, categories -> store (SIMULATED internal data)", 5)
+    if not run(PULL_CMD, fatal=False, date=day):
+        failed.append("internal pull")
+    iso = date.fromisoformat(day).isocalendar()
+    log("KPIs: the 15 scorecard KPIs for the day, the week to date and the month to date -> out/kpi/", 6)
+    for cmd in KPI_CMDS:
+        if not run(cmd, fatal=False, date=day, week=f"{iso.year}-W{iso.week:02d}", month=day[:7]):
+            failed.append("KPIs " + cmd[3].lstrip("-"))
+    return failed
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
