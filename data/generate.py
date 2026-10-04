@@ -796,6 +796,54 @@ def tidy_month(events):
     return key
 
 
+def settled_month(events):
+    """The settled month for the close: a month where nothing is still owed to Goodwill at month end, so a
+    complete close reads `RECONCILED` for every marketplace, not `OPEN`. It is the same September, cut to
+    the activity whose payout has already reached the bank by Sep 30: eBay through Sep 27, Amazon's first
+    settlement (Sep 1-14), ShopGoodwill through Sep 27. The reports still cover the whole month (the
+    remaining days are quiet). One report was never downloaded, Upright's Sep 7, so ShopGoodwill reads
+    `INCOMPLETE` until `late/` (that one file) is added. Synthetic, and a cut chosen to settle: a real
+    month end always has money in transit (see `tidy_month`)."""
+    rng = random.Random(SEED + 5)  # own stream: leaves every other scenario byte-identical
+    payouts = [p for p in payout_schedule(events) if p["deposit"] <= SEP30 and p["events"]]
+    events = [e for p in payouts for e in p["events"]]
+    payouts = payout_schedule(events)
+    payouts = [p for p in payouts if p["deposit"] <= SEP30 and p["events"]]
+
+    name = "settled_month"
+    inbox = OUT / name / "inbox"
+    inbox.mkdir(parents=True)
+    skipped = date(2026, 9, 7)
+    exported = month_downloads(
+        inbox, events, payouts, rng,
+        ebay_ranges=((date(2026, 9, 1), date(2026, 9, 7), ""), (date(2026, 9, 8), date(2026, 9, 14), ""),
+                     (date(2026, 9, 15), date(2026, 9, 21), ""), (date(2026, 9, 22), date(2026, 9, 30), "")),
+        amazon_ranges=((SEP1, SEP30),), upright_skip={skipped})
+    deposits = write_bank(inbox / "bank_activity_2026-09.csv", payouts, unexplained=False)
+    (OUT / name / "periodic").mkdir()
+    write_periodic(OUT / name / "periodic" / "shopgoodwill_periodic_2026-09.csv", payouts)
+
+    late = OUT / name / "late"
+    late.mkdir()
+    orders = [e for e in events if e.source == "shopgoodwill" and isinstance(e, Order)
+              and e.placed.astimezone(PT).date() == skipped]
+    write_upright(late / f"paid_orders_{skipped:%m-%d-%Y}_{skipped:%m-%d-%Y}.xlsx", orders)
+
+    missing = {"kind": "missing_file", "detail": "Upright paid orders for Sep 7 (Pacific) never downloaded; "
+                                                 "ShopGoodwill payout SGW-0913 is larger than the files show"}
+    not_modeled = ("Cash Monkey, Goodwill Books, payout fees and reserves, chargebacks; the August payouts that "
+                   "settle in early September are not in the bank file. The month is cut to settled activity, "
+                   "which no real month end is")
+    key = close_key(name, exported, payouts, deposits, exceptions=[missing], not_modeled=not_modeled)
+    key["mess"] = "One report not downloaded (Upright, Sep 7); add late/ and every source reads RECONCILED"
+    (OUT / name / "expected.json").write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
+    after = dict(exported, shopgoodwill=sorted(exported["shopgoodwill"] + orders, key=when))
+    key = close_key(f"{name}_after_late", after, payouts, deposits, exceptions=[], not_modeled=not_modeled)
+    key["mess"] = f"{name} once the Sep 7 Upright report is in the inbox: nothing is missing and nothing is open"
+    (OUT / name / "expected_after_late.json").write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
+    return key
+
+
 def goodwill_scenario(name, business_date, events, skip=(), upright_twice=False, note=""):
     """Nightly inbox as Goodwill receives it: Upright (ShopGoodwill) + Cash Monkey (eBay, Amazon), .xlsx.
 
@@ -866,6 +914,7 @@ def main():
     ]
     keys.append(messy_month(events))
     keys.append(tidy_month(events))
+    keys.append(settled_month(events))
     for k in keys:
         bd = k["business_date"]
         if bd:

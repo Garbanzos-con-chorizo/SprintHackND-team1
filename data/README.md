@@ -117,3 +117,13 @@ The two reports the messy inbox never downloaded, found later. They sit beside `
 | `late/paid_orders_09-07-2026_09-07-2026.xlsx` | Upright "Paid orders" for September 7 (Pacific): the day payout `SGW-0913` paid for and no file held. |
 | `late/amazon_daterange_2026-09-21_2026-09-22.csv` | Amazon Date Range report for September 21-22 (Pacific): the two days settlement `AMZN-0928` paid for and no file held. |
 | `expected_after_late.json` | The answer key of the month once both are in the inbox, from the same generated events: no payout has a data gap, and the two `missing_file` exceptions are gone. The rest of the mess stays (the duplicate file, the overlapping download, the two broken rows, the two refunds of August orders, the unmatched deposit). `expected.json` is not touched. |
+
+## Settled month (`settled_month`, for the demo that ends on RECONCILED)
+The same September cut to the activity whose payout has already reached the bank by Sep 30 (eBay through Sep 27, Amazon's first settlement Sep 1-14, ShopGoodwill through Sep 27), so nothing is in transit and nothing is earned-but-unpaid. The reports still cover the whole month. **Synthetic, and a cut chosen to settle: a real month end always has money in transit** (see `tidy_month`, which ends `OPEN`).
+
+One report was never downloaded: Upright's Sep 7. `late/` holds that single file.
+```
+python -m reports.close --month 2026-09 --inbox data/sample/settled_month/inbox --inbox data/sample/settled_month/periodic --inbox out/sim/2026-09
+python -m reports.close --month 2026-09 --inbox data/sample/settled_month/inbox --inbox data/sample/settled_month/periodic --inbox out/sim/2026-09 --inbox data/sample/settled_month/late
+```
+First run: `eBay RECONCILED; Amazon RECONCILED; ShopGoodwill INCOMPLETE; Goodwill Books RECONCILED`. Second run (or the file picker on the close page with the late file): all four `RECONCILED`. `out/sim/2026-09` is the simulated sources (`python -m engine fetch --simulate --close-month 2026-09 --inbox out/sim/2026-09 --out out/sim_fetch`). `expected.json` and `expected_after_late.json` are the answer keys; `reports/tests/test_close_settled_month.py` runs both closes. Every other sample is byte-identical to before.
