@@ -21,7 +21,7 @@ Checked 2026-10-03 against slides 19-31 of the SprintHack deck (`innovationsprin
 | 9 | Manual download steps (21-25, 27-30) | Automated by Amanda's assumed API and emailed Excel; the engine reads the attachment. The API clients are stubs, and `python -m engine fetch --simulate` demos all four providers (Upright, Cash Monkey, Amazon, eBay) with synthetic reports. Cash Monkey's report form has a **"Scheduled Report"** option (slide 30), so it may need no API at all. | **Aligned by assumption**, disclose |
 | 10 | Day boundary | Eastern midnight to midnight. Upright's form defaults to Pacific (slide 24) and Cash Monkey is UTC (slide 30); both are converted per source. 9 PM Pacific is midnight Eastern, so the cutoff Amanda gave lines up. | **Aligned** |
 | 11 | When the report is produced | The slides' own evidence: the report form is set to **9/30** (slide 23) and the Cash Monkey file is stamped **20261001-132256** (slide 30). So today staff pull the previous day's data the **next day, around 1:22 PM** (the zone of that stamp is not stated). Our run is just after midnight Eastern (decision 004), earlier than today. | **Better than today, but not what staff do now**; run time still to confirm |
-| 12 | "Revenue for the day" (31) | Not defined on the slide. Staff total the `Subtotal` **and** `Shipping` columns separately (slide 26, row 130). We report merchandise revenue (`Subtotal`), net of refunds, with fees separate, and **do not report shipping at all** yet. Orlando has asked for `shipping_cents` and `handling_cents` columns (request in `docs/members/victor.md`, 22:15). | **Open** (revenue definition, Q5); the columns are requested, not built |
+| 12 | "Revenue for the day" (31) | Not defined on the slide. Staff total the `Subtotal` **and** `Shipping` columns separately (slide 26, row 130). We report merchandise revenue (`Subtotal`), net of refunds, with fees separate, and **the pulse does not show shipping**. The engine now outputs `shipping_cents` and `handling_cents` per row (`transaction.md` v0.4), and the month-end close uses them. | **Open** (revenue definition, Q5); shipping is in the data, not on the pulse page |
 | 13 | Total is **e-commerce** only (31) | Brick and mortar is out of scope (meeting); the enterprise total is the e-commerce total. | **Aligned** |
 | 14 | A missing download | Not on the slides. We show "No data", never $0, and leave the source out of the total. | Our own safeguard |
 
@@ -34,7 +34,7 @@ Checked 2026-10-03 against slides 19-31 of the SprintHack deck (`innovationsprin
 |---|---|---|
 | Rename the labels to "Other e-commerce channels" and "Total e-commerce" (row 3) | Orlando (`reports/pulse.py`) | S |
 | Always show the Other row, with a dash when empty (row 4) | Orlando, and Dani's `pulse.md` wording ("may show a dash or hide") | S |
-| Add `shipping_cents` and `handling_cents` to `transactions.csv` (row 12; Orlando's request) and decide whether the pulse shows them | Victor (engine), then Dani | S-M |
+| ~~Add `shipping_cents` and `handling_cents` to `transactions.csv`~~ **Done** (v0.4). Decide whether the pulse page shows them, once Amanda answers the revenue question | Dani and Orlando | S |
 | Mention in the pitch that adding a marketplace needs a contract change (row 5) | Orlando | S |
 
 ## Questions for Amanda (added to `docs/office-hours-victor.md`)

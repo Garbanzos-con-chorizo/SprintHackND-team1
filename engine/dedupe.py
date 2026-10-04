@@ -5,7 +5,7 @@ file order) is kept. A dropped copy is logged as a `duplicate` warning; if its a
 the kept row the warning says so, because that is a conflict a person should look at, not a harmless
 re-download.
 """
-_COMPARED = ("gross_cents", "fee_cents", "business_date", "customer_id")
+_COMPARED = ("gross_cents", "fee_cents", "shipping_cents", "handling_cents", "business_date", "customer_id")
 
 
 def dedupe_rows(rows: list[dict]) -> tuple[list[dict], list[dict]]:

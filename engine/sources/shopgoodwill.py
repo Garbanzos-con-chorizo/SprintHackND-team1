@@ -25,5 +25,7 @@ class ShopGoodwill(OrderReportParser):
     date = ("Close Date", "Paid date", "Closing date", "Date sold", "Order date", "Date")
     gross = ("Winning bid", "Final price", "Item total", "Item price", "Amount")
     buyer = ("Buyer ID", "Bidder", "Winner", "Buyer")
+    shipping = ("Shipping",)
+    handling = ("Handling Fee", "Handling")
     refund_amount = ("Refund amount", "Refunded")
     currency = ("Currency",)

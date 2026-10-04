@@ -1,7 +1,7 @@
 # Contract: canonical transaction, phase 1 (task 0.1)
 
 - **Owner:** Victor (`engine/`). **Consumers:** Dani (pulse calculation), Orlando (pulse rendering, and later the dashboard).
-- **Status:** agreed (v0.3). In use by `recon/` (pulse) and `reports/`; the engine implements it.
+- **Status:** agreed (v0.4). In use by `recon/` (pulse) and `reports/`; the engine implements it.
 - **Scope:** phase 1 only, the nightly pulse. Phase 3 (close) adds columns later (`fee`/`payout`/`bank` types, `net_cents`, `memo`, GL fields). Adding columns is not a breaking change: consumers ignore columns they don't know.
 
 ## What this contract does
@@ -29,6 +29,8 @@ CSV, UTF-8 (no BOM), header row, RFC 4180 quoting, `\n` line endings. One row pe
 | `customer_basis` | enum | yes | `buyer` if `customer_id` is set, else `order` (count distinct `order_id`). Lets the report label the metric (P-V2). |
 | `gross_cents` | integer | yes | USD cents, signed. `sale` positive, `refund` negative. Excludes shipping and tax. |
 | `fee_cents` | integer | yes | Marketplace fee in USD cents, positive = cost to us. 0 if the source doesn't report one. Reported separately; never subtracted from `gross_cents`. |
+| `shipping_cents` | integer | yes | What the buyer was **charged for shipping**, in USD cents, exactly as the report writes it. **Not part of `gross_cents`.** Positive on a `sale` row, **negative on a `refund` row** (the shipping given back). 0 when the report has no shipping column. eBay's "Shipping and handling" is one amount and is reported here in full. |
+| `handling_cents` | integer | yes | What the buyer was **charged for handling**, same rules as `shipping_cents`. Only ShopGoodwill (Upright's `Handling`) has it; 0 elsewhere. |
 | `source_file` | string | yes | Input filename. |
 | `source_row` | integer | yes | 1-based data row in that file. |
 
@@ -100,7 +102,11 @@ Until the engine runs, Dani and Orlando code against `examples/transactions.samp
 - **`source` values in use:** `upright`, `cashmonkey`, `shopgoodwill`, `amazon`, `ebay`. `marketplace` is what the pulse groups by; a Cash Monkey file carries `amazon`, `ebay` and `other` rows.
 - **`source_status.json` is keyed by marketplace** (see its section above).
 
+## Shipping and handling (v0.4)
+Added at Orlando's request (the month-end close needs what each marketplace owes, which is revenue plus shipping and handling, less fees). **Non-breaking:** the two columns come right after `fee_cents`, so a reader that takes the first ten columns by position is unaffected, and a reader that ignores columns it doesn't know is unaffected. Several lines of one order are summed, like the other amounts. The pulse does not show them; they only feed the close. Sources: eBay `Shipping and handling`; Amazon `shipping credits`; Upright `Shipping Charged` and `Handling`; ShopGoodwill (older export) `Shipping` and `Handling Fee`; Cash Monkey `Shipping`, which it pro-rates per unit so an order's lines add up to what was charged.
+
 ## Changelog
+- v0.4: `shipping_cents` and `handling_cents` added after `fee_cents` (see above).
 - v0.3: status agreed; rules above written down; sources and `source_status.json` keyed by marketplace; Upright and Cash Monkey added.
 - draft v0.2: narrowed to phase 1; added cleaning rules; dropped close-only columns and sources.
 - draft v0.1: initial (superseded).

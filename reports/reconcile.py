@@ -10,8 +10,9 @@ Reads one month's inbox and writes the close payload `reports.bc_export` takes
   - exceptions: unmatched deposits, payouts in transit, days no report covers (from the file names),
     refunds of orders sold before the month, rows the engine rejected or de-duplicated, and whatever
     open balance is left ("not yet paid out"), accepted only if it fits the source's payout cycle.
-STOPGAP: the engine output has no shipping or handling yet, so those two numbers per source are read
-from the sample's answer key when one is present, and the payload says so.
+Shipping and handling come from the engine's `shipping_cents` and `handling_cents` columns
+(`docs/contracts/transaction.md` v0.4). Only if an older engine output lacks those columns does this fall
+back to the sample's answer key (a STOPGAP), and the payload says so.
 
     python -m reports.reconcile --inbox data/sample/messy_month/inbox --month 2026-09
     python -m reports.bc_export --payload out/close/2026-09/close_payload_2026-09.json
@@ -161,11 +162,16 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
         for r in mine:
             revenue_by_day[src][r["business_date"]] += int(r["gross_cents"])
         k = key_totals.get(src, {})
+        if all("shipping_cents" in r and "handling_cents" in r for r in mine):
+            shipping = sum(int(r["shipping_cents"] or 0) for r in mine)
+            handling = sum(int(r["handling_cents"] or 0) for r in mine)
+        else:  # an older engine output without the columns: use the answer key and say so
+            shipping, handling = k.get("shipping_cents", 0), k.get("handling_cents", 0)
+            if k:
+                stopgaps.append(f"{src}: shipping and handling from the answer key (engine output has no such columns)")
         sources[src] = {"sales_cents": sales, "refunds_cents": refunds,
                         "fees_cents": sum(int(r["fee_cents"]) for r in mine),
-                        "shipping_cents": k.get("shipping_cents", 0), "handling_cents": k.get("handling_cents", 0)}
-        if k:
-            stopgaps.append(f"{src}: shipping and handling from the answer key (engine output has no such columns yet)")
+                        "shipping_cents": shipping, "handling_cents": handling}
 
     payload_deposits = []
     for d in deposits:

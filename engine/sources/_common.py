@@ -17,6 +17,10 @@ class OrderReportParser(Parser):
     gross: tuple[str, ...] = ()          # merchandise amount, excluding shipping and tax
     fees: tuple[str, ...] = ()           # every fee column found is summed; stored as a positive cost
     buyer: tuple[str, ...] = ()
+    # What the buyer was charged for shipping and for handling, as the report writes it (first column found).
+    # Reported separately and never part of `gross_cents`. Sale rows are positive, refund rows negative.
+    shipping: tuple[str, ...] = ()
+    handling: tuple[str, ...] = ()
     refund_amount: tuple[str, ...] = ()  # a column holding the refunded amount, if the report has one
     row_type: tuple[str, ...] = ()       # a column saying what the row is (e.g. Order / Refund)
     refund_words: tuple[str, ...] = ("refund", "return", "reversal")
@@ -81,6 +85,9 @@ class OrderReportParser(Parser):
                 gross = parse_money(table.get(row, *self.gross))
                 fee = sum(abs(parse_money(v)) for v in (table.get(row, f) for f in self.fees) if v)
                 refunded = parse_money(table.get(row, *self.refund_amount)) if self.refund_amount and table.get(row, *self.refund_amount) else 0
+                ship_text, hand_text = table.get(row, *self.shipping), table.get(row, *self.handling)
+                shipping = abs(parse_money(ship_text)) if ship_text else 0
+                handling = abs(parse_money(hand_text)) if hand_text else 0
             except ValueError as exc:
                 result.warn(table, row_no, "bad_amount", str(exc))
                 continue
@@ -88,11 +95,12 @@ class OrderReportParser(Parser):
             is_refund_row = any(w in kind_text for w in self.refund_words) or gross < 0
             events = []
             if is_refund_row:
-                events.append(("refund", -abs(gross), 0))   # refunds are always negative; fees stay on the sale
+                # refunds are always negative, and so is the shipping and handling given back; fees stay on the sale
+                events.append(("refund", -abs(gross), 0, -shipping, -handling))
             else:
-                events.append(("sale", gross, fee))
+                events.append(("sale", gross, fee, shipping, handling))
             if refunded:
-                events.append(("refund", -abs(refunded), 0))
+                events.append(("refund", -abs(refunded), 0, 0, 0))   # a refund column carries no shipping detail
 
             buyer = table.get(row, *self.buyer)
             marketplace = self.marketplace
@@ -101,11 +109,13 @@ class OrderReportParser(Parser):
                 if self.strict_channels and channel_name not in self.channel_marketplaces:
                     continue
                 marketplace = self.channel_marketplaces.get(channel_name, self.marketplace)
-            for typ, amount, event_fee in events:
+            for typ, amount, event_fee, event_ship, event_hand in events:
                 key = (order_id, typ, day, marketplace)
                 if key in grouped:  # several lines of one order in one file: one row per order
                     grouped[key]["gross_cents"] += amount
                     grouped[key]["fee_cents"] += event_fee
+                    grouped[key]["shipping_cents"] += event_ship
+                    grouped[key]["handling_cents"] += event_hand
                     continue
                 grouped[key] = {
                     "txn_id": f"{self.source}:{order_id}:{typ}",
@@ -118,6 +128,8 @@ class OrderReportParser(Parser):
                     "customer_basis": "buyer" if buyer and not self.customers_are_orders else "order",
                     "gross_cents": amount,
                     "fee_cents": event_fee,
+                    "shipping_cents": event_ship,
+                    "handling_cents": event_hand,
                     "source_file": table.name,
                     "source_row": row_no,
                 }

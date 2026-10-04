@@ -13,6 +13,8 @@ COLUMNS = [
     "customer_basis",
     "gross_cents",
     "fee_cents",
+    "shipping_cents",
+    "handling_cents",
     "source_file",
     "source_row",
 ]

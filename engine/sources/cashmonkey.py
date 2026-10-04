@@ -23,6 +23,7 @@ class CashMonkey(OrderReportParser):
     date = ("Order Date (UTC)", "Order Date")
     gross = ("Item Price",)
     fees = ("Marketplace Fees", "Market Fees")
+    shipping = ("Shipping", "Shipping Price")   # pro-rated per unit by Cash Monkey, so the lines of an order sum to the total
     currency = ("Currency",)
     channel = ("Channel",)
     channel_marketplaces = {"amazon mf": "amazon", "amazon": "amazon", "ebay": "ebay", "goodwillbooks": "other"}
