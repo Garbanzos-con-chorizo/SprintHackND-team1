@@ -22,7 +22,8 @@ SRC = ROOT / "out" / "close"
 DEST = ROOT / "reports" / "close"
 FILES = [("general_journal", "General Journal lines"), ("ar_invoice", "AR invoice lines"),
          ("control_totals", "Control totals"), ("exceptions", "Exceptions")]
-STATUS_CLASS = {"RECONCILED": "ok", "OPEN": "stale", "UNEXPLAINED": "missing", "MISMATCH": "missing"}
+STATUS_CLASS = {"RECONCILED": "ok", "OPEN": "stale", "INCOMPLETE": "missing", "UNEXPLAINED": "missing",
+                "MISMATCH": "missing"}
 
 CLOSE_CSS = """
 main { max-width:1100px; }
@@ -55,7 +56,7 @@ def money(c):
 
 
 def headline(control, journal_docs, exceptions):
-    bad = [r for r in control if r["Status"] in ("UNEXPLAINED", "MISMATCH")]
+    bad = [r for r in control if r["Status"] in ("INCOMPLETE", "UNEXPLAINED", "MISMATCH")]
     parts = [f"{journal_docs} journal documents, all balanced to 0.00"]
     parts.append(", ".join(f"{r['Source']} {r['Status']}" + (f" ({money(cents(r['Unexplained']))})" if r["Status"] == "UNEXPLAINED" else "")
                            for r in control))
@@ -97,7 +98,9 @@ def render(month, folder):
             f'<h2 class="sec">Exceptions to work</h2><div class="card"><table><thead><tr><th>Kind</th><th>Source</th><th>Amount</th>'
             f'<th>Effect</th><th>Detail</th></tr></thead><tbody>\n{exc_rows}\n</tbody></table></div>'
             f'<section class="foot"><p>OPEN: money still in transit or not paid out yet, fully explained by the exceptions marked '
-            f'"open balance". UNEXPLAINED: money nobody has accounted for; resolve before posting. Positive amounts are debits.</p></section>'
+            f'"open balance". INCOMPLETE: every cent is accounted for, but a payout paid for days no report covers; download '
+            f'that report and run the close again. UNEXPLAINED: money nobody has accounted for; resolve before posting. '
+            f'Positive amounts are debits.</p></section>'
             f'<p class="nav"><a href="../index.html">Reports</a></p>')
     return PAGE.substitute(title=f"Month-end close {month}", css=CSS + CLOSE_CSS, body=body)
 
