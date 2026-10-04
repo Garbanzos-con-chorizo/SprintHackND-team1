@@ -2,7 +2,7 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 10:40 EDT · **Branch:** d/shipping-cost (D3.5 and D3.13); everything else of mine is on `main`
+**Last updated:** 2026-10-04 10:30 EDT · **Branch:** d/shipping-cost (D3.5 and D3.13); everything else of mine is on `main`
 
 ## Phase 3 (now): plan `docs/PLAN_PHASE_3.md`, decision 009 (accepted by Victor)
 My tasks are D3.1 to D3.14 in section 3 of the plan. **All fourteen are done**; D3.5 and D3.13 are in this branch, the rest on `main`. Victor's side (V3.1 to V3.10) is on `main` too, so **all nine of Goodwill's month-end sources reach the close**: five from sample files we generated, four from his simulated APIs, each labelled on the page.
@@ -15,7 +15,7 @@ My tasks are D3.1 to D3.14 in section 3 of the plan. **All fourteen are done**; 
   python -m reports.close --month 2026-09 --inbox data/sample/messy_month/inbox --inbox data/sample/messy_month/periodic --inbox out/sim/2026-09 --inbox data/sample/messy_month/late
   ```
   `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04` does the fetch and the close on the 1st by itself (Victor's V3.4).
-- **What works** (run 10:20 to 10:35 on this branch; `python -m pytest engine recon reports -q`: 463 passed, 1 skipped):
+- **What works** (run 10:15 to 10:28 on this branch; `python -m pytest engine recon reports -q`: 463 passed, 1 skipped):
   - **Tidy month:** 44 files from 3 inboxes; 65 journal lines in 28 documents, each 0.00; one invoice of 3 lines; eBay, Amazon and ShopGoodwill `OPEN`, Goodwill Books `RECONCILED`, each `unexplained 0.00`; 7 exceptions (three payouts in transit, three "not yet paid out", one jewelry item with no supplier).
   - **Messy month:** the journal still balances; Amazon `INCOMPLETE` (`payout_data_gap -743.10` for September 21-22); ShopGoodwill `INCOMPLETE` (`-1875.64` for September 7); the $412.37 deposit held out; 17 exceptions, each with an owner and an action.
   - **Messy month plus `late/`:** 47 files from 4 inboxes; all three marketplaces `OPEN`; 13 exceptions.

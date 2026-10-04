@@ -1,6 +1,6 @@
 # Demo script: the month-end close (D3.11)
 
-Written by Dani's agent for whoever records (Orlando); last updated 2026-10-04 10:40 EDT, after the simulated sources, the shipping cost and Goodwill Books landed. Target: **about 65 seconds** inside the three-minute video (`docs/pitch/presentation_guide.md`, section 3). Three runs of **one command**, on the real pipeline: Victor's engine reads the files, Dani's rules match the money, the export writes the Business Central files. Every step below was run on the branch that carries this file; the numbers are from those runs.
+Written by Dani's agent for whoever records (Orlando); last updated 2026-10-04 10:30 EDT, after the simulated sources, the shipping cost and Goodwill Books landed. Target: **about 65 seconds** inside the three-minute video (`docs/pitch/presentation_guide.md`, section 3). Three runs of **one command**, on the real pipeline: Victor's engine reads the files, Dani's rules match the money, the export writes the Business Central files. Every step below was run on the branch that carries this file; the numbers are from those runs.
 
 **Everything is synthetic.** The sample files are generated (`data/generate.py`), four of Goodwill's nine sources come from simulated APIs (`engine fetch --simulate`), the account numbers are placeholders, and nothing is posted to Business Central. The page says so in its first lines; say it once out loud too.
 
