@@ -55,6 +55,9 @@ def store_status(conn: sqlite3.Connection, start: str, end: str) -> dict:
                     if loaded[day].get(mk, ("unknown",))[0] != "ok"]
             if gaps:
                 partial[day] = gaps
+    internal = dict(conn.execute(
+        "SELECT business_date, group_concat(DISTINCT source) FROM internal_daily "
+        "WHERE business_date BETWEEN ? AND ? GROUP BY business_date", (start, end)).fetchall())
     last_run = conn.execute("SELECT run_id, command, business_date, finished_at, result, message FROM runs "
                             "ORDER BY started_at DESC, rowid DESC LIMIT 1").fetchone()
     return {
@@ -64,6 +67,8 @@ def store_status(conn: sqlite3.Connection, start: str, end: str) -> dict:
         "partial": partial,
         "not_loaded": [d for d in days if d not in loaded],
         "marketplaces": marketplaces,
+        "internal": {"days": len(internal), "missing": [d for d in days if d not in internal],
+                     "sources": sorted({s for v in internal.values() for s in v.split(",")})},
         "last_run": dict(zip(("run_id", "command", "business_date", "finished_at", "result", "message"),
                              last_run)) if last_run else None,
     }
@@ -81,6 +86,11 @@ def format_status(s: dict) -> str:
         lines.append("  partial: " + "; ".join(f"{d} ({', '.join(g)})" for d, g in s["partial"].items()))
     if s["not_loaded"]:
         lines.append("  not loaded: " + compress(s["not_loaded"]))
+    i = s["internal"]
+    lines.append(f"  internal API snapshot: {i['days']} of {s['days_expected']} days"
+                 + (f" (source {', '.join(i['sources'])}" + (": simulated)" if "mock" in i["sources"] else ")")
+                    if i["sources"] else "")
+                 + (f"; missing: {compress(i['missing'])}" if i["missing"] and i["days"] else ""))
     if s["last_run"]:
         r = s["last_run"]
         lines.append(f"  last run: {r['command']} {r['business_date'] or ''} {r['result']} at {r['finished_at']}"

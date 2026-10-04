@@ -2,12 +2,14 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 00:45 · **Branch:** victor/internal-api
+**Last updated:** 2026-10-04 01:15 · **Branch:** victor/internal-pull
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`
 **Decision 007:** agreed by all three, SQLite included (Orlando's amendment at 21:30, my response appended). Tripwire: if September isn't in the store by 10:00 Sunday, the KPIs read the files instead.
 
 ### Done
+- **V2.6** (branch `victor/internal-pull`): `python -m engine.internal_api pull (--date D | --from D1 --to D2)` writes the snapshot into `internal_daily` (same rules as load: delete then insert, a failed pull changes nothing). `store backfill` now pulls each day after loading it, and `store status` shows internal coverage. 7 tests in `engine/tests/test_internal_pull.py`.
+- **Checkpoint 1 data side ready:** `python -m engine.store backfill --inbox data/sample/clean_month/inbox --from 2026-09-01 --to 2026-09-30` gives 30 of 30 days complete, the internal snapshot on 30 of 30 days (1,890 rows, 10 metrics, simulated), and category sales equal to revenue on every day. About 12 s.
 - **V2.5** (branch `victor/internal-api`): `engine/internal_api/` with `MockInternalApi` (seeded per metric and date; category sales split from the day's pulse revenue so they add up to it exactly), `HttpInternalApi` (`INTERNAL_API=http`, `INTERNAL_API_URL`), `make_client`, and `snapshot_rows(api, day)`, which gives the 10 metrics of `internal-api.md` as `internal_daily` rows (63 a day). 13 tests in `engine/tests/test_internal_api.py`, including the HTTP client against a local stand-in server. Rough September KPIs on the mock + real revenue: $51.93 per labor hour, 23% net margin, median 6 days donation to listing, 45% unsold over 30 days, 78% sell-through. `reports/mock_api.py` stays until D2.11 (Orlando's pages still use it; different shape).
 - **V2.3 + V2.4** (branch `victor/store-status-backfill`): `python -m engine.store status [--month M]` and `python -m engine.store backfill --inbox DIR --from D1 --to D2 [--out out]`. Backfill reads the inbox once and writes each day through the same `engine.cli.write_day` that `engine run` uses (tested: identical files), so **September loads in about 6 s** (was 41 s day by day). 8 tests in `engine/tests/test_store_backfill.py`.
 - **Checked by hand, all of September:** `clean_month`: 30 of 30 days complete, 90 of 90 marketplace-days equal to the answer key, month revenue 7,075,396 cents = key. `messy_month`: month revenue 6,850,986 cents = key; `status` flags the 3 days with a stale file (Sep 7 ShopGoodwill, Sep 21-22 Amazon). The answer key writes 0 for those; the store keeps NULL, as `pulse.md` says. **The 10:00 tripwire is met.**
@@ -22,7 +24,6 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 ### Next, in order (sizes S < 30 min, M 30-90 min)
 | ID | Task | Size | Target |
 |---|---|---|---|
-| V2.6 | `python -m engine.internal_api pull --date D`: `snapshot_rows` into `internal_daily` (delete-then-insert per date); called by `store backfill` after each load | S | 11:00 checkpoint 1 |
 | V2.11 | `run_nightly`: add store load, internal pull, kpi | S | after CP1 |
 | V2.8 | `export kpi-csv` from the KPI file (against Dani's sample file) | S | |
 | V2.9 | `export pdf`: headless Edge prints Orlando's scorecard page (needs O2.4); goes to Orlando if late | M | |
@@ -88,6 +89,7 @@ uv pip install -r engine/requirements.txt
 ```
 Then:
 ```
+python -m engine.internal_api pull --date 2026-09-14
 python -m engine run [--inbox inbox] [--out out] [--date YYYY-MM-DD]
 python -m pytest engine -q
 ```

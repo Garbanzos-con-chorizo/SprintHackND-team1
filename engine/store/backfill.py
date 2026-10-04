@@ -2,8 +2,8 @@
 
 The inbox is read once (the engine output holds every row it found, whatever the date), then
 for each day the engine's files are written for that date, Dani's pulse command runs on them,
-and the day is loaded. A day that fails is reported and skipped; the others still load.
-The internal API pull joins each day here once it exists (V2.6).
+the day is loaded, and the internal API snapshot for that day is pulled into the store.
+A day that fails is reported and skipped; the others still load.
 """
 import sqlite3
 import subprocess
@@ -12,6 +12,7 @@ from pathlib import Path
 
 from ..cli import write_day
 from ..ingest import EmailAttachmentAdapter, ingest
+from ..internal_api.pull import PullError, pull_day
 from .load import LoadError, load_day
 from .status import days_between
 
@@ -30,6 +31,11 @@ def backfill(conn: sqlite3.Connection, inbox: Path, out: Path, start: str, end: 
             result = {"date": day, "result": "ok", "message": "", **load_day(conn, out, day)}
         except (LoadError, PulseError, OSError) as e:
             result = {"date": day, "result": "failed", "message": str(e)}
+        else:
+            try:
+                result["internal_rows"] = pull_day(conn, day)["rows"]
+            except PullError as e:  # the day's load stays; only the snapshot is missing
+                result.update(result="failed", message=f"loaded, but the internal API pull failed: {e}")
         results.append(result)
         if on_day:
             on_day(result)
