@@ -10,8 +10,9 @@ Reads one month's inbox and writes the close payload `reports.bc_export` takes
   - exceptions: unmatched deposits, payouts in transit, days no report covers (from the file names),
     refunds of orders sold before the month, rows the engine rejected or de-duplicated, and whatever
     open balance is left ("not yet paid out"), accepted only if it fits the source's payout cycle.
-STOPGAP: the engine output has no shipping or handling yet, so those two numbers per source are read
-from the sample's answer key when one is present, and the payload says so.
+Everything here comes from the engine's files and the bank file; nothing is read from an answer key.
+Shipping and handling are the engine's `shipping_cents` and `handling_cents` columns
+(`docs/contracts/transaction.md` v0.4).
 
     python -m reports.reconcile --inbox data/sample/messy_month/inbox --month 2026-09
     python -m reports.bc_export --payload out/close/2026-09/close_payload_2026-09.json
@@ -142,6 +143,8 @@ def match_deposits(deposits, payouts, window_days=WINDOW_DAYS):
 # ---------------------------------------------------------------- payload
 
 def build(inbox, month, mapping, engine_out, answer_key=None):
+    """`answer_key` is accepted so older callers keep working; it is no longer read (shipping and handling
+    now come from the engine's files)."""
     y, m = map(int, month.split("-"))
     first, last = date(y, m, 1), date(y, m, calendar.monthrange(y, m)[1])
     in_month = lambda iso: first.isoformat() <= iso <= last.isoformat()
@@ -149,8 +152,7 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
     deposits, payouts = match_deposits(read_bank(inbox, mapping), read_payouts(inbox))
     exceptions, stopgaps = [], []
 
-    # Month totals per source from the engine (marketplace column), shipping/handling stopgap.
-    key_totals = (answer_key or {}).get("close", {}).get("marketplace_totals_from_files", {})
+    # Month totals per source from the engine (marketplace column).
     sources, revenue_by_day = {}, defaultdict(lambda: defaultdict(int))
     for src in mapping:
         mine = [r for r in rows if r["marketplace"] == src and in_month(r["business_date"])]
@@ -160,12 +162,10 @@ def build(inbox, month, mapping, engine_out, answer_key=None):
         refunds = -sum(int(r["gross_cents"]) for r in mine if r["type"] == "refund")
         for r in mine:
             revenue_by_day[src][r["business_date"]] += int(r["gross_cents"])
-        k = key_totals.get(src, {})
         sources[src] = {"sales_cents": sales, "refunds_cents": refunds,
                         "fees_cents": sum(int(r["fee_cents"]) for r in mine),
-                        "shipping_cents": k.get("shipping_cents", 0), "handling_cents": k.get("handling_cents", 0)}
-        if k:
-            stopgaps.append(f"{src}: shipping and handling from the answer key (engine output has no such columns yet)")
+                        "shipping_cents": sum(int(r["shipping_cents"]) for r in mine),
+                        "handling_cents": sum(int(r["handling_cents"]) for r in mine)}
 
     payload_deposits = []
     for d in deposits:
@@ -265,10 +265,8 @@ def main(argv=None):
     ap.add_argument("--out", default=str(OUT))
     args = ap.parse_args(argv)
     inbox = Path(args.inbox)
-    key_path = inbox.parent / "expected.json"
-    key = json.loads(key_path.read_text(encoding="utf-8")) if key_path.exists() else None
     folder = Path(args.out) / args.month
-    payload = build(inbox, args.month, load_mapping(), folder / "engine", key)
+    payload = build(inbox, args.month, load_mapping(), folder / "engine")
     path = folder / f"close_payload_{args.month}.json"
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     matched = sum(bool(d["matches"]) for d in payload["deposits"])
