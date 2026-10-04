@@ -19,8 +19,9 @@ Our brief is broad and we have no real Goodwill files yet, so we decided early t
 | 2.2 | The nightly **eBay, Amazon and "Other"** numbers come from **one Cash Monkey "Orders Report"** filtered by channel (Amazon-MF, eBay, Goodwillbooks). | Slide 30 shows that form, "orders across all market places", with exactly those channels. | inferred from the deck, **needs Amanda to confirm** |
 | 2.3 | The seller-portal reports on slide 38 (eBay "Listing sales", Amazon "Payments summary", ShopGoodwill periodic, Goodwill Books statement) are **month-end inputs, not nightly**. | They are listed under the monthly close and are described as monthly or periodic. | inferred |
 | 2.4 | **"Other" = Goodwillbooks only.** | It is the only other channel on the Cash Monkey form. | default |
-| 2.5 | Upright rows have a **payment date** (header spelling guessed: `Payment Date`), written **without a timezone in Pacific time**, the report form's default (slide 7: "Use America/Los_Angeles for SGW"). We convert it to Eastern. If the file has no date column, the day falls back to the file name. | The form's timezone field defaults to Pacific; exported timestamps carry no zone. If staff pick another zone, it is one line in `engine/sources/upright.py`. | guess |
+| 2.5 | Upright rows have a **payment date** (header spelling guessed: `Payment Date`), written **without a timezone in Pacific time**, the report form's default (slide 24: "Use America/Los_Angeles for SGW"). We convert it to Eastern. If the file has no date column, the day falls back to the file name. | The form's timezone field defaults to Pacific; exported timestamps carry no zone. If staff pick another zone, it is one line in `engine/sources/upright.py`. | guess |
 | 2.6 | **Other Upright channels are ignored**: only `Shopgoodwill` rows count. | If Upright also carried eBay or Amazon orders, counting them would double-count against Cash Monkey. | decision |
+| 2.7 | **Cash Monkey's eBay and Amazon rows are the whole eBay and Amazon story for the pulse.** Slide 27's caption says "Books: open Cash Monkey reports", so it may cover only the Goodwill Books operation, and Upright's "eBay listings" and "Goodwillfinds" channels are ignored (2.6). If either carries sales Cash Monkey does not, the pulse **under-counts** eBay and Other. | We can't tell from the deck. Counting Upright's other channels risks double counting against Cash Monkey; ignoring them risks under-counting. | **risk, to confirm with Amanda** (`docs/PHASE1_ALIGNMENT.md`) |
 
 ## 2b. Goodwill's internal data (the internal API)
 | # | Assumption | Why | Confidence |
@@ -33,7 +34,7 @@ Our brief is broad and we have no real Goodwill files yet, so we decided early t
 ## 3. How the data gets in (acquisition)
 | # | Assumption | Why | Confidence |
 |---|---|---|---|
-| 3.1 | **An API exists for Upright** and can generate the Paid orders report; Upright then **emails it as an Excel attachment**. | Amanda told us to assume this (office hours, 2026-10-03). The deck agrees: "generate; email delivery" (slides 7-9, 38). | **from Amanda** (`docs/decisions/005-api-email-delivery-and-run-schedule.md`) |
+| 3.1 | **An API exists for Upright** and can generate the Paid orders report; Upright then **emails it as an Excel attachment**. | Amanda told us to assume this (office hours, 2026-10-03). The deck agrees: "generate; email delivery" (slides 24-25, 38). | **from Amanda** (`docs/decisions/005-api-email-delivery-and-run-schedule.md`) |
 | 3.2 | We **do not know the API's endpoint or fields**, so the Upright client is a stub that says "not configured" instead of pretending. | Nobody has seen the API. Inventing it would be an overclaim. | decision |
 | 3.3 | **The email arrives in a folder**: an email rule saves the attachment into `inbox/`, and the engine reads the folder. Reading a live mailbox is a later step that needs Goodwill's approval. | Lightest bridge, no mailbox credentials needed, same code path as a manual drop. | decision |
 | 3.4 | **Excel is read directly; there is no Excel-to-CSV step.** The engine writes the CSV (and two JSON files) that Dani's code reads. | A converter would add a step with no benefit. Amanda said converting to CSV is fine if CSV isn't offered, so we remain compatible either way. | decision |
@@ -52,6 +53,7 @@ Our brief is broad and we have no real Goodwill files yet, so we decided early t
 | 3b.3 | **Default run time: just after 12:00 AM ET, reporting the day that just ended.** | The e-commerce day is final only after midnight ET, and B&M's 10 PM report is already in by then. Matches decision 004. Alternatives (1 PM next-day, or 10 PM partial day) are in decision 005. | assumption, **time to confirm with Amanda** |
 | 3b.4 | **`python -m reports.run_nightly` stands in for the scheduler** and runs once when called. Windows Task Scheduler or cron would call it in production. We disclose it as a stand-in, not a real scheduler. | A real scheduler needs a server we don't have for the demo. | decision (Orlando's O4) |
 | 3b.5 | **No "late" state.** A report that hasn't arrived by the run is shown as "no data" and the next run picks it up. | With one run a day, "late" and "missing" look the same to the reader, and a separate state would need a contract change for no gain. | decision |
+| 3b.6 | **Today staff pull the previous day's data the next day, around 1:22 PM.** The report form is set to 9/30 (slide 23) and the Cash Monkey file is stamped `20261001-132256` (slide 30); the zone of that stamp is unknown. Our automated run (just after midnight Eastern) is therefore earlier than the manual process, not the same. | Evidence read off the slides. It also makes the 1 PM option in decision 005 the one that mirrors today's practice. | inference from the deck |
 
 ## 4. What the numbers mean (definitions)
 Open questions for Amanda are in `docs/OFFICE_HOURS.md` and `docs/office-hours-victor.md`. Until answered:
@@ -59,6 +61,7 @@ Open questions for Amanda are in `docs/OFFICE_HOURS.md` and `docs/office-hours-v
 | # | Assumption | Why | Confidence |
 |---|---|---|---|
 | 4.1 | **Revenue = merchandise amount** (Upright `Subtotal`, Cash Monkey `Item Price`), **excluding shipping, handling and tax**. | Slide 26 shows Total = Subtotal + shipping + handling + tax, and staff total the Subtotal column. Shipping and tax are not Goodwill's sales revenue. | default, partly from the deck (`engine/sources/*.py`) |
+| 4.1b | **Shipping is not reported.** Staff total the `Subtotal` and the `Shipping` columns separately (slide 26, row 130); we report merchandise revenue only. | Shipping is not Goodwill's sales revenue, but they track it, so they may want it shown separately. | default, **open** (Q5) |
 | 4.2 | Revenue is **net of refunds**, and a **refund counts on the day it is issued**, not the original order day. | The pulse is a daily view of what happened that day. | default |
 | 4.3 | **Marketplace fees are reported separately**, never subtracted from revenue. | Keeps revenue comparable to the staff's figure and shows fees on their own. | default |
 | 4.4 | **Customer count = number of orders** for Upright (staff count rows even though a buyer column exists) and for Cash Monkey (no buyer column), **unique buyers** only where a source gives a buyer id and staff don't count rows. The report labels which. | Slide 26: "Customer Count is the Count of the Rows minus the Title Row", so staff count rows today. | from the deck (orders) + default (buyers) |
@@ -66,6 +69,7 @@ Open questions for Amanda are in `docs/OFFICE_HOURS.md` and `docs/office-hours-v
 | 4.6 | **The business day is the Eastern day.** | Goodwill Michiana is in Indiana. The sources disagree: Cash Monkey writes UTC, Upright lets the user pick a zone (default Pacific). | default (`engine/contract.py`, per-source zone in each parser) |
 | 4.7 | **Unit amounts are USD.** Non-USD rows are rejected with a warning. | Cash Monkey auto-converts to USD (slide 30 note). | from the deck |
 | 4.8 | A **missing or empty source is shown as "no data", never as $0**. | A $0 would look like a real quiet day and hide a failed download. | decision |
+| 4.9 | **Cash Monkey customers are counted as distinct orders.** Its export is one line per unit, so if staff count its rows (as they do Upright's), a 3-unit order is 3 customers to them and 1 to us. | Slide 26 only says how Upright is counted. | **open question** (`docs/PHASE1_ALIGNMENT.md`) |
 
 ## 5. How we clean the data
 | # | Assumption | Why | Confidence |

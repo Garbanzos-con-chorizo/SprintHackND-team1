@@ -4,12 +4,14 @@ A view of `docs/TASKS.md`, regrouped. Task IDs, owners and sizes are unchanged; 
 
 | Phase | Goal | Difficulty |
 |---|---|---|
-| **1. Nightly pulse** | Each night: messy exports in, clean daily numbers out (revenue and customers by marketplace, enterprise totals) | Low |
+| **1. Nightly pulse** (done) | Each night: messy exports in, clean daily numbers out (revenue and customers by marketplace, enterprise totals) | Low |
 | **2. Monthly dashboard** | Accumulate the clean days over a month and visualize the five pillars | Medium |
 | **3. Month-end close** | Rules, bank reconciliation, exceptions and the Business Central journal file | High (the real problem) |
 | **Cross-cutting** | Story, demo, submission, integration | |
 
 ## Phase 1: Nightly pulse
+**Status, 2026-10-03: done.** The inbox goes through the engine and Dani's pulse to the page, CSV and email copy, and all 8 sample scenarios match their answer keys (24 of 24 marketplace-days). Left over: the Upright and Cash Monkey column names are still guesses, and a few definitions wait on Amanda. How it lines up with the deck is in `docs/PHASE1_ALIGNMENT.md`. Phase 2 and 3 are planned in `docs/PLAN_PHASE_2_3.md` (this file's phase 2 and 3 sections below are the original outline).
+
 Contract first: **0.1** (`transaction.md`, Victor) and **P0** (`pulse.md`, Dani).
 
 | Person | Tasks |

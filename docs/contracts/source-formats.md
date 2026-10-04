@@ -2,6 +2,8 @@
 
 Evidence for the synthetic-data generator (`data/generate.py`, Orlando) and the parsers (`engine/sources/`, Victor). Everything here is read off the SprintHack deck (`innovationsprintlab.com/sprinthack-deck/sprinthack.html`, slide numbers given), not from real files. **Confidence is stated per fact. Anything marked UNKNOWN must not be invented as if it were known; if a generator needs a value, it is labelled a guess.** Real or anonymized exports from Amanda replace all of this.
 
+**Status, 2026-10-03.** Parsers for Upright Paid Orders and the Cash Monkey Orders Report exist (`engine/sources/upright.py`, `cashmonkey.py`) and read both our spelling and Orlando's (`Payment Date`, `Market Fees`) of the guessed columns. Orlando's `data/sample/gw_*` files follow this document and match their answer keys through the pulse. Still no real file. Open points found later are in `docs/PHASE1_ALIGNMENT.md` (Cash Monkey may cover the Books operation only; Upright's other channels are ignored; customer count for Cash Monkey; a "Scheduled Report" option on the Cash Monkey form; staff pull the previous day's data the next day at about 1:22 PM).
+
 ## The nightly pulse most likely comes from two reports, not the three our samples imitate
 | Pulse marketplace | Real source (evidence) | Our current synthetic file |
 |---|---|---|
@@ -12,7 +14,7 @@ Evidence for the synthetic-data generator (`data/generate.py`, Orlando) and the 
 Inference, not stated in the deck: that the nightly eBay and Amazon numbers come from Cash Monkey rather than the seller portals. Confirm with Amanda (office-hours question: where does each nightly number come from?).
 
 ## Upright, Paid orders report
-- **How it is produced** (slides 21-25, 7-9 screenshots): Reports, Downloads menu, Paid orders; set a date range; a **Timezone** field (default `Pacific Daylight Time`, "Use America/Los_Angeles for SGW"); Channel (default `All`); Payment status (`Paid`); Generate report. It is **asynchronous**: "We'll email the report when it's ready"; finished reports appear under *Past reports* (Created by, Created, Status `Complete`, a Download link). Other downloads in the same menu: Paid order items, Orders, **Refunds**, Shipments, Products, Manifest items. Slide 38 says "Generate; email delivery; save as Excel".
+- **How it is produced** (slides 21-25): Reports, Downloads menu, Paid orders; set a date range; a **Timezone** field (default `Pacific Daylight Time`, "Use America/Los_Angeles for SGW"); Channel (default `All`); Payment status (`Paid`); Generate report. It is **asynchronous**: "We'll email the report when it's ready"; finished reports appear under *Past reports* (Created by, Created, Status `Complete`, a Download link). Other downloads in the same menu: Paid order items, Orders, **Refunds**, Shipments, Products, Manifest items. Slide 38 says "Generate; email delivery; save as Excel".
 - **Day boundary:** the report's own timezone is chosen by the person running it. Our business day is Eastern (default). The report's day and our day can differ. UNKNOWN which timezone staff actually use.
 - **File:** saved from Excel (the title bar shows `paid_orders_09-30-2026_09-30-2026 (4)`), so the name pattern is `paid_orders_<MM-DD-YYYY>_<MM-DD-YYYY>` and the format is probably `.csv` opened in Excel. UNKNOWN whether staff keep it as CSV or Excel.
 - **Columns as far as the screenshot (slide 26) shows them; left to right, several headers truncated:**
