@@ -16,10 +16,10 @@ Built at **SprintHack@ND, October 3-4 2026**, by three people with AI coding age
 | **Month-end close to Business Central:** bank deposits matched to marketplace payouts, an exceptions list, a balanced journal file | **Runs** on a synthetic messy month and writes Business Central **import files** (CSV), not a live posting. Some inputs are stopgaps (see [Known gaps](#known-gaps)) | [Month-end close](#3-month-end-close-to-business-central) |
 
 ## Quick start
-Needs **Python 3.12 or newer** (the engine alone also runs on 3.11, but the report pages need 3.12).
+Needs **Python 3.12 or newer**; the repo pins **3.13** (`.python-version`, and the Docker image). The engine alone also runs on 3.11, but the report pages and the PDF export need 3.12.
 ```bash
 pip install -r engine/requirements.txt          # openpyxl, tzdata, pytest
-python -m pytest engine recon reports -q        # every test (311 at the time of writing)
+python -m pytest engine recon reports -q        # every test, all three lanes
 ```
 Everything below writes to `out/`, `inbox/` and `reports/` (generated, git-ignored).
 
@@ -44,7 +44,7 @@ python -m engine.store backfill --inbox data/sample/clean_month/inbox --from 202
 python -m recon.kpi --month 2026-09                     # the 15 KPIs -> out/kpi/month-2026-09.json
 python -m reports.monthly --month 2026-09               # the scorecard page and a KPI CSV
 ```
-About 12 seconds. On the sample month, 13 KPIs are complete, 1 is partial and 1 has no data, and the page says which.
+About 15 seconds. On the sample month, 13 KPIs are complete, 1 is partial and 1 has no data, and the page says which.
 
 ### 3. Month-end close to Business Central
 ```bash
@@ -53,6 +53,13 @@ python -m reports.bc_export --payload out/close/2026-09/close_payload_2026-09.js
 python -m reports.close_report --month 2026-09
 ```
 The messy September has missing and duplicated files, malformed rows, refunds from the prior month, payouts, and a bank file with one deposit covering several payouts and one deposit that matches nothing. The output (`out/close/2026-09/`) is a General Journal (56 lines, every document sums to 0.00), an AR invoice file, control totals and an **exceptions list**. Not everything reconciles, on purpose: the page shows what is open, what is explained and what is still unexplained.
+
+### 4. See the pages in a browser
+```bash
+pip install -r requirements-server.txt          # fastapi, uvicorn (only for this step)
+python server.py                                # then open http://127.0.0.1:8000/
+```
+A thin server that only serves `reports/`; it computes nothing, has no login and listens on localhost. Or as one image: `docker build -t goodwill-reports .` then `docker run --rm -p 127.0.0.1:8000:8000 goodwill-reports` (the image builds its pages from the synthetic samples; see [`docs/decisions/008-static-server-for-docker.md`](docs/decisions/008-static-server-for-docker.md)).
 
 ## How it works
 ```
@@ -85,7 +92,7 @@ Files are the contract between the three parts (`docs/contracts/`), so each part
 - **Shipping and handling are a stopgap in the close.** The engine does not output those columns yet, so `reports.reconcile` reads them from the sample's answer key and prints `STOPGAP`.
 - **Two open questions could change the numbers:** whether Cash Monkey's report covers only the Goodwill Books operation, and how staff count customers for it (rows or orders). See [`docs/PHASE1_ALIGNMENT.md`](docs/PHASE1_ALIGNMENT.md).
 - **Brick and mortar is out of scope.** The total is the e-commerce total.
-- **No login, no web server.** The pages are static files; a thin server is planned ([`docs/decisions/008-static-server-for-docker.md`](docs/decisions/008-static-server-for-docker.md)), not built.
+- **No login.** The server is for local use only (localhost, no authentication); in production it would sit behind Goodwill's own sign-in.
 - **The run time is an assumption.** The nightly run is set just after midnight Eastern, when e-commerce reports finalize; the slides suggest staff pull the previous day's data the next day, around 1:20 PM.
 
 ## Where things are
@@ -96,6 +103,7 @@ Files are the contract between the three parts (`docs/contracts/`), so each part
 | `reports/` | The pages, CSV and email layouts, reconciliation, the Business Central export, the nightly run | Orlando |
 | `data/` | Synthetic sample inboxes, each with an answer key | Orlando |
 | `docs/` | Problem, plan, contracts, decisions, assumptions, pitch material | all |
+| `server.py`, `Dockerfile` | A thin server for the pages, and the image that bundles them | Victor |
 
 ## Documentation
 - [`docs/PROBLEM.md`](docs/PROBLEM.md): the brief, the rubric, the demo plan.
