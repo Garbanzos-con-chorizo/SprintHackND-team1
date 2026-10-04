@@ -1,6 +1,6 @@
 # Contract: KPI file, phase 2 (task C2)
 
-- **Owner:** Dani (`recon/kpi/`). **Consumers:** Orlando (scorecard page, print layout), Victor (KPI CSV, PDF and email exports, `kpi_values` in the database).
+- **Owner:** Dani (`recon/kpi/`). **Consumers:** Orlando (scorecard page, print layout), Victor (KPI CSV, PDF and email exports).
 - **Status:** draft
 - **Inputs:** a period of stored nightly data: the daily pulse, the transactions and the internal API snapshots. **Where they are stored is not settled** (decision 007 proposes a SQLite database; Orlando's response to it proposes flat files). The KPI file below is the same either way; only "Inputs the KPIs need" and the `--db` option depend on it.
 
