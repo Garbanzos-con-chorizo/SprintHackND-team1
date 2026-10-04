@@ -52,8 +52,6 @@ class MockScraperAdapter(DataIngestAdapter):
             return batch
         if not records:
             return batch
-        result = parser.parse(table_from_records(name, records))
-        batch.files.append({"file": name, "source": parser.source, "feeds": list(parser.feeds)})
-        batch.rows.extend(result.rows)
-        batch.warnings.extend(result.warnings)
+        batch.add_result({"file": name, "source": parser.source, "feeds": list(parser.feeds)},
+                         parser.parse(table_from_records(name, records)))
         return batch

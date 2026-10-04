@@ -25,6 +25,14 @@ COLUMNS = [
     "occurred_at",
 ]
 
+# Close inputs (docs/contracts/close-inputs.md, V3.2). payouts.csv: money a marketplace says it sent to the
+# bank, positive = paid to Goodwill; period_from/period_to only when the report states the period.
+PAYOUT_COLUMNS = ["payout_id", "marketplace", "paid_date", "amount_cents", "period_from", "period_to",
+                  "source_file", "source_row"]
+# bank.csv: every line of a bank export, credits positive, debits negative.
+BANK_COLUMNS = ["bank_txn_id", "account", "posting_date", "description", "amount_cents", "balance_cents",
+                "source_file", "source_row"]
+
 # Marketplaces the pulse expects data for each day (keys of source_status.json). `other` is not
 # listed: it appears only on a day it has rows, otherwise the pulse treats it as not configured.
 EXPECTED_MARKETPLACES = ["shopgoodwill", "amazon", "ebay"]

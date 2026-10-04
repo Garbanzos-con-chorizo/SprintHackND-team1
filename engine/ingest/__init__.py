@@ -1,5 +1,5 @@
 """Pluggable ingestion: any adapter that returns canonical rows plugs into the same pipeline."""
-from ..dedupe import dedupe_rows
+from ..dedupe import dedupe_bank, dedupe_payouts, dedupe_rows
 from .base import DataIngestAdapter, NormalizedBatch
 from .email_adapter import EmailAttachmentAdapter
 from .scraper_adapter import MockScraperAdapter
@@ -14,5 +14,9 @@ def ingest(adapters: list[DataIngestAdapter], business_date: str | None = None) 
     for adapter in adapters:
         merged.extend(adapter.fetch_and_normalize(business_date))
     merged.rows, duplicate_warnings = dedupe_rows(merged.rows)
+    merged.warnings.extend(duplicate_warnings)
+    merged.payouts, duplicate_warnings = dedupe_payouts(merged.payouts)
+    merged.warnings.extend(duplicate_warnings)
+    merged.bank, duplicate_warnings = dedupe_bank(merged.bank)
     merged.warnings.extend(duplicate_warnings)
     return merged
