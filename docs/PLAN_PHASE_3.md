@@ -2,21 +2,21 @@
 
 Written 2026-10-04 00:15 EDT by Dani's agent. **Status: proposed** (`docs/decisions/009-phase-3-split-dani-victor.md`). It replaces section 8 ("Phase 3") of `docs/PLAN_PHASE_2_3.md`, which was written before any close code existed. Sizes: **S** < 30 min, **M** 30-90 min, **L** 90+ min. **All clock times are Eastern.**
 
-Checked against `main` at 4d8d8d9 by running the commands and reading the code, not from status files. What Goodwill asked for was read from the deck itself (slides 37 to 42, from the page's DOM), not from memory.
+Checked against `main` at 2fcfafe by running the commands and reading the code, not from status files. What Goodwill asked for was read from the deck itself (slides 37 to 42, from the page's DOM), not from memory.
 
 **Time left:** submission and code freeze are Sunday 16:00. The recording has to exist before that, so phase 3 stops taking features at **13:00**. With a start at 08:00 that is **five build hours per person**. Phase 3 is split between **Dani** (rules, matching, calculation, samples with their answer keys, the close command and page) and **Victor** (the engine's side: what the parsers hand over, the scheduler, the store). Orlando built the first version and is away; section 3 says who holds which of his files meanwhile.
 
 ## 0. Where `main` is today
 
-Run on a fresh virtual environment (Python 3.13.16, `engine/requirements.txt`), Sunday 00:10:
+Run on a fresh virtual environment (Python 3.13.16, `engine/requirements.txt`), Sunday 00:20:
 
 | Command | What it printed |
 |---|---|
-| `python -m pytest engine recon reports -q` | `353 passed, 1 skipped` in 69 s (347 an hour earlier; Victor's L1 to L5 landed in between) |
+| `python -m pytest engine recon reports -q` | `355 passed, 1 skipped` in 70 s (347 at 23:58; Victor's L1 to L6 landed in between) |
 | `python -m reports.reconcile --inbox data/sample/messy_month/inbox --month 2026-09` | `23 deposits classified (19 matched to payouts), 31 payouts read, 14 exceptions` |
 | `python -m reports.bc_export --payload out/close/2026-09/close_payload_2026-09.json` | `journal: 56 lines in 25 documents, every document sums to 0.00`; `invoices: 1 document(s), 3 lines`; eBay `OPEN`, ShopGoodwill `OPEN`, Amazon `UNEXPLAINED` with `unexplained -226.78` |
 | `python -m reports.close_report --month 2026-09` | `wrote reports/close/2026-09.html` |
-| `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04` | exit 0 (40 s the first time, 21 s once the store exists); on the night of Sep 30 it prints `close: 2026-09 from data/sample/messy_month/inbox` and `close page: reports/close/2026-09.html` |
+| `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04` | exit 0 (55 s from an empty `out/`, now that it also seeds August; 21 s once the store exists); on the night of Sep 30 it prints `close: 2026-09 from data/sample/messy_month/inbox` and `close page: reports/close/2026-09.html` |
 
 That matches what we believed. Six things do not, or were not known:
 
@@ -27,7 +27,7 @@ That matches what we believed. Six things do not, or were not known:
 5. **The bank file and the payout rows are read in `reports/reconcile.py`, not by the engine.** The engine skips `Payout` and `Transfer` rows and reports the bank file as `unparseable` ("no source recognizes this file"), which `reconcile` then filters out. Bank debits are dropped (`reports/reconcile.py:66`).
 6. **The close page does not say what is simulated.** Nothing on `reports/close/2026-09.html` or in the four CSV files says the data is synthetic or that the account numbers are placeholders. By rule 14 of `CLAUDE.md` that is an overclaim waiting to be found.
 
-Also changed in the last hour: **Victor has finished L1 to L5** (PRs #48 to #50). L6, L7 and L8 are left, so he has more room for phase 3 than "L1 to L8" suggested.
+Also changed while this was being written: **Victor has finished L1 to L6 and L8** (PRs #48 to #52, between 00:00 and 00:16). Only L7, the demo script, is left of phase 2, so he has far more room for phase 3 than "L1 to L8" suggested.
 
 **Deck against `docs/goodwill-project-context.md`, sections 6 and 7:** the same, item for item, on slides 37 to 42. The deck has two things the transcription leaves out, neither of substance: a kicker line on each slide (for example "GOODWILL MICHIANA · TARGET CLOSE") and a one-sentence speaker note that restates the title. The transcription numbers slide 38's rows 1 to 9; the slide does not. One phrase is easy to read past in both: slide 41 says "**the attachment** clarifies the required scope". Goodwill has a document we have never seen (question 4).
 
@@ -174,11 +174,10 @@ In this order. V3.1 comes first because it is the only task Dani's numbers depen
 | ID | Task | Files | Size | Needs | Done when |
 |---|---|---|---|---|---|
 | V3.1 | **`occurred_at` on every transaction** (`transaction.md` v0.5, appended, so nothing breaks): the moment of the sale or refund as ISO 8601 with its offset; empty when the export gives only a date (eBay) or only a file name. Several lines of one order: the first line's time. The store ignores the column. | `engine/sources/`, `engine/contract.py`, `docs/contracts/transaction.md`, test | M | | `python -m engine run --inbox data/sample/messy_month/inbox --out out/tmp --date 2026-09-30` writes a header ending `units,occurred_at`; a test sums gross + shipping + handling - fee over the rows whose `occurred_at`, read in Pacific time, falls in each window and gets the answer key's `net_in_files_cents`: Amazon Sep 1-14 = 405,400 and Sep 15-28 = 415,074; ShopGoodwill Sep 1-6 = 1,088,878, Sep 7-13 = 1,344,329, Sep 14-20 = 1,329,924, Sep 21-27 = 1,370,702 |
-| L6 | The weekly page from the KPI file (his list) | | M | | his list |
 | V3.2 | **The engine writes `payouts.csv` and `bank.csv`** instead of skipping payout rows and rejecting the bank file. Payouts de-duplicated across overlapping downloads. Bank rows signed, credits positive, debits included. | `engine/sources/`, `engine/writer.py`, new `docs/contracts/close-inputs.md`, tests | M | C3.1 | the same `engine run` writes `out/tmp/payouts.csv` with 31 rows (29 eBay, 2 Amazon) and `out/tmp/bank.csv` with 26 rows (24 credits, 2 debits), and `warnings.json` has no `unparseable` entry for `bank_activity_2026-09.csv` |
 | V3.3 | **`source_coverage.json`**: per marketplace, the files read, the days each file says it covers, and the days of the month no file covers. Replaces the file-name check in `reconcile`. | `engine/status.py` or beside it, contract, test | S-M | C3.1 | on `messy_month` it lists `2026-09-21` and `2026-09-22` missing for Amazon, `2026-09-07` for ShopGoodwill, none for eBay |
 | V3.4 | **The scheduler calls the one command, and the store remembers the run**: `run_scheduled` runs `python -m reports.close` on the 1st in place of the three commands; a `runs` row with `command = 'close'` (`store.md`); the portal card links the status file. | `reports/run_scheduled.py`, `reports/hub.py`, `engine/store/`, `docs/contracts/store.md` | S | D3.7 on `main`; until then nothing changes | `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04` exits 0 and prints `close page: reports/close/2026-09.html`; `python -m engine.store status` shows a close run |
-| L8, L7 | His list. For L7 the close part is D3.11: link it | | S, S-M | D3.11 | his list |
+| L7 | The demo script for phases 2 and 3, the last item of his phase 2 list. The close part is D3.11: link it, do not write a second one | `docs/pitch/` | S-M | D3.11 | his list |
 | V3.5 | **A Business Central ledger export for the FedEx rule**: parse a G/L entries file into `ledger.csv`. Only if D3.5 goes ahead. | `engine/sources/`, contract | S | checkpoint 1 | cut with D3.5 |
 | V3.6 | **A close email**: a `Close` report type in `subscribers.csv`, an `.eml` to accounting with the page and the four CSVs attached, generated, not sent. | `reports/email_gen.py`, `reports/config/subscribers.csv` | S-M | D3.7 | `out/outbox/<run date>/` has one close email per active subscriber. Cut early |
 
@@ -226,11 +225,11 @@ The clock assumes both start at 08:00. Anything done tonight is a head start; th
 | Time | Dani, track A | Dani, track B | Victor |
 |---|---|---|---|
 | 08:00 | contracts C3.2, C3.3; claim rows | | C3.1; response to decision 009; claim rows |
-| 08:45 | D3.1 | D3.6 | V3.1, then L6 |
-| 10:00 | D3.1 | D3.7 | V3.2 |
+| 08:45 | D3.1 | D3.6 | V3.1, then V3.2 |
+| 10:00 | D3.1 | D3.7 | V3.2, then V3.3 |
 | **11:00** | **Checkpoint 1** | | |
-| 11:00 | D3.2, D3.3 | D3.7, then D3.8 | V3.3 |
-| 12:00 | D3.4 (once V3.2 is in); D3.5 only if checkpoint 1 was fully green | D3.9 | V3.4, L8 |
+| 11:00 | D3.2, D3.3 | D3.7, then D3.8 | V3.4 (once D3.7 is in); V3.6; V3.5 only if D3.5 goes ahead |
+| 12:00 | D3.4 (once V3.2 is in); D3.5 only if checkpoint 1 was fully green | D3.9 | L7, phases 2 and the nightly part |
 | 12:30 | | D3.10, D3.11 | L7 (links D3.11) |
 | **13:00** | **Checkpoint 2: phase 3 takes no more features** | | |
 | 13:00 | dry run of the demo script from a fresh clone | | |

@@ -6,7 +6,7 @@
 - **Full plan:** `docs/PLAN_PHASE_3.md` (what `main` does today, the gap against deck slides 38 to 42, tasks, contracts, clock, cuts).
 
 ## Context
-Orlando built the first version of the month-end close (`reports/reconcile.py`, `bc_export.py`, `close_report.py`, the mapping, the messy month and its answer key) and cannot work on it now. Phase 3 was never assigned (007). Checked on `main` at 4d8d8d9: the close runs on the messy month and balances, but Amazon is $226.78 off, ShopGoodwill hides a gap of $1,875.64 behind a net, there is no clean month for the close, and the page does not say what is simulated. Victor has L6, L7 and L8 left from phase 2; Dani has nothing left.
+Orlando built the first version of the month-end close (`reports/reconcile.py`, `bc_export.py`, `close_report.py`, the mapping, the messy month and its answer key) and cannot work on it now. Phase 3 was never assigned (007). Checked on `main` at 2fcfafe: the close runs on the messy month and balances, but Amazon is $226.78 off, ShopGoodwill hides a gap of $1,875.64 behind a net, there is no clean month for the close, and the page does not say what is simulated. Victor has only L7 (the demo script) left from phase 2: L1 to L6 and L8 landed tonight. Dani has nothing left.
 
 ## Decision
 1. **Two parts.** **Dani:** the rules, matching and calculation of the close and their tests; the sample months with their answer keys; the one-command close, its archive and status file; the close page; the rules document and the close demo script. **Victor:** what the engine hands the close (the order time on each transaction, the payout rows, the bank file, which days each report covers), the scheduler, the store's run history, and the rest of his phase 2 list.
