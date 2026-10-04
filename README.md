@@ -13,7 +13,7 @@ Built at **SprintHack@ND, October 3-4 2026**, by three people with AI coding age
 |---|---|---|
 | **Nightly pulse:** revenue and customers by marketplace (ShopGoodwill, Amazon, eBay, Other), then the e-commerce total | **Done**, runs end to end | [Nightly pulse](#1-the-nightly-pulse) |
 | **Monthly dashboard:** the 15-KPI scorecard (growth, profitability, productivity, inventory, engagement) | **Runs** on a synthetic month, kept in a SQLite store night by night, with a **one-page PDF** and a **CSV for Excel / Power BI** attached to the monthly email draft. Some KPIs need company data we don't have and use a **mock internal API**, labelled "Simulated internal data" | [A month](#2-a-month-and-its-scorecard) |
-| **Month-end close to Business Central:** bank deposits matched to marketplace payouts, an exceptions list, a balanced journal file | **Runs** on a synthetic messy month and writes Business Central **import files** (CSV), not a live posting. Some inputs are stopgaps (see [Known gaps](#known-gaps)) | [Month-end close](#3-month-end-close-to-business-central) |
+| **Month-end close to Business Central:** bank deposits matched to marketplace payouts, an exceptions list, a balanced journal file | **Runs** on a synthetic messy month and writes Business Central **import files** (CSV), not a live posting. It reads only the engine's files and the bank file, never an answer key | [Month-end close](#3-month-end-close-to-business-central) |
 
 ## Quick start
 Needs **Python 3.12 or newer**; the repo pins **3.13** (`.python-version`, and the Docker image). The engine alone also runs on 3.11, but the report pages and the PDF export need 3.12.
@@ -92,7 +92,6 @@ Files are the contract between the three parts (`docs/contracts/`), so each part
 
 ## Known gaps
 - **No real file has been read.** The first thing to do with a real file is replace a few column names. Different teammates guessed different names for a few columns; the parsers accept both spellings as a hedge, not as proof.
-- **Shipping and handling are still a stopgap in the close.** The engine now outputs them per order (`shipping_cents`, `handling_cents`, matching the messy month's answer key to the cent), but `reports.reconcile` still reads them from the sample's answer key and prints `STOPGAP` until its switch to the engine's columns is merged.
 - **Two open questions could change the numbers:** whether Cash Monkey's report covers only the Goodwill Books operation, and how staff count customers for it (rows or orders). See [`docs/PHASE1_ALIGNMENT.md`](docs/PHASE1_ALIGNMENT.md).
 - **Brick and mortar is out of scope.** The total is the e-commerce total.
 - **No login.** The server is for local use only (localhost, no authentication); in production it would sit behind Goodwill's own sign-in.
