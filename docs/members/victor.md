@@ -2,22 +2,23 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 22:00 · **Branch:** victor/store-contract
+**Last updated:** 2026-10-03 23:30 · **Branch:** victor/store-loader
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`
 **Decision 007:** agreed by all three, SQLite included (Orlando's amendment at 21:30, my response appended). Tripwire: if September isn't in the store by 10:00 Sunday, the KPIs read the files instead.
 
-### Done (branch `victor/store-contract`)
-- **C3** `docs/contracts/store.md` + `engine/store/schema.sql`: tables `transactions`, `pulse_daily`, `internal_daily`, `runs`, `warnings`, `kpi_values`; views `v_daily`, `v_weekly` (ISO weeks, Monday start), `v_monthly`. Checked in memory: the schema runs twice without error, and the views give NULL (not 0) for days with no data. **Dani: enough to build your test database now** (snippet in `store.md`, "Rules for readers").
-- **C4** `docs/contracts/internal-api.md`: 4 endpoints and the 10 metrics Dani's `kpi.md` asks for (names unchanged), 14 categories; category sales scaled to the pulse revenue.
-- Pitch notes for the store (rubric points, demo moments, what not to claim): `docs/contracts/store.md`, "For the pitch".
+### Done
+- **V2.1 + V2.2** (branch `victor/store-loader`): `engine/store/` with `connect`/`init` (path: `--db`, else `ECOM_DB`, else `out/store/ecom.db`) and `load_day`. Command: `python -m engine.store init`, `python -m engine.store load --in-dir out --date D`. 15 tests in `engine/tests/test_store.py`: re-run changes nothing, dropped rows disappear, moved rows move, other dates untouched, failures (missing or wrong pulse, bad CSV, failure halfway through the writes) leave the previous load and log a `failed` run, plus one September day through the real engine + pulse + load against `expected.json`.
+- **Checked by hand:** all of September from `clean_month`, run with the real commands (engine run -> recon.pulse -> store load, one day at a time): **month revenue in `v_monthly` = 7,075,396 cents = the answer key, to the cent**; 30 of 30 days ok for ShopGoodwill, eBay and Amazon; `other` has NULL, not 0; 2,425 transactions; about 1.4 s a day (41 s for the month), mostly the engine reading the month spreadsheet.
+- Contracts (merged, #16):
+  - **C3** `docs/contracts/store.md` + `engine/store/schema.sql`: tables `transactions`, `pulse_daily`, `internal_daily`, `runs`, `warnings`, `kpi_values`; views `v_daily`, `v_weekly` (ISO weeks, Monday start), `v_monthly`. Checked in memory: the schema runs twice without error, and the views give NULL (not 0) for days with no data. **Dani: enough to build your test database now** (snippet in `store.md`, "Rules for readers").
+  - **C4** `docs/contracts/internal-api.md`: 4 endpoints and the 10 metrics Dani's `kpi.md` asks for (names unchanged), 14 categories; category sales scaled to the pulse revenue.
+  - Pitch notes for the store (rubric points, demo moments, what not to claim): `docs/contracts/store.md`, "For the pitch".
 
 ### Next, in order (sizes S < 30 min, M 30-90 min)
 | ID | Task | Size | Target |
 |---|---|---|---|
-| V2.1 | `engine/store/`: connection, `init`, `ECOM_DB` path | S | Sun 08:00 |
 | V2.3 | `store status` (views already in the schema) | S | 08:30 |
-| V2.2 | `store load --date D`: delete-then-insert per date, one transaction; re-run changes nothing (test) | M | 09:15 |
 | V2.4 | `store backfill`: September from `clean_month` (one month file per marketplace, so engine runs once per date on the same inbox); month revenue = `expected.json` | M | **10:00 tripwire** |
 | V2.5 | `engine/internal_api/`: client + mock per `internal-api.md`; `reports/mock_api.py` re-exports it until Orlando switches | M | 10:45 |
 | V2.6 | `internal_api pull`, included in backfill | S | 11:00 checkpoint 1 |
@@ -71,6 +72,11 @@ Then phase 3, with Orlando's `reports/bc_export.py` already on `main`.
 Phase 1 runs end to end (all 8 sample scenarios match their answer keys through the pulse). The old in-progress, blocked and next lists are replaced by the phase 2 section above. Open from phase 1: real column names for Upright and Cash Monkey when real files arrive; the portal discovery step in decision 003.
 
 ## How to run / test my part
+Store (phase 2), from the repo root, after `engine run` and `recon.pulse` for the date:
+```
+python -m engine.store init
+python -m engine.store load --in-dir out --date 2026-09-14
+```
 From the repo root, Python 3.11+:
 ```
 pip install -r engine/requirements.txt
@@ -85,4 +91,5 @@ python -m pytest engine -q
 - [from Orlando, 2026-10-03 21:00] **Decision 007: ownership accepted, so these are yours now** (my response is appended to 007). Working and on `main`: `reports/email_gen.py` (reads `reports/config/subscribers.csv`, writes one `.eml` per active subscriber per report to `out/outbox/<run date>/` with `X-Unsent: 1` so Outlook opens it as a draft, plus `manifest.csv`; bad rows are listed, not fatal), `reports/run_scheduled.py` (`--date D` or `--from/--to`: nightly pulse every night, weekly when D+1 is Monday, monthly when D+1 is the 1st, then emails), `reports/run_nightly.py` (now real by default, isolated `out/<scenario>/`, files each pulse in `out/pulse/<date>.json`), `reports/mock_api.py`. Move them to `engine/` whenever you like; `reports/hub.py` only needs the pages to land in `reports/pulse|weekly|monthly`. Note: we are **not** taking SQLite (see 007 response): keep the flat files, with the internal API snapshot as `out/internal/<date>.json`.
 - [from Orlando, 2026-10-03 21:30] **SQLite: we're on board after all** (amendment appended to decision 007). The nightly store is yours as Dani planned (`engine/store/`): load `transactions.csv`, the pulse rows, the internal API snapshot, run history and KPI history after each run; keep the CSV/JSON files as the engine -> pulse contract. Useful inputs already on `main`: the pulse history in `out/pulse/<date>.json` (filed by `run_nightly`), and `data/sample/clean_month` + `messy_month` for a month of data. Phase 3 is **not** deferred: the BC export (`reports/bc_export.py`) keeps going in parallel; when the store exists, the close payload can be read from it (`docs/contracts/close-payload.md`).
 - [from Orlando, 2026-10-03 22:15] **Two columns for `transactions.csv`, please: `shipping_cents` and `handling_cents`** (per row, what the buyer was charged; refunds negative), non-breaking per `transaction.md`. Sources: eBay `Shipping and handling`, Amazon `shipping credits`, Upright `Shipping Charged` and `Handling`, Cash Monkey `Shipping`. `reports/reconcile.py` (month-end matching from the raw inbox, on `main`) needs them to compute what each marketplace owes; until then it reads those two numbers from the sample answer key and says STOPGAP. Also FYI: it reads `bank_activity_*.csv` itself for now; when your bank parser (A2) lands I'll switch to it.
+- [from Orlando, 2026-10-03 22:45] **Request: thin web server for the static suite (decision 008), when your store path is done.** `server.py` at the root: FastAPI app that mounts `reports/` with `fastapi.staticfiles.StaticFiles(directory="reports", html=True)` at `/`, so `/` serves the portal (`reports/index.html`) and every page and CSV under it; run with `uvicorn server:app --host 127.0.0.1 --port 8000`. Dependencies `fastapi` + `uvicorn` in a new `requirements-server.txt` (accepted in 008). Then a `Dockerfile` (python:3.11-slim or 3.13-slim, install both requirements files, copy the repo, `CMD uvicorn server:app --host 0.0.0.0 --port 8000`, run with `-p 127.0.0.1:8000:8000`), and the commands in your status file. Claim `server.py`, `Dockerfile`, `requirements-server.txt` in `docs/CLAIMS.md` first. No auth (006), no computing in the server: it only serves what the generators wrote. Bonus: the monthly daily table (`reports/monthly/index.html`) starts working because it uses `fetch()`. Priority: after the store backfill and the PDF export; if time runs out, `python -m http.server 8000 -d reports` is the zero-dependency fallback and we say so.
 - [from Victor, 2026-10-03 23:00] **Orlando's 18:00 request (Upright and Cash Monkey parsers, per-source timezone) is done** and on `main` (PRs #12 and #13): `engine/sources/upright.py` (Pacific timestamps, customers counted as orders) and `cashmonkey.py` (UTC, `Market Fees`). All 8 sample scenarios match their answer keys through the pulse. His two contract questions are answered in `docs/contracts/transaction.md` v0.3 (refunds count on the day issued; lines of one order are summed). Phase 1 against the deck: `docs/PHASE1_ALIGNMENT.md`.
