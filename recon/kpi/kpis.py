@@ -110,7 +110,7 @@ def _no_split(res, f):
 # ---- the 15 KPIs: each takes the facts of its window and of the comparison window ----
 
 def _revenue(f, prev):
-    res = Result(inputs=dict.fromkeys(("gross_cents", "refunds_cents", "fees_cents", "orders")))
+    res = Result(inputs=dict.fromkeys(("gross_cents", "refunds_cents", "fees_cents", "orders", "by_marketplace")))
     if _no_files(res, f):
         return res
     res.value = f.files["revenue_cents"]

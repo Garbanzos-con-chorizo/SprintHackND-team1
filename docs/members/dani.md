@@ -2,7 +2,23 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 10:30 EDT · **Branch:** d/shipping-cost (D3.5 and D3.13); everything else of mine is on `main`
+**Last updated:** 2026-10-04 13:00 EDT · **Branch:** nothing open; the feedback round (decision 011) merged in #79, so everything of mine is on `main`
+
+## Website feedback round (done): decision 011, PR #79
+Feedback on the site asked for seven fixes; all seven went in with one PR. It edited files held by Victor and Orlando (a note is in each one's requests; my claim row is released).
+
+- **What works** (run 12:40 to 12:50 on the branch; `python -m pytest engine recon reports -q`: 489 passed):
+  - **Titles** in title case on every page.
+  - **Daily report:** "Download Full Day (Excel)" gives `reports/pulse/<date>.xlsx` (Summary, By Marketplace, Data Quality, Definitions, Transactions, Flagged Rows; each sheet says the data is synthetic). `reports/day_workbook.py`.
+  - **Overview:** cards further apart under colored bands, a short headline, buttons, the rest under "More"; the week's revenue by marketplace as a pie beside the bars.
+  - **Scorecards:** a pie of revenue by marketplace on each one; on the list, the KPI trend (choose an area and days, weeks or months). `reports/charts.py`.
+  - **Fewer words:** explanations are in a "Notes and Definitions" dropdown at the bottom; an asterisk opens it.
+  - **Search:** Daily Reports finds `10/03/2026`.
+  - **Month-End Close:** export files are buttons (page and list); "Posting status: Not posted" is unchanged. This is also Victor's task 1 of 11:50.
+- **In my own lane:** KPI 1 carries `inputs.by_marketplace` (`kpi.md` v0.7, additive; the four examples regenerated), so the scorecard pie does no arithmetic.
+- **How to run it:** `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04`, then `python server.py` and open http://127.0.0.1:8000/. Checked in the browser: the search by date, the trend's buttons, the asterisk opening the notes, the Excel file.
+- **Known limits:** the KPI trend has as many points as there are scorecards on file (4 days, 2 weeks, 2 months after the scheduled run). The pie on the overview adds the nights on file of the latest week. A KPI file from before v0.7 gives a scorecard without a pie. Victor's task 2 (who receives the emails) is not done. The emails keep their wording.
+- **Next step:** none of mine. Orlando's port of `o/ui-map` goes on top of this; his conflicts would be in `hub.card` and the bottom of `scorecard.render`.
 
 ## Phase 3 (now): plan `docs/PLAN_PHASE_3.md`, decision 009 (accepted by Victor)
 My tasks are D3.1 to D3.14 in section 3 of the plan. **All fourteen are done**; D3.5 and D3.13 are in this branch, the rest on `main`. Victor's side (V3.1 to V3.10) is on `main` too, so **all nine of Goodwill's month-end sources reach the close**: five from sample files we generated, four from his simulated APIs, each labelled on the page.

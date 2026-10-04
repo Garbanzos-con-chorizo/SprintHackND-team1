@@ -1,7 +1,7 @@
 # Contract: KPI file, phase 2 (task C2)
 
 - **Owner:** Dani (`recon/kpi/`). **Consumers:** Orlando (scorecard page, print layout), Victor (KPI CSV, PDF and email exports; `kpi_values` in the store).
-- **Status:** draft v0.6, implemented in `recon/kpi/`. The tests reproduce every example file from the calculator.
+- **Status:** draft v0.7, implemented in `recon/kpi/`. The tests reproduce every example file from the calculator.
 - **Inputs:** the store, `docs/contracts/store.md` (the SQLite database of decision 007): the daily pulse, the transactions and the internal API snapshots of the period. What is read from it is under "Inputs the KPIs read".
 
 ## What this contract does
@@ -133,7 +133,7 @@ If several apply, `status` is the worst of them, `reason` is the first reason of
 ## The 15 KPIs
 | # | `id` | Name | Unit | Good | Source | Formula | `inputs` |
 |---|---|---|---|---|---|---|---|
-| 1 | `fin.revenue` | Total E-Commerce Revenue | cents | up | files | Sum of `revenue_cents` over the `ok` marketplace-days (pulse definition: sales minus refunds, no shipping, no tax, fees not subtracted) | `gross_cents`, `refunds_cents`, `fees_cents`, `orders` |
+| 1 | `fin.revenue` | Total E-Commerce Revenue | cents | up | files | Sum of `revenue_cents` over the `ok` marketplace-days (pulse definition: sales minus refunds, no shipping, no tax, fees not subtracted) | `gross_cents`, `refunds_cents`, `fees_cents`, `orders`, `by_marketplace` (each marketplace's `revenue_cents` over its `ok` days, keyed by marketplace id in display order; a marketplace with no `ok` day has no key; the values add up to the KPI's value) |
 | 2 | `fin.revenue_growth` | Revenue Growth % | ratio | up | files | (revenue - prior revenue) / prior revenue | `revenue_cents`, `prior_revenue_cents` |
 | 3 | `fin.net_margin` | Net Margin % | ratio | up | mixed | (revenue - marketplace fees - cost of goods - net shipping cost - labor cost) / revenue | `revenue_cents`, `fees_cents`, `cogs_cents`, `shipping_net_cost_cents`, `labor_cost_cents`, `net_profit_cents` |
 | 4 | `prod.listings_created` | Listings Created | count | up | internal | New listings in the period | `by_marketplace` |
@@ -197,7 +197,8 @@ Goodwill describes the dashboard twice: slide 32 asks it to balance five **pilla
   "delta": { "value": 85575, "pct": 9.6, "reason": "partial_period" },
   "good_direction": "up", "source": "files", "simulated": false,
   "definition": "Sales minus refunds, before marketplace fees. Excludes shipping and tax.",
-  "inputs": { "gross_cents": 986909, "refunds_cents": -5448, "fees_cents": 66661, "orders": 321 } }
+  "inputs": { "gross_cents": 986909, "refunds_cents": -5448, "fees_cents": 66661, "orders": 321,
+              "by_marketplace": { "shopgoodwill": 663300, "amazon": 128629, "ebay": 189532 } } }
 ```
 
 ## Inputs the KPIs read
@@ -264,6 +265,7 @@ python -m recon.kpi --date 2026-10-03                       # a day with eBay mi
 - Net shipping cost (KPI 3): carrier cost minus shipping charged to buyers, from the internal API until `transactions` carries shipping.
 
 ## Changelog
+- draft v0.7: one more input on KPI 1, `inputs.by_marketplace`: the period's revenue per marketplace, for the scorecard's pie chart (the page does no arithmetic, so the split has to be in the file). Additive: no value changes, and `null` when there is no marketplace data, like the other inputs. The four examples carry it.
 - draft v0.6: nothing changes in the shape. `listing_to_sale_days` is in the mock now (Victor, `internal-api.md` v0.5), so `listing_dates` is the split the pipeline uses; the examples carry that metric and a stock count for the day before, and show it. The `period_first` assumption remains only as the fallback.
 - draft v0.5: sell-through's two boxes use the listing system's sales by listing date when the store has them (`listing_to_sale_days`, a metric requested from Victor); `inputs.split_basis` says which split was used (`listing_dates` or `period_first`). Additive: until the metric exists nothing changes but the new input.
 - draft v0.4: sell-through is shown as two boxes (Dani's decision): new field `parts` on every KPI (`null` except KPI 11), `inputs.opening_stock`, and the note now states the assumption. This replaces v0.3's `from_period`, `from_earlier` and `sold_from_earlier` inputs and its "100% + ..." note, which nobody used yet. The examples now carry unit counts, so average selling price and sell-through are on their per-unit basis, as on the real pipeline since `transaction.md` v0.4.

@@ -141,8 +141,8 @@ def main(argv=None):
     if args.simulated:
         log("Store, internal API, KPIs: SKIPPED (simulated pulse; no transactions to store)", 4)
 
-    log("Render: dashboard page, CSV, email copy", 7)
-    paths = renderer.render(p, REPORTS / "pulse")
+    log("Render: dashboard page, CSV, Excel workbook, email copy", 7)
+    paths = renderer.render(p, REPORTS / "pulse", detail_dir=None if args.simulated else out)
     for path in paths:
         print(f"            {shown(path)}")
     print(f"            {shown(hub.build(REPORTS))} (portal)")

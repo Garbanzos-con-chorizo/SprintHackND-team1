@@ -97,7 +97,7 @@ class CloseCommandTest(unittest.TestCase):
             self.assertTrue((self.out / name).is_file(), name)
         self.assertEqual(sorted(p.name for p in (self.out / "inbox").iterdir()), self.names)
         page = self.base / "pages" / f"{MONTH}.html"
-        self.assertIn("Month-end close", page.read_text(encoding="utf-8"))
+        self.assertIn("Month-End Close", page.read_text(encoding="utf-8"))
         self.assertEqual(sorted(p.name for p in (self.base / "pages" / MONTH).iterdir()),
                          sorted(f"{k}_{MONTH}.csv" for k in CSVS))
 

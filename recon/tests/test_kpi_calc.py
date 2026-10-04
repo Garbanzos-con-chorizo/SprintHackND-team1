@@ -173,7 +173,8 @@ class HandComputed(unittest.TestCase):
 
     def test_revenue(self):
         self.check("fin.revenue", 35000,
-                   {"gross_cents": 36500, "refunds_cents": -1500, "fees_cents": 1985, "orders": 19},
+                   {"gross_cents": 36500, "refunds_cents": -1500, "fees_cents": 1985, "orders": 19,
+                    "by_marketplace": {SG: 22000, AM: 4500, EB: 8500}},  # each marketplace's revenue; adds up to 35000
                    prior_value=28000, delta={"value": 7000, "pct": 25.0, "reason": None})
 
     def test_revenue_growth(self):
@@ -304,7 +305,8 @@ class MissingMarketplaceData(unittest.TestCase):
         self.assertEqual((revenue["value"], revenue["status"], revenue["reason"]),
                          (None, "no_data", "no_marketplace_data"))
         self.assertEqual(revenue["inputs"],
-                         {"gross_cents": None, "refunds_cents": None, "fees_cents": None, "orders": None})
+                         {"gross_cents": None, "refunds_cents": None, "fees_cents": None, "orders": None,
+                          "by_marketplace": None})
         self.assertEqual(revenue["delta"], {"value": None, "pct": None, "reason": "current_no_data"})
         self.assertEqual(revenue["prior_value"], 28000)
         self.assertEqual(kpis["cat.top_revenue"]["rows"], [])

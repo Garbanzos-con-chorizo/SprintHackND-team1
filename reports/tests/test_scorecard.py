@@ -69,12 +69,12 @@ class ScorecardTest(unittest.TestCase):
         kf, _ = self.render("kpi.sample.month.json")
         with tempfile.TemporaryDirectory() as tmp:
             dest = Path(tmp)
-            self.assertNotIn("Download:", scorecard.render(kf, dest))
+            self.assertNotIn('href="month-2026-09.', scorecard.render(kf, dest))
             (dest / "month-2026-09.csv").write_text("x", encoding="utf-8")
             (dest / "month-2026-09.pdf").write_bytes(b"%PDF")
             html = scorecard.render(kf, dest)
-            self.assertIn('<a href="month-2026-09.csv">', html)
-            self.assertIn('<a href="month-2026-09.pdf">', html)
+            self.assertIn('<a class="btn quiet dl" href="month-2026-09.csv">', html)
+            self.assertIn('<a class="btn dl" href="month-2026-09.pdf">', html)
 
     def test_portal_card_switches_between_day_week_and_month_pages(self):
         from reports import hub
