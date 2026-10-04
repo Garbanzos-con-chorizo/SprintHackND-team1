@@ -14,3 +14,10 @@ Interface for the others: files in `out/`, plus the command `python -m engine ru
 ## Consequences
 - Dani and Orlando can use any language, because the contract is files.
 - Adding any other dependency needs a new decision record.
+
+## Update (2026-10-04, Victor): the project runs on Python 3.13
+- **`.python-version` at the root says `3.13`.** uv and pyenv pick it up. 3.12 still works (the minimum above stands); 3.11 doesn't (`reports/pulse.py`).
+- **Local setup, same on every machine, with uv** (it downloads 3.13 if missing): `uv venv` then `uv pip install -r engine/requirements.txt`, then run everything as `.venv\Scripts\python -m ...` (Windows) or after `.venv\Scripts\activate`. No new dependency.
+- Checked on CPython 3.13.14 (SQLite 3.53.1): engine 116 tests, recon unittest OK, reports 14 tests, `python -m reports.run_nightly --scenario gw_day_clean` runs.
+- The Docker image of decision 008 uses `python:3.13-slim`.
+- Dani already runs 3.13. Orlando: the `reports/pulse.py` f-string fix I asked for is now optional.
