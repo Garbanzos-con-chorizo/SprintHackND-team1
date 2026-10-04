@@ -67,8 +67,8 @@ def test_the_same_date_gives_the_same_data(tmp_path):
 
 def test_files_have_the_names_and_shapes_the_deck_shows(tmp_path):
     deliver(tmp_path, "2026-10-02")
-    names = sorted(p.name for p in (tmp_path / "inbox").iterdir())
-    assert names == ["amazon_orders_2026-10-02.xlsx", "ebay_orders_2026-10-02.xlsx",
+    names = sorted(p.name for p in (tmp_path / "inbox").iterdir() if p.name != "_simulated.json")  # V3.3 manifest
+    assert names ==["amazon_orders_2026-10-02.xlsx", "ebay_orders_2026-10-02.xlsx",
                      "orders2023-20261003-001500-96170.xlsx", "paid_orders_10-02-2026_10-02-2026.xlsx"]
 
 

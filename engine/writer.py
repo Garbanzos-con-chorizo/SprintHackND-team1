@@ -13,7 +13,7 @@ def now_local() -> datetime:
 
 
 def write_outputs(out_dir: Path, rows: list[dict], source_status: dict, warnings: list[dict],
-                  payouts: list[dict] = (), bank: list[dict] = ()) -> None:
+                  payouts: list[dict] = (), bank: list[dict] = (), source_coverage: dict | None = None) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # transactions.csv (transaction.md), then the close inputs (close-inputs.md), written even when empty.
@@ -31,3 +31,8 @@ def write_outputs(out_dir: Path, rows: list[dict], source_status: dict, warnings
     with open(out_dir / "warnings.json", "w", encoding="utf-8", newline="\n") as f:
         json.dump(warnings, f, indent=2)
         f.write("\n")
+
+    if source_coverage is not None:  # close-inputs.md
+        with open(out_dir / "source_coverage.json", "w", encoding="utf-8", newline="\n") as f:
+            json.dump(source_coverage, f, indent=2)
+            f.write("\n")
