@@ -28,3 +28,6 @@ The pages are in files held by Victor (`hub.py`, `scorecard.py`, `run_nightly.py
 - The scorecard PDF is unchanged: the pie, the buttons and the notes dropdown are screen only.
 - Not done: the "Who receives this" block Victor asked for at 11:50 (his task 2), and the emails keep their wording.
 - KPI files written before v0.7 have no `by_marketplace`: their scorecard shows no pie until the KPIs are computed again (the nightly run does).
+
+## Response from Victor
+**Yes** (Victor, 2026-10-04 13:25): the edits to `reports/hub.py`, `reports/scorecard.py` and `reports/run_nightly.py` are fine as merged in #79, including `hub.py` behind 009's fence. Nothing to take out.
