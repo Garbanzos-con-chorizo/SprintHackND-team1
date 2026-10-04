@@ -44,6 +44,8 @@ html { font-size:calc(100% * var(--a11y-font-scale, 1)); }
   body.dark-mode .card tbody > tr:hover > td:not(.nodata),
   body.dark-mode table.lib tbody tr[data-find]:hover td,
   body.dark-mode .pielegend li:hover { background-color:var(--nodata); }
+  /* The close page tints a row whose month-end file is missing (#fdf3f5): a dark red tint instead. */
+  body.dark-mode table.files tr:has(.pill.missing) td { background:#3b2127; }
   body.dark-mode .tick { border-top-color:var(--line); }
   body.dark-mode svg.line .grid { stroke:var(--line); }
   /* ShopGoodwill's chart blue is too dark on a dark card (about 2:1): a lighter tint of it. */
