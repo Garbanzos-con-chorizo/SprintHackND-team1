@@ -148,17 +148,6 @@ If several apply, `status` is the worst of them, `reason` is the first reason of
 | 14 | `cat.top_margin` | Top 10 Categories by Margin | ranking, cents | up | mixed | Category revenue (KPI 13) minus category cost of goods; `ratio` = margin / category revenue | `revenue_cents`, `cogs_cents`, `margin_cents`, `categories`, `rest_cents` |
 | 15 | `cust.repeat_buyer_rate` | Repeat Buyer Rate | ratio | up | files | Buyers with two or more orders in the period / buyers, over sale rows that have a `customer_id` | `buyers`, `repeat_buyers`, `orders_with_buyer_id`, `orders` |
 
-### Pillars
-Goodwill describes the dashboard twice: slide 32 asks it to balance five **pillars** (growth, profitability, productivity, inventory management, customer engagement), slide 35 lays the 15 KPIs out in five **areas**. The file keeps the areas as the layout and tags each KPI with its pillar, so the page can show both without holding a mapping of its own.
-
-| Pillar | KPIs |
-|---|---|
-| Growth | `fin.revenue`, `fin.revenue_growth`, `sales.asp`, `cat.top_revenue` |
-| Profitability | `fin.net_margin`, `cat.top_margin` |
-| Productivity | `prod.listings_created`, `prod.revenue_per_labor_hour`, `prod.listings_per_employee`, `sales.sales_per_employee` |
-| Inventory | `inv.days_donation_to_listing`, `inv.unlisted_backlog`, `inv.unsold_pct`, `sales.sell_through` (slide 36 calls it inventory velocity) |
-| Engagement | `cust.repeat_buyer_rate` (the only customer KPI of the 15) |
-
 Variants (`basis`) and fallbacks, each stated in `definition` and `note`:
 | KPI | `basis` | Meaning |
 |---|---|---|
@@ -170,6 +159,17 @@ Variants (`basis`) and fallbacks, each stated in `definition` and `note`:
 Consistency rules: cost of goods in KPI 3 is the sum of the category cost of goods of KPI 14, so the two never disagree. KPIs 8 and 9 are snapshots on `through`; their `prior_value` is the snapshot on `prior_period.through`. KPI 15 uses `customer_id` even where the pulse counts customers by order (Upright keeps the buyer hash).
 
 Rounding: cents and counts are integers; `ratio` has four decimals; `number` and `days` one decimal. Rounding happens once, on the final value.
+
+### Pillars
+Goodwill describes the dashboard twice: slide 32 asks it to balance five **pillars** (growth, profitability, productivity, inventory management, customer engagement), slide 35 lays the 15 KPIs out in five **areas**. The file keeps the areas as the layout and tags each KPI with its pillar, so the page can show both without holding a mapping of its own.
+
+| Pillar | KPIs |
+|---|---|
+| Growth | `fin.revenue`, `fin.revenue_growth`, `sales.asp`, `cat.top_revenue` |
+| Profitability | `fin.net_margin`, `cat.top_margin` |
+| Productivity | `prod.listings_created`, `prod.revenue_per_labor_hour`, `prod.listings_per_employee`, `sales.sales_per_employee` |
+| Inventory | `inv.days_donation_to_listing`, `inv.unlisted_backlog`, `inv.unsold_pct`, `sales.sell_through` (slide 36 calls it inventory velocity) |
+| Engagement | `cust.repeat_buyer_rate` (the only customer KPI of the 15) |
 
 ## Example (one KPI, from `kpi.sample.month.partial.json`)
 ```json
@@ -195,7 +195,7 @@ The store is defined by `docs/contracts/store.md` (schema: `engine/store/schema.
 The internal metrics read (a copy for convenience; `internal-api.md` is the authority). Flows are the day's amount; snapshots are the state at the end of the day:
 | `metric` | `dimension` | Kind | Used by |
 |---|---|---|---|
-| `labor_hours` | `total` (activities optional) | flow | 5 |
+| `labor_hours` | `total` | flow | 5 |
 | `labor_cost_cents` | `total` | flow | 3 |
 | `employees` | `total` (full-time equivalents) | snapshot | 6, 12 |
 | `listings_created` | marketplace | flow | 4, 6, 11 |
