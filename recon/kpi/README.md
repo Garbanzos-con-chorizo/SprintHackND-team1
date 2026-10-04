@@ -63,7 +63,7 @@ Rules that hold for every KPI (they are in the contract; the tests pin them):
 - The top 10 categories add up to total revenue to the cent, and net margin uses the same cost of goods as the margin ranking.
 
 ## Tests: `recon/tests/test_kpi_*.py`
-110 tests (141 with the pulse), all passing.
+113 tests (144 with the pulse), all passing.
 
 - `test_kpi_calc.py`: all 15 KPIs against values worked out by hand on two days of a week, then one test per state: a missing day, a day never loaded, no data at all, real zeros, no prior period, a partial comparison, different bases, no internal data, internal data for some days, an old snapshot, zero divisors, more than ten categories.
 - `test_kpi_periods.py`: ids, to-date windows, comparison windows, labels.
@@ -73,7 +73,7 @@ Rules that hold for every KPI (they are in the contract; the tests pin them):
 
 ## Known limits
 - **Verified end to end on 2026-10-03** (checkpoint 1), with the real commands: `engine.store backfill` on `clean_month` (engine, pulse, store load and internal pull for 30 days), then `recon.kpi --month 2026-09`. Revenue 7,075,396, refunds, fees and orders all equal the answer key; 13 KPIs `ok`, growth `no_data` (nothing stored for August), repeat buyers `partial` (Amazon gives no buyer id). The four `day_*` nights through `reports.run_nightly` and the `messy_month` (revenue 6,850,986 = its key, the three stale marketplace-days flagged) agree too. Every scalar KPI of those files was recomputed with plain SQL on the store: no difference.
-- **Sell-through is shown as two boxes, and both rest on an assumption.** The single rate (sold / listed in the period) passes 100% on short periods because older listings sell too (208% on Sunday October 4, 79% for September). So the file gives two boxes in `parts`: what sold of the period's own listings, and what sold of the stock left from earlier (the listings still active the night before). The data does not say which listing each sale came from, so what was listed in the period is taken to sell first: the first box is an upper bound, the second a lower bound, and the second is 0 whenever no more sold than was listed. Exact figures need sales by listing date from the listing system.
+- **Sell-through is shown as two boxes, and today both rest on an assumption.** The single rate (sold / listed in the period) passes 100% on short periods because older listings sell too (208% on Sunday October 4, 79% for September). So the file gives two boxes in `parts`: what sold of the period's own listings, and what sold of the stock left from earlier (the listings still active the night before). No export says which listing each sale came from, so what was listed in the period is taken to sell first: the first box is an upper bound, the second a lower bound. **The calculator already reads the real split** from the listing system's sales by listing date (`listing_to_sale_days`); that metric is requested from Victor and not in the mock yet, so `inputs.split_basis` reads `period_first` everywhere today.
 - **Six tests of the other lanes fail on this machine and on an untouched `main` alike** (run 2026-10-03 22:30): five PDF tests (`engine/tests/test_export_pdf.py`: "the browser wrote no PDF") and one email test that expects `.csv` to be `text/csv` (here it is `application/vnd.ms-excel`). The other 328 pass. The test suite no longer writes into `out/` (Victor fixed it).
 - **11 of the 15 KPIs are simulated** until Goodwill's internal data is real.
 - Growth compares with the period before, not year over year (needs 13 months stored).

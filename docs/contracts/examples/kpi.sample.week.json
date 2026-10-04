@@ -454,7 +454,8 @@
         "units_sold": 606,
         "orders": 529,
         "units_listed": 885,
-        "opening_stock": 2310
+        "opening_stock": 2310,
+        "split_basis": "period_first"
       }
     },
     {
