@@ -99,6 +99,11 @@ def main(argv=None):
         p = mock_pulse.build(args.scenario)[-1]
         (out / "pulse").mkdir(parents=True, exist_ok=True)
         (out / "pulse" / f"{day}.json").write_text(json.dumps(p, indent=2) + "\n", encoding="utf-8")
+    # File the night's pulse in the shared history (out/pulse/, as in docs/contracts/pulse.md),
+    # which the weekly dashboard and monthly scorecard read.
+    archive = ROOT / "out" / "pulse"
+    archive.mkdir(parents=True, exist_ok=True)
+    (archive / f"{day}.json").write_text(json.dumps(p, indent=2) + "\n", encoding="utf-8")
     ent = p["enterprise"]
     print(f"            enterprise revenue {renderer.money(ent['revenue_cents'])}, {ent['orders']} orders; "
           f"marketplaces with data: {', '.join(ent['included']) or 'none'}")

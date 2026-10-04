@@ -35,29 +35,30 @@ REASONS = {
     "prior_zero": "prior day revenue was $0",
 }
 
-# Goodwill palette. Green is too light for text on white (about 2:1), so it is only a badge
-# background under dark text; red passes as text (about 5.6:1).
+# Goodwill palette: blue #0054A4 and black #231F20 on white. Greys are tints of the black.
+# Green and red mark change and missing data only; green is too light for text on white
+# (about 2:1), so it is a badge background under black text; red passes as text (about 5.6:1).
 CSS = """
-:root { --primary:#0054A4; --ink:#231F20; --bg:#F4F6F8; --card:#fff; --up:#9DBB68; --down:#CC1F40;
-  --muted:#5b6066; --line:#dfe3e8; --down-bg:#fbe8ec; --nodata:#f1f3f5; }
+:root { --primary:#0054A4; --ink:#231F20; --bg:#fff; --card:#fff; --up:#9DBB68; --down:#CC1F40;
+  --muted:#5c5859; --line:#d3d2d2; --nodata:#f4f4f4; --radius:2px; }
 * { box-sizing:border-box; }
 body { margin:0; background:var(--bg); color:var(--ink);
   font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
 main { max-width:980px; margin:0 auto; padding:24px 16px 48px; }
-header { background:var(--primary); color:#fff; border-radius:10px; padding:18px 20px; }
+header { background:var(--primary); color:#fff; border-radius:var(--radius); padding:18px 20px; }
 header h1 { margin:0; font-size:22px; }
 header p { margin:4px 0 0; font-size:13px; opacity:.9; }
 .summary { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--primary);
-  border-radius:10px; padding:12px 16px; margin:16px 0 0; font-size:17px; font-weight:600; }
+  border-radius:var(--radius); padding:12px 16px; margin:16px 0 0; font-size:17px; font-weight:600; }
 .summary.alert { border-left-color:var(--down); }
 .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:16px 0; }
-.kpi { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+.kpi { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; }
 .kpi .label { color:var(--primary); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
 .kpi .value { font-size:24px; font-weight:700; margin-top:2px; font-variant-numeric:tabular-nums; }
 .kpi .sub { font-size:13px; margin-top:4px; }
-.banner { background:var(--down-bg); border-left:5px solid var(--down); border-radius:10px;
+.banner { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--down); border-radius:var(--radius);
   padding:10px 14px; margin:0 0 16px; font-size:14px; }
-.card { background:var(--card); border:1px solid var(--line); border-radius:10px; overflow-x:auto; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow-x:auto; }
 table { width:100%; border-collapse:collapse; min-width:720px; }
 th, td { padding:10px 12px; text-align:right; border-bottom:1px solid var(--line);
   font-variant-numeric:tabular-nums; white-space:nowrap; }
@@ -66,11 +67,11 @@ th:first-child, td:first-child, td.status, th.status { text-align:left; }
 tr.total td { font-weight:700; border-top:2px solid var(--primary); border-bottom:none; }
 td.nodata { text-align:left; background:var(--nodata); color:var(--down); font-weight:600; }
 td.nodata.quiet { color:var(--muted); font-weight:400; font-style:italic; }
-.pill { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; }
+.pill { display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:var(--radius); }
 .pill.ok { background:var(--up); color:var(--ink); }
 .pill.missing, .pill.stale, .pill.unknown { background:var(--down); color:#fff; }
 .pill.not_configured { border:1px solid var(--line); color:var(--muted); }
-.chg { display:inline-block; padding:1px 8px; border-radius:6px; font-weight:600; }
+.chg { display:inline-block; padding:1px 8px; border-radius:var(--radius); font-weight:600; }
 .chg.up { background:var(--up); color:var(--ink); }
 .chg.down { background:var(--down); color:#fff; }
 .muted { color:var(--muted); }
@@ -83,7 +84,7 @@ dt { font-weight:600; color:var(--ink); }
 dd { margin:0; }
 a { color:var(--primary); }
 ul.days { list-style:none; padding:0; margin:16px 0; }
-ul.days li { background:var(--card); border:1px solid var(--line); border-radius:10px; margin-bottom:8px; }
+ul.days li { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:8px; }
 ul.days a { display:block; padding:12px 16px; text-decoration:none; font-weight:600; }
 .chg, .pill { border:1px solid transparent; }
 @media print {
@@ -94,9 +95,9 @@ ul.days a { display:block; padding:12px 16px; text-decoration:none; font-weight:
   header, .summary, .pill, .chg, .banner, td.nodata { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   /* ...and borders that still read correctly if backgrounds are dropped. */
   header { border:2px solid var(--primary); }
-  .chg.up, .pill.ok { border-color:#6d8a3c; }
+  .chg.up, .pill.ok { border-color:var(--ink); }
   .chg.down, .pill.missing, .pill.stale, .pill.unknown { border-color:var(--down); }
-  .kpi, .card, .summary, .banner { border-color:#9aa1a8; }
+  .kpi, .card, .summary, .banner { border-color:var(--muted); }
   .card { overflow:visible; }
   table { min-width:0; font-size:9.5pt; }
   th, td { padding:6px 8px; }
@@ -311,8 +312,8 @@ def render_day(p):
 
 # Email copy: Outlook desktop renders with Word, which ignores <style> variables, grid and
 # border-radius. So: nested tables, every style inline on the element, web-safe fonts, hex colors.
-E = {"primary": "#0054A4", "ink": "#231F20", "bg": "#F4F6F8", "up": "#9DBB68", "down": "#CC1F40",
-     "muted": "#5b6066", "line": "#dfe3e8"}
+E = {"primary": "#0054A4", "ink": "#231F20", "bg": "#ffffff", "up": "#9DBB68", "down": "#CC1F40",
+     "muted": "#5c5859", "line": "#d3d2d2"}
 EMAIL_FONT = "font-family:Arial,Helvetica,sans-serif;"
 
 

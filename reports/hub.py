@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 HUB_CSS = """
 .hub-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin:18px 0 0; }
 .hub-card { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--primary);
-  border-radius:10px; padding:16px 18px; }
+  border-radius:var(--radius); padding:16px 18px; }
 .hub-card.alert { border-left-color:var(--down); }
 .hub-card.empty { border-left-color:var(--line); }
 .hub-card .label { color:var(--primary); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
@@ -103,11 +103,11 @@ def build(root=ROOT / "reports"):
     root = Path(root)
     cards, mock = zip(*(card(root, item) for item in SUITE))
     note = ("<p>Pages marked <strong>mock data</strong> are built from the synthetic sample exports; "
-            "numbers with a yellow badge are simulated internal data.</p>") if any(mock) else ""
+            "KPIs marked SIMULATED use simulated internal data.</p>") if any(mock) else ""
     body = (f'<header><h1>Goodwill Michiana e-commerce reports</h1>'
-            f'<p>Latest reports · updated {datetime.now():%Y-%m-%d %H:%M} · static pages, open from this folder</p></header>'
+            f'<p>Latest reports · updated {datetime.now():%Y-%m-%d %H:%M}</p></header>'
             f'<div class="hub-grid">\n' + "\n".join(cards) + '\n</div>'
-            f'<section class="foot">{note}<p>A red edge means that report flags missing data or partial totals.</p></section>')
+            f'<section class="foot">{note}<p>Red edge: the report flags missing data or partial totals.</p></section>')
     path = root / "index.html"
     path.write_text(PAGE.substitute(title="E-commerce reports", css=CSS + HUB_CSS, body=body), encoding="utf-8")
     return path

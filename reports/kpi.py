@@ -23,16 +23,17 @@ KPI_CSS = """
 .section h2 { font-size:15px; color:var(--primary); margin:0 0 8px; text-transform:uppercase; letter-spacing:.04em; }
 .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; }
 .card.kpi { padding:14px 16px; overflow:visible; }
-.badge { display:inline-block; margin-top:6px; font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; }
+.badge { display:inline-block; margin-top:6px; font-size:11px; font-weight:700; padding:2px 6px; border-radius:var(--radius);
+  text-transform:uppercase; letter-spacing:.03em; }
 .badge.files { color:var(--primary); border:1px solid var(--primary); }
-.badge.simulated { color:var(--ink); background:#fff4cc; border:1px dashed #8a6d00; }
-.simnote { background:#fff4cc; border:1px dashed #8a6d00; border-radius:10px; padding:10px 14px; margin:16px 0 0; font-size:14px; }
+.badge.simulated { color:var(--ink); background:var(--nodata); border:1px dashed var(--ink); }
+.simnote { background:var(--nodata); border:1px dashed var(--ink); border-radius:var(--radius); padding:10px 14px; margin:16px 0 0; font-size:14px; }
 .card table { min-width:520px; }
 """
 
-SIMNOTE = """<p class="simnote"><strong>Simulated internal data:</strong> numbers with a yellow badge use labor hours, listings,
-cost of goods or category mix from a mock of Goodwill's internal systems. They show how the dashboard works,
-not Goodwill's real figures. Blue-badge numbers come from the marketplace exports.</p>"""
+SIMNOTE = """<p class="simnote"><strong>Simulated internal data:</strong> KPIs marked SIMULATED use labor hours, listings,
+cost of goods or category mix from a mock of Goodwill's internal systems, not Goodwill figures. KPIs marked
+FROM MARKETPLACE FILES are calculated from the exports.</p>"""
 
 PAGE_BODY = Template("""<header>
   <h1>$title</h1>
