@@ -17,12 +17,12 @@ internal API (mock)                                         ──> python -m en
 - **File:** `out/store/ecom.db` (under `out/`, so it's not committed). The `ECOM_DB` setting overrides the path. Python standard library `sqlite3`, no server, no new dependency.
 - **Moving later:** the SQL is kept plain so it moves to Azure SQL or Postgres with a short migration script. The SQLite-only parts are marked `sqlite:` in `schema.sql`: `PRAGMA user_version` and the `date(...)` expressions in `v_weekly`.
 
-| Command | What it does |
-|---|---|
-| `python -m engine.store init` | Creates the database from `schema.sql`. Safe on an existing database. |
-| `python -m engine.store load --in-dir out --date D` | Loads one business date (rules below). |
-| `python -m engine.store backfill --inbox DIR --from D1 --to D2` | Runs engine, pulse, load and internal pull for each day of the range. |
-| `python -m engine.store status [--month M]` | Days present, missing and partial per marketplace. |
+| Command | State | What it does |
+|---|---|---|
+| `python -m engine.store [--db PATH] init` | built | Creates the database from `schema.sql`. Safe on an existing database. |
+| `python -m engine.store [--db PATH] load --in-dir out [--date D] [--pulse-dir DIR]` | built | Loads one business date (rules below). `--date` defaults to the one in `source_status.json`; the pulse file defaults to `<in-dir>/pulse/<D>.json`. Exit 1 and nothing changed if an input is missing or wrong. |
+| `python -m engine.store backfill --inbox DIR --from D1 --to D2` | next (V2.4) | Runs engine, pulse, load and internal pull for each day of the range. |
+| `python -m engine.store status [--month M]` | next (V2.3) | Days present, missing and partial per marketplace. |
 
 ## Conventions (all tables)
 - Money: `INTEGER` cents. Dates: `TEXT 'YYYY-MM-DD'`, the Eastern business date. Timestamps: `TEXT`, ISO 8601 with offset.
@@ -45,9 +45,10 @@ internal API (mock)                                         ──> python -m en
 The views leave out `customers` on purpose: adding daily counts doesn't give distinct buyers over a week. Count distinct buyers from `transactions` instead (`customer_basis = 'buyer'`, per marketplace, since buyer ids aren't comparable across marketplaces).
 
 ## Load rules (`store load --date D`)
-- **One date, one database transaction, all or nothing.** Load deletes every `transactions`, `pulse_daily` and `warnings` row for D, then inserts the new ones (`INSERT OR REPLACE` on `txn_id`, so a row whose date moved since the last load moves with it). **Re-running a date gives the same database**, and rows a fixed engine no longer produces disappear (a plain per-row upsert would leave them behind).
+- **One date, one database transaction, all or nothing.** Load deletes every `transactions`, `pulse_daily` and `warnings` row for D, then inserts the new ones (`INSERT OR REPLACE` on `txn_id`, so a row whose date moved since the last load moves with it). **Re-running a date gives the same data** (only `run_id` and the `runs` log change), and rows a fixed engine no longer produces disappear (a plain per-row upsert would leave them behind).
 - Only rows of `transactions.csv` with `business_date = D` are loaded; the file can hold other days (the month samples do).
 - All four marketplaces of the pulse are stored, including `not_configured`, so "no data" is always a row, never a gap.
+- Load needs `transactions.csv` and the pulse file for D (it says to run `recon.pulse` first if that's missing); `warnings.json` and `source_status.json` are optional. A pulse file for another date, or a missing required column, fails the load.
 - A failed load writes nothing except a `runs` row with `result = 'failed'`; the previous load of D stays.
 - `internal_api pull --date D` follows the same rule for `internal_daily`.
 
@@ -74,4 +75,5 @@ How the store helps on the rubric. Every claim below is true of what we build; s
 - **Don't claim:** live Azure, multi-user access, or real internal data. The rubric's overclaim flag drops Working Evidence to level 1.
 
 ## Changelog
+- v0.2 (2026-10-03, Victor): `init` and `load` built (`engine/store/`, tests in `engine/tests/test_store.py`). Wording: a re-run gives the same data, not the same file. Load's required and optional inputs are listed.
 - draft v0.1 (2026-10-03, Victor): initial, from `docs/PLAN_PHASE_2_3.md` section 6. Adds `warnings` and `v_daily` (not in the plan), `units` in `transactions`, and the delete-then-insert load rule.
