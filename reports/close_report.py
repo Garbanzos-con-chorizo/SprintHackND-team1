@@ -4,13 +4,19 @@ Reads out/close/<YYYY-MM>/ (control totals, exceptions, General Journal, AR invo
 there, the close payload, the engine's files and the run history) and writes reports/close/<YYYY-MM>.html:
 what is simulated, the reconciliation status per source, the exceptions to work with who owns each,
 shipping cost per carrier, the Cash Monkey cross-check, Goodwill's nine month-end sources with what this
-run has for each, jewelry sales by supplier, and a block of download buttons for the export files (copied
-next to the page). The explanations of each table sit in a "Notes and Definitions" dropdown at the bottom;
+run has for each and a file picker beside each one (below), jewelry sales by supplier, and a block of
+download buttons for the export files (copied next to the page). The explanations of each table sit in a "Notes and Definitions" dropdown at the bottom;
 an asterisk beside a heading opens it.
 
 The nine sources and their wording come from reports/config/close_sources.csv (deck slide 38). `Detect`
 says how the page knows a source reached this run; `When_Absent` is what it says otherwise ("not in
 this inbox" now that the engine reads all nine; "not modeled" for a source nothing reads).
+
+The file pickers: Goodwill's Controller downloads the month-end reports by hand (Debie Coble, 2026-10-04;
+decision 012), so each of the nine sources has a place to choose the downloaded file. The chosen files go to
+the server's /api/close/<month>/ routes (decision 010, reports/close_upload.py), which keep them in
+out/uploads/<month>/ and run the same close again. The page computes nothing; opened from disk, it says it
+needs the server.
 
     python -m reports.close_report --month 2026-09
 """
@@ -53,6 +59,16 @@ table.tight th { white-space:normal; }
 .export .actions { margin:0; }
 .export .hint { margin:10px 0 0; font-size:14px; color:var(--muted); }
 .simnote { margin:12px 0 0; font-size:13px; border:1px dashed var(--ink); padding:8px 12px; border-radius:var(--radius); }
+/* One file picker per month-end source, and the button that hands the chosen files to the close. */
+td.pick, th.pick { white-space:normal; text-align:left; }
+td.pick input[type=file] { font:inherit; font-size:13px; max-width:230px; }
+.byhand { margin:0 0 8px; font-size:15px; }
+.pickrun { padding:12px 16px; margin:8px 0 0; overflow:visible; border-left:5px solid var(--primary); }
+.pickrun .actions { margin:0; }
+.pickrun [hidden] { display:none; }
+.pickrun p { margin:8px 0 0; font-size:13px; color:var(--muted); }
+.pickrun p#pick-state { min-height:1.5em; font-size:15px; font-weight:600; color:var(--ink); }
+.pickrun p#pick-state.bad { color:var(--down); }
 .state { font-weight:700; }
 .state.absent { font-weight:400; color:var(--muted); }
 @media print {
@@ -62,9 +78,57 @@ table.tight th { white-space:normal; }
   th, td { padding:3px 5px; }
   td.detail { max-width:none; }
   .simnote { font-size:7.5pt; padding:3px 6px; }
-  .export, .nav { display:none; }
+  .export, .nav, .pick, .pickrun { display:none; }
 }
 """
+
+
+BY_HAND = ("Goodwill's Controller downloads these reports by hand today (Debie Coble, President and CEO, "
+           "2026-10-04). Nothing in Goodwill's process fetches them, so the close starts from the downloaded files.")
+
+# Sends the files chosen beside the sources to the server, asks it to run the close again and reloads the page.
+# The server does the work (reports.close_upload, decision 010); opened from disk, the pickers say they need it.
+PICK_SCRIPT = """<script>
+(function () {
+  var box = document.getElementById("pick");
+  if (!box) return;
+  var api = "../api/close/" + box.dataset.month, head = { "X-Reports": "1" };
+  var picks = [].slice.call(document.querySelectorAll("input.src-file"));
+  var run = document.getElementById("pick-run"), clear = document.getElementById("pick-clear");
+  var state = document.getElementById("pick-state");
+  function say(text, bad) { state.textContent = text; state.className = bad ? "bad" : ""; }
+  function off(text) { picks.forEach(function (p) { p.disabled = true; }); run.disabled = true; clear.hidden = true; say(text); }
+  function json(r) { return r.json(); }
+  function again() { return fetch(api + "/run", { method: "POST", headers: head }).then(json).then(function (d) {
+    if (!d.ok) throw new Error(d.error || (d.log || []).slice(-2).join(" ") || "the close did not run");
+    say("Done. Loading the new result...");
+    location.reload();
+  }); }
+  function fail(e) { run.disabled = clear.disabled = false; say("Not done: " + e.message, true); }
+  if (location.protocol === "file:") return off("Choosing files needs the report server: run python server.py and open http://127.0.0.1:8000/");
+  fetch(api + "/uploads").then(json).then(function (d) {
+    if (!d.enabled) return off("Adding files is switched off on this server.");
+    clear.hidden = !(d.files || []).length;
+    if (!clear.hidden) say("Added so far: " + d.files.join(", "));
+  }).catch(function () { off("Choosing files needs the report server (python server.py)."); });
+  run.addEventListener("click", function () {
+    var files = [], seen = {};
+    picks.forEach(function (p) { [].forEach.call(p.files, function (f) { if (!seen[f.name]) { seen[f.name] = 1; files.push(f); } }); });
+    if (!files.length) return say("Choose a downloaded file beside at least one source first.", true);
+    run.disabled = true;
+    say("Adding " + files.length + " file(s)...");
+    files.reduce(function (before, f) { return before.then(function () {
+      return fetch(api + "/uploads/" + encodeURIComponent(f.name), { method: "PUT", headers: head, body: f }).then(json)
+        .then(function (d) { if (!d.ok) throw new Error(d.error || d.detail || "the file was not accepted"); });
+    }); }, Promise.resolve()).then(function () { say("Running the close again..."); return again(); }).catch(fail);
+  });
+  clear.addEventListener("click", function () {
+    clear.disabled = true;
+    say("Removing the added files and running the close again...");
+    fetch(api + "/uploads", { method: "DELETE", headers: head }).then(json).then(again).catch(fail);
+  });
+})();
+</script>"""
 
 
 def read(path):
@@ -163,15 +227,28 @@ def render(month, folder):
             f'<td class="text">{escape(r["Acquisition_Rule"])}</td>'
             f'<td class="text"><span class="state{"" if present else " absent"}">'
             f'{escape(r["Origin"] if present else r["When_Absent"])}</span>{"; " + escape(note) if note else ""}</td>'
-            f'<td class="detail">{escape(r["What_We_Read"]) if present else ""}</td></tr>'
+            f'<td class="detail">{escape(r["What_We_Read"]) if present else ""}</td>'
+            f'<td class="pick"><input type="file" class="src-file" multiple accept=".csv,.xlsx" '
+            f'aria-label="Downloaded file for {escape(r["Source"])}"></td></tr>'
             for r, present, note in source_states(folder, payload))
         note_sources = ('The first three columns are Goodwill\'s own (their slide 38). "Sample file" is a synthetic file '
-                        'we generated; "simulated API" is a file written by a stand-in for an API we have not seen; '
-                        '"not in this inbox" means no file of that source reached this run.')
+                        'we generated; "simulated API" is a file written by our simulator: Goodwill has no such API today, '
+                        'and the simulator stands in for the Controller\'s download; '
+                        '"not in this inbox" means no file of that source reached this run. A file chosen here is '
+                        f'kept in out/uploads/{month}/ and the same close runs again with it; the engine recognizes '
+                        'each file by its own name and layout, whichever source it was chosen beside.')
         sources = (f'<h2 class="sec">Goodwill\'s nine month-end sources, and what this run has for each{ast(note_sources)}</h2>'
+                   f'<p class="byhand">{escape(BY_HAND)} Choose each downloaded file beside its source.</p>'
                    '<div class="card"><table><thead><tr><th>Source</th><th class="text">Month-end input</th>'
                    '<th class="text">Acquisition / rule</th>'
-                   f'<th class="text">In this run</th><th class="text">What we read</th></tr></thead><tbody>\n{rows}\n</tbody></table></div>')
+                   f'<th class="text">In this run</th><th class="text">What we read</th>'
+                   f'<th class="pick">Choose the downloaded file</th></tr></thead><tbody>\n{rows}\n</tbody></table></div>'
+                   f'<section class="card pickrun" id="pick" data-month="{month}"><div class="actions">'
+                   '<button class="btn" id="pick-run" type="button">Add the chosen files and run the close again</button>'
+                   '<button class="btn quiet" id="pick-clear" type="button" hidden>Remove the added files and run again</button>'
+                   '</div><p id="pick-state" role="status"></p>'
+                   '<p>Only .csv and .xlsx. A file whose name is already in the run is refused, not counted twice. '
+                   'Nothing is posted.</p></section>' + PICK_SCRIPT)
 
     shipping = ""
     if shipping_rows:

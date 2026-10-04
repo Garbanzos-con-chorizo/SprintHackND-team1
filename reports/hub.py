@@ -302,6 +302,7 @@ ADD_CSS = """
 .addfiles ul { padding-left:20px; }
 .addrow { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0 4px; }
 .addrow input[type=file] { font:inherit; font-size:14px; max-width:100%; }
+.addfiles [hidden] { display:none; }  /* .btn sets display, which would show a hidden button */
 /* The export files of a month: one button each, in a column that wraps. */
 table.lib td.files { white-space:normal; min-width:300px; }
 table.lib td.files a.btn { margin:0 6px 6px 0; }
@@ -411,8 +412,9 @@ def build(root=ROOT / "reports"):
     band = f'<div class="charts">{bars}{pie}</div>' if bars and pie else bars or pie
     about = notes([
         ("", f'<p><strong>{DATA_LABEL}.</strong> Every figure on these pages comes from synthetic sample files and '
-             f'simulated APIs: {DATA_NOTE}. KPIs marked "Simulated internal data" use a mock of Goodwill\'s internal '
-             f'systems. The month-end close writes export files for Business Central: nothing is posted.</p>'),
+             f'simulators: {DATA_NOTE}. The month-end reports are downloaded by hand at Goodwill (decision 012); our '
+             f'simulators stand in for that download. KPIs marked "Simulated internal data" use a mock of Goodwill\'s '
+             f'internal systems. The month-end close writes export files for Business Central: nothing is posted.</p>'),
         ("Charts", '<p>Revenue is as on the nightly pulse: sales minus refunds, before marketplace fees. A night with a '
                    'missing file shows only the marketplaces that reported; no data is never drawn as zero. The pie adds '
                    'up the nights on file of the latest week, Monday to Sunday.</p>'),
