@@ -37,18 +37,19 @@ The third run is the "Generate the month-end close" button on the close page, no
 
 | Time | On screen | Say |
 |---|---|---|
-| 0:00 | Slide 1, Goodwill's three sentences | "This is Goodwill's problem in their words: three reports, built by hand from six or more systems." |
-| 0:15 | Slide 2, the diagram | "One program builds all three. In: the reports Goodwill already receives. Out: the pulse, the scorecard and the Business Central files. The data is synthetic, and we'll show exactly what is real." |
-| 0:25 | Slide 3, then switch to the terminal | "Here it is running, in one take: a clean input, then a messy one." |
+| 0:00 | Slide 1, the title | "We are Chorizo Power, on Goodwill Michiana's reporting problem." |
+| 0:05 | Slide 2, Goodwill's three sentences | "This is Goodwill's problem in their words: three reports, built by hand from six or more systems." |
+| 0:20 | Slide 3, the diagram | "One program builds all three. In: the reports Goodwill already receives. Out: the pulse, the scorecard and the Business Central files. The data is synthetic, and we'll show exactly what is real." |
+| 0:30 | Slide 4, then switch to the terminal | "Here it is running, in one take: a clean input, then a messy one." |
 
-**Nightly pulse (0:30 to 0:55)**
+**Nightly pulse (0:35 to 1:00)**
 - **Do:** `python -m reports.run_nightly --scenario gw_day_clean --open --pace 0.4`
 - **Say:** "Every night two reports arrive: Upright for ShopGoodwill, Cash Monkey for eBay and Amazon. It parses them, puts every order on the right Eastern day and publishes. Revenue up 7.1% versus Wednesday, ShopGoodwill strongest."
 - **Do:** `python -m reports.run_nightly --scenario gw_day_cashmonkey_missing --open`
 - **Say:** "Now the night the Cash Monkey email never came. A spreadsheet would show eBay and Amazon at zero. This says no data, and the total says it is partial."
 - **Point at:** `ebay MISSING`, `amazon MISSING` in the log; "Amazon and eBay: no data for this day" on the page.
 
-**Month-end close (0:55 to 1:50)**
+**Month-end close (1:00 to 1:55)**
 - **Do:** the first close command (tidy month); then the close tab, Ctrl+F5.
 - **Say:** "Month-end. Today it's a workbook pasted into Business Central. Here it's one command running Goodwill's own six steps. Every report in: the journal balances, and every cent each marketplace still owes is explained."
 - **Point at:** the six step lines; `OPEN` on eBay, Amazon, ShopGoodwill; `Unexplained $0.00`.
@@ -61,28 +62,29 @@ The third run is the "Generate the month-end close" button on the close page, no
 - **Do:** open the General Journal CSV from the close page in Excel.
 - **Say:** "This is what goes to Business Central: General Journal lines in its own column order. Nothing is posted."
 
-**COO scorecard (1:50 to 2:10)**
+**COO scorecard (1:55 to 2:15)**
 - **Do:** the portal tab, COO Scorecards, September 2026.
 - **Say:** "And the monthly dashboard: Goodwill's own fifteen KPIs in their five areas, computed from the nightly data. Eleven need internal data we haven't seen, so each one says 'simulated' on the tile. The change against August is against a simulated August, so it's illustrative."
 - **Point at:** a "Simulated internal data" badge; Repeat Buyer Rate marked partial.
 - **If there are five spare seconds** (a small plus, cut it first): "The pages also have an accessibility menu: dark mode, larger text, a dyslexia-friendly font." Point at the menu; do not change a setting mid-take.
 
-**Back to the slides (2:10 to 3:15)**
+**Back to the slides (2:15 to 3:20)**
 
 | Time | On screen | Say |
 |---|---|---|
-| 2:10 | Slide 4 | "It checks its own work. Totals match an answer key computed apart from the program; a journal that doesn't balance is never written; a missing report is never zero." |
-| 2:20 | Slide 5, the missing-report steps | "What you just saw, step by step: a payout arrives, no report covers some of its days, the close names them and gives them an owner, and adding the report closes the gap." |
-| 2:32 | Slide 6, integration | "It fits the systems they already run: Excel, Outlook drafts, and Business Central, which Goodwill told us is cloud and takes CSV uploads; our files follow its column order. The backend can also write the same lines as Business Central API requests; it has never been connected. The Controller still downloads the reports by hand; everything after the download is automatic. It runs on one computer or one Docker image, and the account rules are a CSV, not code." (Never "integrated", "posts" or "fetches": `docs/contracts/bc-api.md`, decision 012.) |
-| 2:52 | Slide 7 | "What we simulated: all the data, the provider APIs and the mailbox, and the internal data behind eleven of the fifteen KPIs. Not done: posting, their real accounts, and their workbook's rules." |
-| 3:07 | Slide 8 | "From manual reporting to management visibility: the nightly pulse, the scorecard and the close. Thank you." |
+| 2:15 | Slide 5 | "It checks its own work. Totals match an answer key computed apart from the program; a journal that doesn't balance is never written; a missing report is never zero." |
+| 2:25 | Slide 6, the missing-report steps | "What you just saw, step by step: a payout arrives, no report covers some of its days, the close names them and gives them an owner, and adding the report closes the gap." |
+| 2:37 | Slide 7, integration | "It fits the systems they already run: Excel, Outlook drafts, and Business Central, which Goodwill told us is cloud and takes CSV uploads; our files follow its column order. The backend can also write the same lines as Business Central API requests; it has never been connected. The Controller still downloads the reports by hand; everything after the download is automatic. It runs on one computer or one Docker image, and the account rules are a CSV, not code." (Never "integrated", "posts" or "fetches": `docs/contracts/bc-api.md`, decision 012.) |
+| 2:57 | Slide 8 | "What we simulated: all the data, the provider APIs and the mailbox, and the internal data behind eleven of the fifteen KPIs. Not done: posting, their real accounts, and their workbook's rules." |
+| 3:12 | Slide 9, thank you | "From manual reporting to management visibility, in Goodwill's words: the nightly pulse, the scorecard and the close. Thank you; we're happy to take questions." |
 
 ## If the slot is shorter: cut in this order
-1. Slide 5, the missing-report steps (12 s): the messy close already showed it.
+1. Slide 6, the missing-report steps (12 s): the messy close already showed it.
 2. The Excel step in the close (about 5 s).
 3. The scorecard down to one sentence and the badge (saves about 10 s).
-4. Slide 4 (10 s).
-Never cut slide 1, the messy close, slide 6 or slide 7.
+4. Slide 5 (10 s).
+5. The title slide down to a click (5 s); the team name stays in every footer.
+Never cut slide 2 (Goodwill's words), the messy close, slide 7 or slide 8.
 
 ## Numbers to expect (synthetic; check them at the dry run)
 
