@@ -18,20 +18,20 @@ Files in this folder:
    About a minute. It builds the pulse pages, the September scorecard (page, CSV, one-page PDF), the simulated month-end sources in `out/close_sources/2026-09/inbox`, the close and the portal. Do not delete `out/` afterwards.
 2. In a second terminal: `python server.py`. Leave it running, off screen.
 3. Browser (zoom 110-125%), tabs in this order:
-   1. `docs/pitch/deck-proposal/deck.html`, full screen (F)
-   2. http://127.0.0.1:8000/close/2026-09.html
-   3. http://127.0.0.1:8000/close/index.html
-   4. http://127.0.0.1:8000/ (the portal, for the scorecard)
-4. Choose the two files in `data/sample/messy_month/late/` once in the panel's file dialog and cancel, so the dialog opens in that folder during the take. Check `out/uploads/2026-09/` is empty (`python -m reports.close_upload --month 2026-09 --clear` if not).
-5. Terminal: font 18 pt or more, repo root, cleared. The commands below in a text file to paste; nothing typed live.
-6. Excel closed; notifications off; everything else closed.
+   1. the deck, https://claude.ai/artifact/F1y3oyZP9vKm88Vn6Tqcti, in Present mode (or its Google Slides copy). Not `deck.html` in this folder: that is the older seven-slide version.
+   2. http://127.0.0.1:8000/close/2026-09.html (the month's close page: the pickers and the Generate button need the server, not a file opened from disk)
+   3. http://127.0.0.1:8000/ (the portal, for the scorecard)
+4. On the close page, open the file dialog of the Amazon picker once, go to `data/sample/messy_month/late/`, and cancel, so the dialog opens in that folder during the take. Check `out/uploads/2026-09/` is empty: if the page shows "Remove the added files and generate again", click it, or run `python -m reports.close_upload --month 2026-09 --clear`.
+5. Leave the accessibility menu (on most pages) closed and on its defaults, so the pages look as rehearsed.
+6. Terminal: font 18 pt or more, repo root, cleared. The commands below in a text file to paste; nothing typed live.
+7. Excel closed; notifications off; everything else closed.
 
 The three close commands (paste them as they are):
 ```
 python -m reports.close --month 2026-09 --inbox data/sample/tidy_month/inbox --inbox data/sample/tidy_month/periodic --inbox out/close_sources/2026-09/inbox
 python -m reports.close --month 2026-09 --inbox data/sample/messy_month/inbox --inbox data/sample/messy_month/periodic --inbox out/close_sources/2026-09/inbox
 ```
-The third run is the panel in the browser, not a command.
+The third run is the "Generate the month-end close" button on the close page, not a command.
 
 ## The take (one recording, no cuts)
 
@@ -54,10 +54,10 @@ The third run is the panel in the browser, not a command.
 - **Point at:** the six step lines; `OPEN` on eBay, Amazon, ShopGoodwill; `Unexplained $0.00`.
 - **Do:** the second close command (messy month); Ctrl+F5.
 - **Say:** "The same month as it really arrives: duplicates, broken rows, and two reports nobody downloaded. Amazon paid $743.10 more than our files explain, and the page says why: no report covers September 21 and 22. ShopGoodwill, $1,875.64, September 7. And a $412.37 deposit matches nothing, so it is held out of the journal with an owner."
-- **Point at:** the two `INCOMPLETE` pills; the two `payout data gap` lines; the `Owner` column; the `unmatched deposit` line.
-- **Do:** the Month-end Close list tab. In the panel, choose the two files in `messy_month/late/`, then "Add files and generate the month-end close" (about 5 seconds).
-- **Say:** "Someone finds the two reports and adds them here. The close runs again: both gaps close, and the deposit nobody can place is still held out."
-- **Point at:** all `OPEN`; 13 exceptions.
+- **Point at:** step 1 at the top, "To be complete, this month needs 2 more reports", naming Amazon (Sep 21, Sep 22) and ShopGoodwill (Upright, Sep 7), with "Missing days" beside both; lower down, the two `INCOMPLETE` pills, the two `payout data gap` lines, the `Owner` column and the `unmatched deposit` line.
+- **Do:** on the same page, in step 1, choose `amazon_daterange_2026-09-21_2026-09-22.csv` beside Amazon and `paid_orders_09-07-2026_09-07-2026.xlsx` beside Upright (both in `messy_month/late/`), then step 2, "Generate the month-end close" (about 5 seconds; the page rebuilds).
+- **Say:** "The Controller finds the two reports and drops each one beside its source. One button generates the close again: both gaps close, and the deposit nobody can place is still held out."
+- **Point at:** "Complete" in step 1; all `OPEN`; 13 exceptions.
 - **Do:** open the General Journal CSV from the close page in Excel.
 - **Say:** "This is what goes to Business Central: General Journal lines in its own column order. Nothing is posted."
 
@@ -65,6 +65,7 @@ The third run is the panel in the browser, not a command.
 - **Do:** the portal tab, COO Scorecards, September 2026.
 - **Say:** "And the monthly dashboard: Goodwill's own fifteen KPIs in their five areas, computed from the nightly data. Eleven need internal data we haven't seen, so each one says 'simulated' on the tile. The change against August is against a simulated August, so it's illustrative."
 - **Point at:** a "Simulated internal data" badge; Repeat Buyer Rate marked partial.
+- **If there are five spare seconds** (a small plus, cut it first): "The pages also have an accessibility menu: dark mode, larger text, a dyslexia-friendly font." Point at the menu; do not change a setting mid-take.
 
 **Back to the slides (2:10 to 3:15)**
 
