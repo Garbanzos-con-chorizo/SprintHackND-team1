@@ -1,10 +1,39 @@
-# Status — Victor (core engine, `engine/`)
+# Status — Victor (core engine `engine/`; phase 2: store, internal API, exports, nightly run)
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 · **Branch:** victor/ingest-framework
+**Last updated:** 2026-10-03 22:00 · **Branch:** victor/store-contract
 
-## Done
+## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`
+**Decision 007:** agreed by all three, SQLite included (Orlando's amendment at 21:30, my response appended). Tripwire: if September isn't in the store by 10:00 Sunday, the KPIs read the files instead.
+
+### Done (branch `victor/store-contract`)
+- **C3** `docs/contracts/store.md` + `engine/store/schema.sql`: tables `transactions`, `pulse_daily`, `internal_daily`, `runs`, `warnings`, `kpi_values`; views `v_daily`, `v_weekly` (ISO weeks, Monday start), `v_monthly`. Checked in memory: the schema runs twice without error, and the views give NULL (not 0) for days with no data. **Dani: enough to build your test database now** (snippet in `store.md`, "Rules for readers").
+- **C4** `docs/contracts/internal-api.md`: 4 endpoints and the 10 metrics Dani's `kpi.md` asks for (names unchanged), 14 categories; category sales scaled to the pulse revenue.
+- Pitch notes for the store (rubric points, demo moments, what not to claim): `docs/contracts/store.md`, "For the pitch".
+
+### Next, in order (sizes S < 30 min, M 30-90 min)
+| ID | Task | Size | Target |
+|---|---|---|---|
+| V2.1 | `engine/store/`: connection, `init`, `ECOM_DB` path | S | Sun 08:00 |
+| V2.3 | `store status` (views already in the schema) | S | 08:30 |
+| V2.2 | `store load --date D`: delete-then-insert per date, one transaction; re-run changes nothing (test) | M | 09:15 |
+| V2.4 | `store backfill`: September from `clean_month` (one month file per marketplace, so engine runs once per date on the same inbox); month revenue = `expected.json` | M | **10:00 tripwire** |
+| V2.5 | `engine/internal_api/`: client + mock per `internal-api.md`; `reports/mock_api.py` re-exports it until Orlando switches | M | 10:45 |
+| V2.6 | `internal_api pull`, included in backfill | S | 11:00 checkpoint 1 |
+| V2.11 | `run_nightly`: add store load, internal pull, kpi | S | after CP1 |
+| V2.8 | `export kpi-csv` from the KPI file (against Dani's sample file) | S | |
+| V2.9 | `export pdf`: headless Edge prints Orlando's scorecard page (needs O2.4); goes to Orlando if late | M | |
+| V2.10 | Attach the PDF to Orlando's `email_gen.py` `.eml` (already writes drafts) | S | |
+| V2.7 | `units` in parsers + `transaction.md` (the `units` column already exists in the store, NULL for now) | S-M | if time |
+| V2.12 | August sample for growth | M | cut first |
+Then phase 3, with Orlando's `reports/bc_export.py` already on `main`.
+
+### Blocked / needs from others
+- None on Dani: `kpi.md` + sample KPI files are on `main` (#15); V2.8 codes against them.
+- Orlando: print layout (O2.4), for V2.9. And read my SQLite response in 007.
+
+## Done (phase 1)
 - Phase split of all tasks: `docs/PHASES.md`
 - Phase 1 transaction contract (draft): `docs/contracts/transaction.md`, mock `docs/contracts/examples/transactions.sample.csv`
 - Handoff map: `docs/HANDOFFS.md` (PR #4)
@@ -38,26 +67,8 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 7. **Scraper is a stub:** `MockScraperAdapter` is handed the records a scraper would have extracted (a JSON fixture or a list of dicts keyed by the source's column names). No login, no network, no paging, no retries. The real scrapers in `engine/scrapers/` are separate and still skeletons.
 8. **Duplicates across adapters:** the same transaction from two adapters counts once; the first adapter's copy wins and the other is logged.
 
-## In progress (claimed, so nobody doubles up)
-- P-V4 real `source_status.json`, P-V3 day cutoff config, V9 runner summary (all `engine/`)
-- Running `engine` against Orlando's `data/sample/*` and comparing with each `expected.json`
-- 0.2 rules contract draft (`docs/contracts/rules.md`), after the items above
-- Not mine: pulse calculation (Dani), sample data and HTML report (Orlando)
-
-## Blocked / needs from others
-- Dani: write `docs/contracts/pulse.md` (P0); confirm or change the pulse JSON shape proposed in `docs/HANDOFFS.md`
-- Anyone who can log in to the portals: run the discovery step in `docs/decisions/003-portal-acquisition.md` (network tab: is the report one replayable request?), starting with Upright (deck slides 21-26) and Cash Monkey (27-30)
-- Orlando: sample exports (O1, P-O1) so parsers match real column names; until then I code against hand-made rows
-- Team: confirm `transaction.md` (task 0.6) and pick the engine language (V1)
-
-## Next (phase 1, in order)
-1. ~~V1 scaffold~~ done
-2. ~~V2 parser base interface and source detection~~ done (branch `victor/v2-parsers`, stacked on V1). To add a source: one module in `engine/sources/`, see `engine/parsers.py` docstring
-3. ~~V3 parsers: ShopGoodwill, eBay, Amazon~~ done on guessed columns; correct the aliases in `engine/sources/*.py` when real files arrive
-4. V6 cleaning and warnings, P-V5 dedupe, P-V3 day boundary
-5. P-V1 marketplace tagging, P-V2 customer identity
-6. V9 runner and P-V4 source status
-Phase 3 (V4, V5, V7, V8, V10, V11, rule contract 0.2) comes after the pulse works end to end.
+## Phase 1 leftovers
+Phase 1 runs end to end (all 8 sample scenarios match their answer keys through the pulse). The old in-progress, blocked and next lists are replaced by the phase 2 section above. Open from phase 1: real column names for Upright and Cash Monkey when real files arrive; the portal discovery step in decision 003.
 
 ## How to run / test my part
 From the repo root, Python 3.11+:
