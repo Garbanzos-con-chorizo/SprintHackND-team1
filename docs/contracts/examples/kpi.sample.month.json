@@ -354,11 +354,11 @@
       "note": null,
       "basis": null,
       "covers": null,
-      "prior_value": null,
+      "prior_value": 0.3522,
       "delta": {
-        "value": null,
+        "value": -0.0319,
         "pct": null,
-        "reason": "no_prior_period"
+        "reason": null
       },
       "good_direction": "down",
       "source": "internal",
@@ -417,21 +417,21 @@
         {
           "id": "listed_in_period",
           "name": "Listed in the period",
-          "value": 0.7827,
-          "sold": 2766,
+          "value": 0.5937,
+          "sold": 2098,
           "available": 3534
         },
         {
           "id": "left_from_earlier",
           "name": "Left from earlier",
-          "value": null,
-          "sold": 0,
-          "available": null
+          "value": 0.2904,
+          "sold": 668,
+          "available": 2300
         }
       ],
       "status": "ok",
       "reason": null,
-      "note": "Assumes what was listed in the period sold first: 2,766 of the 2,766 units sold count against the 3,534 listed in the period, 0 against what was left from earlier (no stock count for the day before the period).",
+      "note": "By listing date: 2,098 of the 2,766 units sold had been listed in the period (3,534 listed), 668 came from the 2,300 left from earlier.",
       "basis": "units",
       "covers": null,
       "prior_value": null,
@@ -448,8 +448,8 @@
         "units_sold": 2766,
         "orders": 2422,
         "units_listed": 3534,
-        "opening_stock": null,
-        "split_basis": "period_first"
+        "opening_stock": 2300,
+        "split_basis": "listing_dates"
       }
     },
     {

@@ -2,7 +2,34 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 22:45 EDT · **Branch:** d/sell-through-exact
+**Last updated:** 2026-10-03 23:45 EDT · **Branch:** d/phase2-handoff (everything of mine is on `main`)
+
+## Handoff (2026-10-03 23:45): my side of phase 2 is finished; Victor finishes the rest
+Dani's decision: Victor takes what is left of phase 2. The list is in "Phase 2: what is left" below and in Victor's requests.
+
+- **Branch:** nothing open. All of `recon/` is on `main`; `recon.kpi` needs no further work for phase 2.
+- **What works** (run from a clean checkout tonight, `main` at 9233f9e plus this branch):
+  - `python -m pytest engine recon reports -q` -> 347 passed, 1 skipped.
+  - `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04` -> exit 0 in 42 s: seeds September into the store, runs the eight nights, builds the September scorecard with its CSV and one-page PDF on the 1st, the close, and the email drafts.
+  - September from that run: revenue 7,075,396 = the answer key; 13 KPIs ok, repeat buyers partial (Amazon has no buyer id), growth no data (no August). Average selling price $28.67 per unit. Sell-through 79.1%, split by listing date into 61.3% (1,911 of the 3,120 listed in the period) and 15.3% (557 of the 3,646 left from earlier). Recomputed with plain SQL on the store: same numbers.
+- **How to run:** see "How to run / test my part" at the end. On my machine the dependencies are in a virtual environment inside the worktree (`.venv`); elsewhere `pip install -r engine/requirements.txt`.
+- **Known issues in my part:** none open. Limits are listed in `recon/kpi/README.md` ("Known limits").
+- **Next step for whoever continues:** the list below, top to bottom.
+
+## Phase 2: what is left (checked on the generated pages, not on the status files)
+The store, the internal snapshot, the 15 KPIs, the monthly scorecard page, the KPI CSV, the PDF and the monthly email all work. What is missing is on the pages, plus one sample month:
+
+| # | What is left | Where | How to check it is done |
+|---|---|---|---|
+| 1 | **Sell-through as two boxes.** The tile still shows one number (79.1%) with the note under it. The KPI file has the boxes: `parts` on `sales.sell_through`, always two (`listed_in_period`, `left_from_earlier`), each with `name`, `value` (may be null: show "No data"), `sold`, `available`. Keep printing `note`. | `reports/scorecard.py` (Orlando's file) | The September page shows "Listed in the period 61.3%" and "Left from earlier 15.3%"; the four `kpi.sample.*.json` render; `kpi.sample.day.json` has a first box without a value |
+| 2 | **The weekly page still computes its own numbers.** `reports/weekly.py` uses `reports/kpi.py` and `reports/mock_api.py`: 34 KPIs in the old five groups of decision 006, from the old mock and a mock pulse history. It disagrees with the scorecard and is the last user of both files. Render the week from `out/kpi/week-<id>.json` with `reports.scorecard` instead, then delete `reports/kpi.py` and `reports/mock_api.py` (plan O2.5, D2.11). | `reports/weekly.py`, `reports/hub.py`, `reports/run_scheduled.py` | No file imports `reports.kpi` or `mock_api` any more; the weekly card opens a 15-KPI page |
+| 3 | **Day, week and month-to-date scorecards are never built.** The nightly run writes `out/kpi/day-*.json`, `week-*.json` and `month-*.json` every night, but only the month page is rendered, on the 1st. No period switch on the portal (plan O2.3). | `reports/run_nightly.py` (render step), `reports/hub.py` | After a night, `reports/scorecard/` has that day, the week to date and the month to date, and the portal links them |
+| 4 | **No download links for the KPI CSV and the PDF.** Both files are written next to the page (`reports/scorecard/month-2026-09.csv`, `.pdf`), but the page links only "All scorecards" and "Reports", and the portal card links the JSON and the daily CSV (plan O2.6). | `reports/scorecard.py`, `reports/hub.py` | The scorecard page and its portal card link the CSV and the PDF |
+| 5 | **Revenue Growth % reads "No data" on the September scorecard**: nothing is stored for August (plan V2.12, first on the cut list). Either generate an August sample (`data/generate.py` is Orlando's) and backfill it, or demo the October page, which has growth (+9.6% on September 1 to 4) but is flagged partial. | `data/`, backfill | The September scorecard shows a growth figure, or the demo script says which page is shown |
+| 6 | **No demo script for phases 2 and 3**, and `docs/pitch/kpi_catalog.md` still lists the old groups (plan O2.8). | `docs/pitch/` | A script that walks store status, the scorecard, the CSV and PDF, and what is simulated |
+| 7 | `docs/PHASES.md` still says phase 2 has nobody assigned. | `docs/PHASES.md` | It points to the plan and says what is done |
+
+Not on the list because they are done or cut on purpose: the trend chart (O2.7, cut early in the plan), `kpi_values` (written), the PDF and content-type failures I reported at 22:35 (fixed by Victor, the suite passes here now).
 
 ## Done
 - P0 pulse contract (draft): `docs/contracts/pulse.md`, mocks `docs/contracts/examples/pulse.sample.json` (clean day) and `pulse.sample.missing.json` (eBay missing). Merged in PR #9.
@@ -41,8 +68,7 @@ Found on the way:
 
 ## Still not verified
 - Real Goodwill files and a real internal API: everything above is synthetic data and the mock.
-- Which listing each sale came from: not in the data, so sell-through's two boxes are bounds (see checkpoint 1). **Victor paged (22:45) to add `listing_to_sale_days` to the mock; my side already reads it** (tested with hand-made rows, never with his mock, which does not have it yet).
-- PDF export on this machine: `engine/tests/test_export_pdf.py` fails here and on an untouched `main` ("the browser wrote no PDF"); told Victor.
+- Which listing each sale came from is simulated: the mock's `listing_to_sale_days` (Victor added it at 22:52 after my page). The calculator's fallback, assuming what was listed in the period sells first, now only runs if that metric is missing.
 
 ## For teammates: what the new context file changes
 - **Orlando (P-O2):** Goodwill's own nightly table (slide 31) labels the rows SHOPGOODWILL, AMAZON, EBAY, OTHER E-COMMERCE CHANNELS and TOTAL E-COMMERCE, with columns DAILY REVENUE and DAILY CUSTOMERS. Use their labels.
@@ -51,14 +77,12 @@ Found on the way:
 - **Victor:** nothing here contradicts `docs/contracts/source-formats.md`; it agrees that staff count rows (orders) as customers. The pulse takes `customer_basis` from the engine's rows, so no pulse change is needed either way.
 
 ## Blocked / needs from others
-- Nothing blocks me.
-- Orlando: tell me when the page reads `out/kpi/*.json`, then we delete the math in `reports/kpi.py` (D2.11).
+- Nothing blocks me, and nothing in `recon/` is waiting.
 
-## Next (task ids from `docs/PLAN_PHASE_2_3.md`)
-1. When Victor's `listing_to_sale_days` lands: re-run the backfill, check `inputs.split_basis` reads `listing_dates`, regenerate the contract examples with the metric in the sample database.
-2. Check Orlando's two sell-through boxes once he has drawn them (render a day and a month).
-3. D2.11 with Orlando: the weekly page still computes its own numbers.
-4. Phase 3: Orlando has the export and the reconciliation on `main` (`reports/bc_export.py`, `reports/reconcile.py`); ask what is left to split.
+## Next
+- Phase 2: see "Phase 2: what is left" at the top. Victor continues (Dani's decision); items 1 to 4 are in Orlando's files.
+- For `recon/` itself, only if Goodwill answers an open definition (`docs/contracts/kpi.md`, "Open questions"): each is one constant at the top of `recon/kpi/kpis.py`.
+- Phase 3: Orlando has the export and the reconciliation on `main` (`reports/bc_export.py`, `reports/reconcile.py`); ask what is left to split.
 
 ## How to run / test my part
 - Tests: `python -m unittest discover -s recon -t .` from the repo root (144 pass). On my machine Python 3.13 is only on the `py` launcher, so `py -m ...`.

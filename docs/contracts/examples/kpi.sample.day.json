@@ -449,7 +449,7 @@
         "orders": 79,
         "units_listed": 0,
         "opening_stock": 2335,
-        "split_basis": "period_first"
+        "split_basis": "listing_dates"
       }
     },
     {

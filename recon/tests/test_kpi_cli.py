@@ -159,8 +159,8 @@ class KpiCommand(unittest.TestCase):
         self.assertEqual(kpis["cust.repeat_buyer_rate"]["reason"], "period_too_short")
 
     def test_a_period_before_anything_was_stored_is_all_no_data(self):
-        self.kpi("--month", "2026-08")
-        doc = self.read("month-2026-08.json")
+        self.kpi("--month", "2026-07")  # August has one row: the stock count of the 31st
+        doc = self.read("month-2026-07.json")
         self.assertEqual((doc["period"]["complete"], doc["coverage"]["days_missing"]), (True, 31))
         self.assertEqual({k["status"] for k in doc["kpis"]}, {"no_data"})
         self.assertIsNone(doc["internal_data"])

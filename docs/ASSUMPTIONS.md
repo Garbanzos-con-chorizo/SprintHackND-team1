@@ -78,7 +78,7 @@ The open definitions of the 15 KPIs (growth against the prior period, what "unso
 
 | # | Assumption | Why | Confidence |
 |---|---|---|---|
-| 4b.1 | **Sell-through's two boxes assume that what was listed in a period sells first.** "Listed in the period" is then the most the period's own listings can account for, and "Left from earlier" the least that came from older stock. | No export says which listing a sale came from. Goodwill's listing system knows each item's listing date; once the internal API gives sales by listing date (`listing_to_sale_days`, requested), the split is read instead of assumed. The page states which one was used. | assumption, replaced by data when the metric exists (`recon/kpi/kpis.py`, `_boxes`) |
+| 4b.1 | **Which listing a sale came from is taken from the listing system, which today is the mock.** Sell-through's two boxes ("Listed in the period", "Left from earlier") split what sold by listing date, using the internal API's sales by days since listing (`listing_to_sale_days`). That data is simulated, and the boxes are badged like every simulated number. If the metric is missing for a period, the calculator falls back to assuming that what was listed in the period sells first, and the note on the page says so. | No export says which listing a sale came from. Goodwill's listing system knows each item's listing date; we have not seen that data. | assumption (`recon/kpi/kpis.py`, `_boxes`; `engine/internal_api/mock.py`) |
 
 ## 5. How we clean the data
 | # | Assumption | Why | Confidence |
