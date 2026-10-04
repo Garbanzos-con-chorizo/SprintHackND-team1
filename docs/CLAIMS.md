@@ -4,3 +4,4 @@ Add a row before editing anything outside your lane (shared config, dependency f
 
 | Path | Who | Since | Why |
 |------|-----|-------|-----|
+| `CLAUDE.md` | Victor | 2026-10-03 23:50 | fill the snapshot, lanes table and file map (draft PR for team review); delete this row when merged |
