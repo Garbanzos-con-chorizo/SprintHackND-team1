@@ -1,11 +1,12 @@
 """Business Central export: balance check, refusal, reconciliation status and the file read-back."""
 import copy
+import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
-from reports import bc_export as bc
+from reports import bc_export as bc, mock_recon
 
 
 class BcExportTest(unittest.TestCase):
@@ -48,14 +49,21 @@ class BcExportTest(unittest.TestCase):
             self.assertEqual(bc.main(["--out", tmp]), 1)
             self.assertEqual(list(Path(tmp).iterdir()), [])
 
-    def test_missing_deposit_leaves_an_open_balance_but_still_balances(self):
+    def test_missing_deposit_is_unexplained_until_an_exception_explains_it(self):
         payload = copy.deepcopy(self.payload)
         last = [d for d in payload["deposits"] if d["source"] == "amazon"][-1]
         payload["deposits"].remove(last)
         journal, _, control, _ = self.run_build(payload)
         self.assertEqual(bc.unbalanced(journal), {})
         amazon = next(r for r in control if r["Source"] == "Amazon")
-        self.assertEqual((amazon["Status"], amazon["Open Balance"]), ("OPEN", last["amount_cents"]))
+        self.assertEqual((amazon["Status"], amazon["Unexplained"]), ("UNEXPLAINED", last["amount_cents"]))
+
+        payload["exceptions"].append({"kind": "in_transit", "source": "amazon", "amount_cents": last["amount_cents"],
+                                      "effect": "open_balance", "detail": "settlement paid, not in the bank yet"})
+        _, _, control, _ = self.run_build(payload)
+        amazon = next(r for r in control if r["Source"] == "Amazon")
+        self.assertEqual((amazon["Status"], amazon["Open Balance"], amazon["Unexplained"]),
+                         ("OPEN", last["amount_cents"], 0))
 
     def test_unmapped_source_and_its_deposit_become_exceptions(self):
         payload = copy.deepcopy(self.payload)
@@ -76,6 +84,21 @@ class BcExportTest(unittest.TestCase):
         self.assertIn("ECOM-2609-SGW-FEES", {line["Document No."] for line in journal})
         sgw = next(r for r in control if r["Source"] == "ShopGoodwill")
         self.assertEqual(sgw["Status"], "RECONCILED")
+
+
+class MessyMonthCloseTest(unittest.TestCase):
+    """The September messy month, through the answer-key payload: balanced, open, fully explained."""
+
+    def test_open_balances_are_fully_explained(self):
+        key = json.loads((mock_recon.SAMPLES / "messy_month" / "expected.json").read_text(encoding="utf-8"))
+        journal, _, control, exceptions = bc.build(mock_recon.build(key), bc.load_mapping())
+        self.assertEqual(bc.unbalanced(journal), {})
+        self.assertEqual({r["Status"] for r in control}, {"OPEN"})
+        self.assertEqual([r["Unexplained"] for r in control], [0, 0, 0])
+        kinds = [e["kind"] for e in exceptions]
+        self.assertEqual(kinds.count("unmatched_deposit"), 1)
+        self.assertEqual(kinds.count("prior_month_refund"), 2)
+        self.assertIn("in_transit", kinds)
 
 
 if __name__ == "__main__":

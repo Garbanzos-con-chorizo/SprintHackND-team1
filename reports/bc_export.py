@@ -33,7 +33,11 @@ JOURNAL_COLUMNS = ["Posting Date", "Document Type", "Document No.", "Account Typ
 INVOICE_COLUMNS = ["Document No.", "Customer No.", "Posting Date", "Type", "No.", "Description", "Quantity",
                    "Unit Price", "Amount", "Department Code"]
 CONTROL_COLUMNS = ["Source", "Path", "Revenue In", "Revenue Posted", "Difference", "Receivable Posted",
-                   "Deposits", "Open Balance", "Status"]
+                   "Deposits", "Open Balance", "Explained", "Unexplained", "Status"]
+EXCEPTION_COLUMNS = ["Kind", "Source", "Amount", "Effect", "Detail"]
+# Effect of an exception: "open_balance" explains part of a source's open balance (money in transit,
+# activity not paid yet, a payout for activity missing from our files); "not_posted" = held out of BC;
+# "info" = nothing to post, someone should look.
 
 
 def _mock_payload():
@@ -102,7 +106,8 @@ def build(payload, mapping):
     for src, s in payload["sources"].items():
         m = mapping.get(src)
         if not m:
-            exceptions.append({"kind": "unmapped_source", "detail": f"{src}: no row in bc_mapping.csv; not posted"})
+            exceptions.append({"kind": "unmapped_source", "source": src, "amount_cents": net(s), "effect": "not_posted",
+                               "detail": f"{src}: no row in bc_mapping.csv; not posted"})
             continue
         posted_sources.append(src)
         label, code = m["Label"], m["Code"]
@@ -132,9 +137,10 @@ def build(payload, mapping):
     for dep in sorted(payload.get("deposits", []), key=lambda d: (d["date"], d["source"])):
         m = mapping.get(dep["source"])
         if not m or dep["source"] not in posted_sources:
-            exceptions.append({"kind": "unmatched_deposit",
-                               "detail": f"{dep['date']} {dep.get('reference', '')} {dep['amount_cents'] / 100:.2f}: "
-                                         f"source '{dep['source']}' not posted this month"})
+            exceptions.append({"kind": "unmatched_deposit", "source": dep["source"], "amount_cents": dep["amount_cents"],
+                               "effect": "not_posted",
+                               "detail": f"{dep['date']} {dep.get('reference', '')}: source '{dep['source']}' "
+                                         f"not posted this month"})
             continue
         base = f"BNK-{dep['date'][5:7]}{dep['date'][8:]}-{m['Code']}"
         seen[base] += 1
@@ -163,10 +169,14 @@ def build(payload, mapping):
                                 and l["Document Type"] != "Payment"))
         deposits = sum(d["amount_cents"] for d in payload.get("deposits", []) if d["source"] == src)
         diff, open_balance = rev_posted - rev_in, receivable - deposits
+        explained = sum(e.get("amount_cents", 0) for e in exceptions
+                        if e.get("effect") == "open_balance" and e.get("source") == src)
+        unexplained = open_balance - explained
+        status = ("MISMATCH" if diff else "UNEXPLAINED" if unexplained else "OPEN" if open_balance else "RECONCILED")
         control.append({"Source": m["Label"], "Path": m["Path"], "Revenue In": rev_in, "Revenue Posted": rev_posted,
                         "Difference": diff, "Receivable Posted": receivable, "Deposits": deposits,
-                        "Open Balance": open_balance,
-                        "Status": "MISMATCH" if diff else ("OPEN" if open_balance else "RECONCILED")})
+                        "Open Balance": open_balance, "Explained": explained, "Unexplained": unexplained,
+                        "Status": status})
     return journal, invoice, control, exceptions
 
 
@@ -187,7 +197,7 @@ def us_date(iso):
     return f"{d.month:02d}/{d.day:02d}/{d.year}"
 
 
-def write(folder, month, journal, invoice, control, exceptions):
+def write(folder, month, journal, invoice, control, exceptions, mapping):
     folder.mkdir(parents=True, exist_ok=True)
     paths = {k: folder / f"{k}_{month}.csv" for k in ("general_journal", "ar_invoice", "control_totals", "exceptions")}
     with open(paths["general_journal"], "w", encoding="utf-8", newline="") as f:
@@ -210,8 +220,12 @@ def write(folder, month, journal, invoice, control, exceptions):
             w.writerow([r[c] if c in ("Source", "Path", "Status") else dollars(r[c]) for c in CONTROL_COLUMNS])
     with open(paths["exceptions"], "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["Kind", "Detail"])
-        w.writerows([e["kind"], e["detail"]] for e in exceptions)
+        w.writerow(EXCEPTION_COLUMNS)
+        for e in exceptions:
+            src = e.get("source") or ""
+            w.writerow([e["kind"], mapping.get(src, {}).get("Label", src),
+                        dollars(e["amount_cents"]) if e.get("amount_cents") is not None else "",
+                        e.get("effect", "info"), e["detail"]])
     return paths
 
 
@@ -253,7 +267,7 @@ def main(argv=None):
         print("No journal written. Fix the payload or bc_mapping.csv and run again.", file=sys.stderr)
         return 1
     folder = Path(args.out) / payload["month"]
-    paths = write(folder, payload["month"], journal, invoice, control, exceptions)
+    paths = write(folder, payload["month"], journal, invoice, control, exceptions, mapping)
     problems, n_lines, n_docs = verify_files(paths)
     print(f"{payload.get('mock', 'payload ' + str(args.payload))}: close {payload['month']}")
     for k, p in paths.items():
@@ -264,8 +278,10 @@ def main(argv=None):
     for r in control:
         print(f"  {r['Source']:<13} {r['Path']:<8} revenue in {dollars(r['Revenue In']):>10}  posted "
               f"{dollars(r['Revenue Posted']):>10}  receivable {dollars(r['Receivable Posted']):>10}  "
-              f"deposits {dollars(r['Deposits']):>10}  open {dollars(r['Open Balance']):>7}  {r['Status']}")
-    print(f"  exceptions: {len(exceptions)}")
+              f"deposits {dollars(r['Deposits']):>10}  open {dollars(r['Open Balance']):>9}  explained "
+              f"{dollars(r['Explained']):>9}  unexplained {dollars(r['Unexplained']):>6}  {r['Status']}")
+    print(f"  exceptions: {len(exceptions)} " + str(dict(sorted(
+        {k: sum(e['kind'] == k for e in exceptions) for k in {e['kind'] for e in exceptions}}.items()))))
     for p in problems:
         print(f"  {p}", file=sys.stderr)
     return 2 if problems else 0

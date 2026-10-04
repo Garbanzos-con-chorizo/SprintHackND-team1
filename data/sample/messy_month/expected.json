@@ -1220,21 +1220,33 @@
         "refunds_cents": 0,
         "fees_cents": 0,
         "orders": 1174,
-        "revenue_cents": 3911800
+        "revenue_cents": 3911800,
+        "shipping_cents": 1412826,
+        "handling_cents": 352200,
+        "net_cents": 5676826,
+        "unpaid_activity_cents": 542993
       },
       "ebay": {
         "sales_cents": 2005232,
         "refunds_cents": -9497,
         "fees_cents": 310373,
         "orders": 768,
-        "revenue_cents": 1995735
+        "revenue_cents": 1995735,
+        "shipping_cents": 163527,
+        "handling_cents": 0,
+        "net_cents": 1848889,
+        "unpaid_activity_cents": 0
       },
       "amazon": {
         "sales_cents": 948649,
         "refunds_cents": -5198,
         "fees_cents": 250496,
         "orders": 410,
-        "revenue_cents": 943451
+        "revenue_cents": 943451,
+        "shipping_cents": 179151,
+        "handling_cents": 0,
+        "net_cents": 872106,
+        "unpaid_activity_cents": 51632
       }
     },
     "payouts": [
