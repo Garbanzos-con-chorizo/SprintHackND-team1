@@ -26,4 +26,7 @@ class ShopGoodwill(OrderReportParser):
     gross = ("Winning bid", "Final price", "Item total", "Item price", "Amount")
     buyer = ("Buyer ID", "Bidder", "Winner", "Buyer")
     refund_amount = ("Refund amount", "Refunded")
+    shipping = ("Shipping",)
+    handling = ("Handling Fee", "Handling")
+    units_per_row = 1  # one item per row (Item #)
     currency = ("Currency",)

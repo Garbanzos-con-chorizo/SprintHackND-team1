@@ -65,6 +65,7 @@ class Facts:
     buyers: dict
     internal: Internal
     split: dict | None  # revenue and cost of goods per category
+    opening_stock: int | None  # listings still active the night before the window; None if not stored
 
 
 def coverage(win, pulse):
@@ -163,4 +164,5 @@ def facts(win, data):
         buyers=buyer_stats(data.sales),
         internal=internal,
         split=category_split(files, internal),
+        opening_stock=round(math.fsum(r.value for r in data.opening)) if data.opening else None,
     )

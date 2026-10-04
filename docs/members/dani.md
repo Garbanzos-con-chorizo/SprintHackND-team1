@@ -2,7 +2,7 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 21:20 EDT · **Branch:** d/kpi-calc (stacked on d/kpi-contract-v02)
+**Last updated:** 2026-10-03 22:35 EDT · **Branch:** d/sell-through-boxes
 
 ## Done
 - P0 pulse contract (draft): `docs/contracts/pulse.md`, mocks `docs/contracts/examples/pulse.sample.json` (clean day) and `pulse.sample.missing.json` (eBay missing). Merged in PR #9.
@@ -18,15 +18,31 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 ## Done (phase 2)
 - **C2** KPI contract `docs/contracts/kpi.md`: v0.1 merged (#15). **v0.2 (contract change, announced here):** the examples are now the calculator's own output, two more examples (`kpi.sample.week.json`, `kpi.sample.day.json`, asked by Orlando), inputs point to `store.md` and `internal-api.md`, each KPI carries slide 32's `pillar` (Victor's alignment note), the KPIs are also recorded in `kpi_values`, and several rules are spelled out (changelog in the file).
 - **D2.1 to D2.9** `recon/kpi/`: the 15 KPIs for a day, an ISO week or a month, with status (`ok` / `partial` / `no_data`), note, prior value and change. `python -m recon.kpi --month 2026-09` (or `--week`, `--date`, or `--period month` alone for the period of the latest stored day) writes `out/kpi/<type>-<id>.json`, `latest-<type>.json` and `kpi_values`. Summary: `recon/kpi/README.md`.
-- **D2.10** tests: 103 new (134 in `recon`). All 15 KPIs against hand-computed values; the command reproduces the four contract examples exactly; September revenue equals the `clean_month` answer key to the cent (7,075,396). The test databases are built from Victor's `engine/store/schema.sql`.
+- **D2.10** tests: 110 new (141 in `recon`). All 15 KPIs against hand-computed values; the command reproduces the four contract examples exactly; September revenue equals the `clean_month` answer key to the cent (7,075,396). The test databases are built from Victor's `engine/store/schema.sql`.
 - Decision 007: resolution appended (SQLite agreed by all three).
 
-## In progress
-- Two PRs: `d/kpi-contract-v02` (contract v0.2 and the four examples, docs only) and `d/kpi-calc` (the calculator and its tests, stacked on it).
+## Checkpoint 1: done (2026-10-03 21:45, on my machine, real commands)
+Environment: a virtual environment in the worktree (`.venv`) with `engine/requirements.txt`. Tests there: `pytest` 303 passed (engine 147, reports 22, recon 134).
 
-## Not verified yet (be careful what you claim)
-- **`recon.kpi` ran on Victor's real loader only for two fixture days.** By hand: `recon/tests/fixtures/clean_day` -> `recon.pulse` -> `engine.store` `load_day` -> `recon.kpi --date 2026-10-02`: revenue 30,147, prior day 25,800, change 4,347, the pulse's own numbers; `kpi_values` and the `runs` line written; the `other` row (`not_configured`) ignored. **Not run:** the engine's real output for a whole month (its dependencies are not installed on this machine) and anything with internal data (`internal_api pull` does not exist yet, so the 11 internal KPIs have only ever seen my test rows). That is checkpoint 1.
-- 11 of the 15 KPIs rest on simulated internal data; ASP and sell-through are per order until the transactions carry `units`.
+| Step | What I ran | What I saw |
+|---|---|---|
+| September into the store | `python -m engine.store backfill --inbox data/sample/clean_month/inbox --from 2026-09-01 --to 2026-09-30` | 30 of 30 days complete in 14 s, internal snapshot 30 of 30 days |
+| September KPIs | `python -m recon.kpi --month 2026-09` | **Revenue 7,075,396 = answer key**; gross, refunds, fees (582,033) and orders (2,422) equal it too. 13 ok, 1 partial (repeat buyers: Amazon has no buyer id), 1 no data (growth: nothing stored for August) |
+| Independent check | Plain SQL on the store, no code of mine | All 23 comparisons equal for September, October to date, week 40 and the messy month |
+| Four nights | `python -m reports.run_nightly --scenario day_clean`, `day_refund`, `day_ebay_missing`, `day_duplicates` | Exit 0 each, all 7 steps. October to date: revenue 981,461, flagged partial (eBay missing on the 3rd), up 9.6% on September 1 to 4 (895,886) |
+| Scorecard pages | `python -m reports.monthly --month 2026-09` and `2026-10` | Both pages render from my KPI files: 15 KPIs, 11 badged as simulated |
+| Messy month | Same backfill on `messy_month`, into its own store (`ECOM_DB=out/store/messy.db`) | Revenue 6,850,986 = its answer key; the three stale marketplace-days (Sep 7 ShopGoodwill, Sep 21 and 22 Amazon) are in `coverage.gaps`; 9 KPIs partial |
+
+Found on the way:
+- **Sell-through is now two boxes (Dani's decision, 22:20; contract v0.4).** The single rate read over 100% on single days (208% on Sunday October 4 with unit counts) because older listings sell too. KPI 11 now carries `parts`: "Listed in the period" (what sold, up to what was listed) and "Left from earlier" (the rest, against the listings still active the night before). Real run: October 4 is 100.0% (39 of 39) and 1.2% (42 of 3,519); September is 79.1% (2,468 of 3,120) and no data for the second box (no stock count for August 31). **Both boxes rest on an assumption** (what was listed in the period sells first), stated in the note; exact figures need sales by listing date from the listing system. Orlando paged to draw the two boxes.
+- **Running `pytest` overwrites `out/kpi` and `out/pulse`** (`reports/tests/test_run_nightly.py` runs the real nightly with a temporary store but the default output folders). Told Victor. Re-run the nightly after the tests, before any demo.
+- Repeat buyer rate is 57% for September (811 buyers, 461 with two or more orders): that is the synthetic sample's small pool of buyers, not a claim about Goodwill.
+- The weekly page still uses the old math in `reports/kpi.py`; the monthly scorecard already reads my KPI file (D2.11 is half done).
+
+## Still not verified
+- Real Goodwill files and a real internal API: everything above is synthetic data and the mock.
+- Which listing each sale came from: not in the data, so sell-through's two boxes are bounds (see checkpoint 1).
+- PDF export on this machine: `engine/tests/test_export_pdf.py` fails here and on an untouched `main` ("the browser wrote no PDF"); told Victor.
 
 ## For teammates: what the new context file changes
 - **Orlando (P-O2):** Goodwill's own nightly table (slide 31) labels the rows SHOPGOODWILL, AMAZON, EBAY, OTHER E-COMMERCE CHANNELS and TOTAL E-COMMERCE, with columns DAILY REVENUE and DAILY CUSTOMERS. Use their labels.
@@ -35,17 +51,16 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - **Victor:** nothing here contradicts `docs/contracts/source-formats.md`; it agrees that staff count rows (orders) as customers. The pulse takes `customer_basis` from the engine's rows, so no pulse change is needed either way.
 
 ## Blocked / needs from others
-- Nothing blocks me. For checkpoint 1 I need September in the store (Victor: V2.4 backfill, V2.6 internal pull).
+- Nothing blocks me.
 - Orlando: tell me when the page reads `out/kpi/*.json`, then we delete the math in `reports/kpi.py` (D2.11).
 
 ## Next (task ids from `docs/PLAN_PHASE_2_3.md`)
-1. Checkpoint 1: `python -m recon.kpi --month 2026-09` on the loaded store must read 7,075,396; fix whatever differs.
-2. If the store is late (Victor's 10:00 tripwire in 007): one function in `recon/kpi/store.py` that builds the same `WindowData` from `out/pulse/*.json`. Not built.
-3. D2.11 with Orlando.
-4. Phase 3: Orlando already has the export and the reconciliation on `main` (`reports/bc_export.py`, `reports/reconcile.py`); ask at checkpoint 1 what is left to split.
+1. Check Orlando's two sell-through boxes once he has drawn them (render a day and a month).
+2. D2.11 with Orlando: the weekly page still computes its own numbers.
+3. Phase 3: Orlando has the export and the reconciliation on `main` (`reports/bc_export.py`, `reports/reconcile.py`); ask what is left to split.
 
 ## How to run / test my part
-- Tests: `python -m unittest discover -s recon -t .` from the repo root (134 pass). On my machine Python 3.13 is only on the `py` launcher, so `py -m ...`.
+- Tests: `python -m unittest discover -s recon -t .` from the repo root (141 pass). On my machine Python 3.13 is only on the `py` launcher, so `py -m ...`.
 - Pulse: `python -m recon.pulse --in-dir recon/tests/fixtures/clean_day --out-dir <some folder>`.
 - KPIs without the real store: `python -m recon.tests.kpi_samples --db out/store/ecom.db` (synthetic September and October 1 to 4; refuses to overwrite an existing database), then `python -m recon.kpi --period month`, `--week 2026-W40`, `--date 2026-10-03`.
 - Regenerate the contract examples after a deliberate change: `python -m recon.tests.kpi_samples`.
@@ -87,3 +102,5 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - [from Victor, 2026-10-03 23:15] **KPI contract and KPI identification are yours; one gap to close.** `docs/contracts/kpi.md` follows slide 35 (five areas, 15 KPIs, stable ids), but slide 32 names five *pillars* (Growth, Profitability, Productivity, Inventory, Engagement) that appear nowhere in the contract. A proposed pillar-to-KPI mapping is in `docs/PHASE1_ALIGNMENT.md` (last section). Please decide: add a `pillar` field per KPI, or leave it to the page? Also note `sales.asp` and `sales.sell_through` need `units` in `transactions.csv` (not built yet), and `cust.repeat_buyer_rate` needs a buyer id (Upright has one, Cash Monkey none).
 - [from Victor, 2026-10-04 01:15] **The real store is ready for `recon.kpi`: one command builds all of September** (on `main` once PR `victor/internal-pull` merges). From the repo root, on Python 3.13 (`uv venv`, then `uv pip install -r engine/requirements.txt`, see decision 002): `python -m engine.store backfill --inbox data/sample/clean_month/inbox --from 2026-09-01 --to 2026-09-30` (about 12 s) writes `out/store/ecom.db` (or `ECOM_DB`). It holds 30 of 30 days of `pulse_daily` and `transactions` (2,425 rows, revenue equal to `expected.json` to the cent), plus `internal_daily` with your 10 metrics on all 30 days (1,890 rows, `source = 'mock'`; `category_sales_cents` adds up to each day's revenue). `python -m engine.store status` shows what's in it. For the messy month, use `--inbox data/sample/messy_month/inbox` with another `ECOM_DB`; 3 days there have a stale marketplace (NULL, not 0), which is good for your `partial` cases. Rough values to expect from the mock on September: about $52 revenue per labor hour, 23% net margin, median 6 days donation to listing, 45% unsold over 30 days.
 - [from Orlando, 2026-10-04 00:10] **O2.1 + O2.4 done: `python -m reports.scorecard --kpi-file out/kpi/month-2026-09.json`** (or `--period month` for `latest-month.json`) renders your file to `reports/scorecard/<type>-<id>.html`; `reports.monthly` now uses it (the old monthly page from `reports/kpi.py` is gone; the weekly page still uses it until it moves to your week files, then D2.11 can delete the math). Everything comes from the file: `status`/`reason`/`note`, `delta` coloured by `good_direction` (ratio deltas in points), `per`, `simulated` + `internal_data.label` as a quiet badge, `coverage.gaps` as one banner (in print the repeated "X has no data on D" sentence is dropped from the notes because the banner says it once; I split notes on ". " and hide sentences containing " has no data on ", so tell me if that wording changes). Tested on all four example files and your real September output (`reports/tests/test_scorecard.py`); each prints on one landscape page. The headline for the portal is written page-side from KPIs 1 and 2 and the counts of `no_data` / `partial`.
+- [from Victor, 2026-10-04 02:40] **Fixed: `pytest` no longer touches the real `out/` and `reports/`** (your 21:55 report; PR `victor/shipping-units`). `run_nightly` now writes through two settings (`OUT`, `REPORTS`; KPI files via `recon.kpi --out-dir`), and `reports/tests/test_run_nightly.py` points them at a temporary folder. A new test checks that `out/kpi`, `out/pulse`, `reports/pulse` and `reports/index.html` are byte-for-byte untouched after a test night. Thanks for the full checkpoint run and the independent SQL check. On sell-through over 100% on single days: I'd keep the definition and add your note (older listings sell too), and show the KPI on the month view in the demo.
+- [from Victor, 2026-10-04 03:15] **`units` is in the transactions now** (PR `victor/shipping-units`, `transaction.md` v0.4), on every source, empty only when an export has no quantity column. Your calculator picked it up with no change: on September average selling price is per unit, $28.67 (was $29.21 per order), and sell-through is by units, 79.1% (was 77.6%), with the "per order" note gone. The contract examples in `docs/contracts/examples/` were generated before this and still show the per-order basis, so you may want to regenerate them (`python -m recon.tests.kpi_samples`) once this merges. Refund rows carry `units = 0`.

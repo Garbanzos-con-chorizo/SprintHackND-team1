@@ -1,4 +1,4 @@
--- Store schema, version 1. Contract: docs/contracts/store.md. Owner: Victor (engine/store/).
+-- Store schema, version 2. Contract: docs/contracts/store.md. Owner: Victor (engine/store/).
 -- Plain SQL on purpose, so it ports to Azure SQL or Postgres. SQLite-only bits are marked "sqlite:".
 -- Safe to run on an existing database: every statement is IF NOT EXISTS.
 --
@@ -6,7 +6,7 @@
 -- timestamps are TEXT ISO 8601 with offset; key columns are never NULL ('' = "no dimension");
 -- a NULL measure means "no data", never 0.
 
-PRAGMA user_version = 1;  -- sqlite: schema version
+PRAGMA user_version = 2;  -- sqlite: schema version (2 added transactions.shipping_cents, handling_cents)
 
 -- One row per sale or refund: the columns of docs/contracts/transaction.md, plus load bookkeeping.
 CREATE TABLE IF NOT EXISTS transactions (
@@ -20,7 +20,9 @@ CREATE TABLE IF NOT EXISTS transactions (
     customer_basis  TEXT    NOT NULL,              -- buyer | order
     gross_cents     INTEGER NOT NULL,
     fee_cents       INTEGER NOT NULL DEFAULT 0,
-    units           INTEGER,                       -- NULL until the engine reports units (V2.7)
+    units           INTEGER,                       -- units sold (sales); NULL when the export has no unit count
+    shipping_cents  INTEGER NOT NULL DEFAULT 0,    -- what the buyer paid for shipping (refunds negative)
+    handling_cents  INTEGER NOT NULL DEFAULT 0,    -- what the buyer paid for handling (refunds negative)
     source_file     TEXT    NOT NULL,
     source_row      INTEGER NOT NULL,
     run_id          TEXT    NOT NULL

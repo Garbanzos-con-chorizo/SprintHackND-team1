@@ -15,9 +15,12 @@ from ..writer import now_local
 
 TXN_INSERT = (
     "INSERT OR REPLACE INTO transactions (txn_id, source, marketplace, type, business_date, order_id, "
-    "customer_id, customer_basis, gross_cents, fee_cents, units, source_file, source_row, run_id) "
-    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    "customer_id, customer_basis, gross_cents, fee_cents, units, shipping_cents, handling_cents, source_file, "
+    "source_row, run_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 )
+# The v1 columns are required; shipping_cents, handling_cents and units (v2) are read when present,
+# so a transactions.csv written before them still loads (0, 0 and unknown).
+REQUIRED = COLUMNS[:COLUMNS.index("shipping_cents")]
 PULSE_FIELDS = ["gross_cents", "refunds_cents", "revenue_cents", "fees_cents", "orders", "customers",
                 "customer_basis"]
 
@@ -40,8 +43,9 @@ def load_day(conn: sqlite3.Connection, in_dir: Path, business_date: str,
         with conn:
             for table in ("transactions", "pulse_daily", "warnings"):
                 conn.execute(f"DELETE FROM {table} WHERE business_date = ?", (business_date,))
-            conn.executemany(TXN_INSERT, [[t[c] for c in COLUMNS[:10]] + [t["units"], t["source_file"],
-                                          t["source_row"], run_id] for t in txns])
+            conn.executemany(TXN_INSERT, [[t[c] for c in COLUMNS[:10]] + [
+                t["units"], t["shipping_cents"], t["handling_cents"], t["source_file"], t["source_row"], run_id]
+                for t in txns])
             conn.executemany(
                 "INSERT INTO pulse_daily VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [[business_date, mk, m["status"]] + [m.get(f) for f in PULSE_FIELDS] + [run_id]
@@ -65,7 +69,7 @@ def read_transactions(path: Path, business_date: str) -> list[dict]:
     try:
         with open(path, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
-            missing = [c for c in COLUMNS if c not in (reader.fieldnames or [])]
+            missing = [c for c in REQUIRED if c not in (reader.fieldnames or [])]
             if missing:
                 raise LoadError(f"{path}: missing column(s) {', '.join(missing)}")
             rows = [r for r in reader if r["business_date"] == business_date]
@@ -76,6 +80,8 @@ def read_transactions(path: Path, business_date: str) -> list[dict]:
             r["customer_id"] = r["customer_id"] or ""
             for c in ("gross_cents", "fee_cents", "source_row"):
                 r[c] = int(r[c])
+            for c in ("shipping_cents", "handling_cents"):
+                r[c] = int(r.get(c) or 0)
             r["units"] = int(r["units"]) if r.get("units") else None
     except ValueError as e:
         raise LoadError(f"{path}: bad number ({e})") from e

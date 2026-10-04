@@ -23,6 +23,9 @@ SALES = [
     ("2026-10-01", "amazon", "a1", ""),
 ]
 INTERNAL = [
+    ("2026-09-29", "active_listings_by_age", "0-30", 90),
+    ("2026-09-30", "active_listings_by_age", "0-30", 100),
+    ("2026-09-30", "active_listings_by_age", "91+", 5),
     ("2026-09-30", "labor_hours", "total", 40.0),
     ("2026-10-01", "labor_hours", "total", 41.5),
     ("2026-10-01", "listings_created", "ebay", 12, "api"),
@@ -50,6 +53,13 @@ class Store(unittest.TestCase):
         self.assertEqual(data.internal, [
             InternalRow("2026-10-01", "labor_hours", "total", 41.5, "mock"),
             InternalRow("2026-10-01", "listings_created", "ebay", 12.0, "api")])
+
+    def test_the_stock_of_the_night_before_comes_with_the_window(self):
+        data = store.load(self.open(pulse=PULSE, internal=INTERNAL), OCT1, date(2026, 10, 2))
+        self.assertEqual(data.opening, [
+            InternalRow("2026-09-30", "active_listings_by_age", "0-30", 100.0, "mock"),
+            InternalRow("2026-09-30", "active_listings_by_age", "91+", 5.0, "mock")])
+        self.assertEqual(store.load(self.open_again(), date(2026, 9, 29), OCT1).opening, [])
 
     def test_latest_business_date(self):
         self.assertEqual(store.latest_business_date(self.open(pulse=PULSE)), date(2026, 10, 2))

@@ -32,6 +32,10 @@ from reports import hub, mock_pulse, pulse as renderer
 
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = ROOT / "data" / "sample"
+# Where the night writes: engine and pulse output, the pulse history and the KPI files under OUT,
+# the pages under REPORTS. Tests point both at a temporary folder.
+OUT = ROOT / "out"
+REPORTS = ROOT / "reports"
 # Filename prefixes per marketplace: the seller-portal samples, then Goodwill's tools
 # (Upright "paid_orders_*" for ShopGoodwill, Cash Monkey "orders2023-*" for eBay and Amazon).
 EXPECTED_SOURCES = {"shopgoodwill": ("shopgoodwill", "sg_", "paid_orders"), "ebay": ("ebay", "orders2023"),
@@ -40,12 +44,17 @@ ENGINE_CMD = ["-m", "engine", "run", "--inbox", "{inbox}", "--out", "{out}", "--
 PULSE_CMD = ["-m", "recon.pulse", "--date", "{date}", "--in-dir", "{out}"]
 STORE_CMD = ["-m", "engine.store", "load", "--in-dir", "{out}", "--date", "{date}"]
 PULL_CMD = ["-m", "engine.internal_api", "pull", "--date", "{date}"]
-KPI_CMDS = [["-m", "recon.kpi", "--date", "{date}"],
-            ["-m", "recon.kpi", "--week", "{week}", "--through", "{date}"],
-            ["-m", "recon.kpi", "--month", "{month}", "--through", "{date}"]]
+KPI_CMDS = [["-m", "recon.kpi", "--date", "{date}", "--out-dir", "{kpi_dir}"],
+            ["-m", "recon.kpi", "--week", "{week}", "--through", "{date}", "--out-dir", "{kpi_dir}"],
+            ["-m", "recon.kpi", "--month", "{month}", "--through", "{date}", "--out-dir", "{kpi_dir}"]]
 
 STEPS = 7
 PACE = 0.0
+
+
+def shown(path):
+    path = Path(path)
+    return path.relative_to(ROOT).as_posix() if path.is_relative_to(ROOT) else str(path)
 
 
 def log(msg, step=None):
@@ -94,9 +103,9 @@ def main(argv=None):
     day = key["business_date"]
     if not day:
         raise SystemExit("pick a day_* scenario (the nightly run covers one business day)")
-    out = ROOT / "out" / args.scenario
+    out = OUT / args.scenario
     shutil.rmtree(out, ignore_errors=True)
-    rel = out.relative_to(ROOT).as_posix()
+    rel = shown(out)
     started = time.perf_counter()
     print(f"\n== Goodwill Michiana nightly pulse - business date {day} ==\n")
 
@@ -116,7 +125,7 @@ def main(argv=None):
         (out / "pulse" / f"{day}.json").write_text(json.dumps(p, indent=2) + "\n", encoding="utf-8")
     # File the night's pulse in the shared history (out/pulse/, as in docs/contracts/pulse.md),
     # which the weekly dashboard and monthly scorecard read.
-    archive = ROOT / "out" / "pulse"
+    archive = OUT / "pulse"
     archive.mkdir(parents=True, exist_ok=True)
     (archive / f"{day}.json").write_text(json.dumps(p, indent=2) + "\n", encoding="utf-8")
     ent = p["enterprise"]
@@ -133,10 +142,10 @@ def main(argv=None):
         log("Store, internal API, KPIs: SKIPPED (simulated pulse; no transactions to store)", 4)
 
     log("Render: dashboard page, CSV, email copy", 7)
-    paths = renderer.render(p, ROOT / "reports" / "pulse")
+    paths = renderer.render(p, REPORTS / "pulse")
     for path in paths:
-        print(f"            {path.relative_to(ROOT).as_posix()}")
-    print(f"            {hub.build().relative_to(ROOT).as_posix()} (portal)")
+        print(f"            {shown(path)}")
+    print(f"            {shown(hub.build(REPORTS))} (portal)")
 
     print(f"\n   {renderer.summary_line(p)}\n")
     log(f"Done in {time.perf_counter() - started:.1f}s"
@@ -157,9 +166,9 @@ def store_and_kpis(out, day):
     if not run(PULL_CMD, fatal=False, date=day):
         failed.append("internal pull")
     iso = date.fromisoformat(day).isocalendar()
-    log("KPIs: the 15 scorecard KPIs for the day, the week to date and the month to date -> out/kpi/", 6)
+    log(f"KPIs: the 15 scorecard KPIs for the day, the week to date and the month to date -> {shown(OUT / 'kpi')}/", 6)
     for cmd in KPI_CMDS:
-        if not run(cmd, fatal=False, date=day, week=f"{iso.year}-W{iso.week:02d}", month=day[:7]):
+        if not run(cmd, fatal=False, date=day, week=f"{iso.year}-W{iso.week:02d}", month=day[:7], kpi_dir=OUT / "kpi"):
             failed.append("KPIs " + cmd[3].lstrip("-"))
     return failed
 

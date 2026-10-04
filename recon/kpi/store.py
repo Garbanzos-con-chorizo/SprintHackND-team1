@@ -10,8 +10,8 @@ import json
 import os
 import sqlite3
 import uuid
-from dataclasses import dataclass
-from datetime import date
+from dataclasses import dataclass, field
+from datetime import date, timedelta
 from pathlib import Path
 
 DEFAULT_DB = Path("out") / "store" / "ecom.db"
@@ -52,11 +52,12 @@ class InternalRow:
 
 @dataclass(frozen=True)
 class WindowData:
-    """Everything stored for a range of days."""
+    """Everything stored for a range of days, and the listings still active the night before it."""
 
     pulse: list
     sales: list
     internal: list
+    opening: list = field(default_factory=list)  # active_listings_by_age rows of the day before the range
 
 
 def default_path():
@@ -114,8 +115,17 @@ def load(con, start, end):
                 span,
             )
         ]
-    internal = []
+    internal, opening = [], []
     if "internal_daily" in tables:
+        opening = [
+            InternalRow(day, metric, dimension, float(value), source)
+            for day, metric, dimension, value, source in _query(
+                con,
+                "SELECT business_date, metric, dimension, value, source FROM internal_daily"
+                " WHERE business_date = ? AND metric = 'active_listings_by_age' ORDER BY dimension",
+                ((start - timedelta(days=1)).isoformat(),),
+            )
+        ]
         internal = [
             InternalRow(day, metric, dimension, float(value), source)
             for day, metric, dimension, value, source in _query(
@@ -125,7 +135,7 @@ def load(con, start, end):
                 span,
             )
         ]
-    return WindowData(pulse, sales, internal)
+    return WindowData(pulse, sales, internal, opening)
 
 
 def _int(value):

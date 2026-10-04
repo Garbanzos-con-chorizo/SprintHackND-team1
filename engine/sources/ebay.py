@@ -20,6 +20,8 @@ class Ebay(OrderReportParser):
     gross = ("Item subtotal", "Gross transaction amount", "Item price", "Order total")
     fees = ("Final Value Fee - fixed", "Final Value Fee - variable", "Final Value Fee", "Regulatory operating fee")
     buyer = ("Buyer username", "Buyer ID")
+    shipping = ("Shipping and handling", "Shipping")  # one combined column: all of it goes to shipping
+    units = ("Quantity",)
     row_type = ("Type", "Transaction type")
     skip_types = ("payout",)
     currency = ("Currency", "Transaction currency")

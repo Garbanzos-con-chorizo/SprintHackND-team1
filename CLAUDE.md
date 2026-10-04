@@ -4,16 +4,17 @@ Hackathon project, 3 humans, each driving their own AI agent(s) in parallel. The
 
 ## Project snapshot (keep current — edit in place)
 - **Problem:** automate Goodwill's recurring reports: the **nightly pulse** (revenue and customers by marketplace; phase 1, done), the **monthly KPI dashboard** (phase 2, in progress) and the **month-end close to Business Central** (phase 3). Details: `docs/PROBLEM.md`, plan: `docs/PLAN_PHASE_2_3.md`, status: `docs/PHASES.md`.
-- **Stack:** Python **3.12+** for the repo (the engine alone also runs on 3.11; `reports/` needs 3.12). Standard library plus `openpyxl`, `tzdata`, `pytest` (`engine/requirements.txt`). SQLite (standard library) for the nightly store. Pages are generated HTML from `reports/`. **Files are the contract between lanes** (CSV and JSON in `out/`). A thin web server is planned (`docs/decisions/008-*`), not built.
+- **Stack:** Python **3.13** (`.python-version`, and the Docker image); 3.12 also works, and the engine alone runs on 3.11 (`reports/` needs 3.12). Standard library plus `openpyxl`, `tzdata`, `pytest` (`engine/requirements.txt`). SQLite (standard library) for the nightly store. Pages are generated HTML from `reports/`, served by a thin FastAPI/Uvicorn server (`server.py`, deps in `requirements-server.txt`) and a `Dockerfile` (`docs/decisions/008-*`); no authentication, localhost only. **Files are the contract between lanes** (CSV and JSON in `out/`).
 - **Run / test / lint:**
   ```
   pip install -r engine/requirements.txt
-  python -m pytest engine recon reports -q                      # every test (303 at the time of writing)
+  python -m pytest engine recon reports -q                      # every test, all three lanes
   python -m reports.run_nightly --scenario gw_day_clean         # the whole nightly run on sample data
   python -m engine fetch --simulate --date 2026-10-02           # simulated provider emails -> inbox/
   python -m engine run --date 2026-10-02                        # inbox/ -> out/ (clean rows, status, warnings)
   python -m recon.pulse --date 2026-10-02                       # out/ -> out/pulse/<date>.json
   python -m engine.tools.make_sample --scenario messy_day --check --pulse   # engine + pulse vs an independent answer key
+  pip install -r requirements-server.txt && python server.py    # serve reports/ at http://127.0.0.1:8000
   ```
   No linter or formatter is configured. Everything in the samples and simulators is **synthetic**.
 - **Demo deadline:** submit by **4:00 PM Sunday Oct 4** (nothing pushed after that counts; the last submission wins). Team code freeze 3:00 PM (`docs/PLAN_PHASE_2_3.md`). Demo 4:30 PM, Pod B, Room 154: a recorded video in Google Slides. **Demo flow:** `docs/PROBLEM.md#demo`, `docs/pitch/`.

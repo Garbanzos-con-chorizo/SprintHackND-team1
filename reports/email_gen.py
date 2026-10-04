@@ -82,7 +82,7 @@ def _kpi_body(title, period, text, kpi_csv, attachments_note):
 </table>"""
 
 
-def _scorecard_body(title, period, text, kpi_file):
+def _scorecard_body(title, period, text, kpi_file, attached="The full scorecard page and its KPI file are attached."):
     """The 15 KPIs as an inline-styled table; simulated ones say so, no-data ones say so."""
     from reports.scorecard import fmt
     kf = json.loads(Path(kpi_file).read_text(encoding="utf-8"))
@@ -107,7 +107,7 @@ def _scorecard_body(title, period, text, kpi_file):
 <tr><td style="padding-top:8px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
 {chr(10).join(rows)}
 </table></td></tr>
-<tr><td style="{EMAIL_FONT}font-size:12px;color:{E['muted']};padding:12px 2px;">The full scorecard page and its KPI file are attached.</td></tr>
+<tr><td style="{EMAIL_FONT}font-size:12px;color:{E['muted']};padding:12px 2px;">{escape(attached)}</td></tr>
 </table>"""
 
 
@@ -127,8 +127,12 @@ def payload(kind, key, root=REPORTS):
             return None
         text, _ = headline(page)
         title, period = "COO scorecard", f"{date.fromisoformat(key + '-01'):%B %Y}"
+        # The one-page PDF and the CSV for Excel (python -m engine.export) go first when they were built.
+        exports = [p for p in (page.with_suffix(".pdf"), page.with_suffix(".csv")) if p.exists()]
+        attached = ("Attached: the scorecard as a one-page PDF" if page.with_suffix(".pdf").exists() else "Attached: the scorecard page")
+        attached += (", its numbers as a CSV for Excel" if page.with_suffix(".csv").exists() else "") + ", the full page and its KPI file."
         return {"subject": f"{title} - {period} - {text.split(';')[0]}", "text": text,
-                "html": _scorecard_body(title, period, text, kfile), "attachments": [page, kfile]}
+                "html": _scorecard_body(title, period, text, kfile, attached), "attachments": exports + [page, kfile]}
     page, kcsv = root / "weekly" / f"{key}.html", root / "weekly" / f"{key}.csv"
     title, period = "Weekly dashboard", key
     if not (page.exists() and kcsv.exists()):
