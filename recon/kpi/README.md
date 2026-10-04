@@ -63,7 +63,7 @@ Rules that hold for every KPI (they are in the contract; the tests pin them):
 - The top 10 categories add up to total revenue to the cent, and net margin uses the same cost of goods as the margin ranking.
 
 ## Tests: `recon/tests/test_kpi_*.py`
-101 tests (132 with the pulse), all passing.
+102 tests (133 with the pulse), all passing.
 
 - `test_kpi_calc.py`: all 15 KPIs against values worked out by hand on two days of a week, then one test per state: a missing day, a day never loaded, no data at all, real zeros, no prior period, a partial comparison, different bases, no internal data, internal data for some days, an old snapshot, zero divisors, more than ten categories.
 - `test_kpi_periods.py`: ids, to-date windows, comparison windows, labels.

@@ -1,7 +1,7 @@
 # Contract: canonical transaction, phase 1 (task 0.1)
 
 - **Owner:** Victor (`engine/`). **Consumers:** Dani (pulse calculation), Orlando (pulse rendering, and later the dashboard).
-- **Status:** draft
+- **Status:** agreed (v0.3). In use by `recon/` (pulse) and `reports/`; the engine implements it.
 - **Scope:** phase 1 only, the nightly pulse. Phase 3 (close) adds columns later (`fee`/`payout`/`bank` types, `net_cents`, `memo`, GL fields). Adding columns is not a breaking change: consumers ignore columns they don't know.
 
 ## What this contract does
@@ -93,6 +93,14 @@ Until the engine runs, Dani and Orlando code against `examples/transactions.samp
 - What counts as `other` (Q9): not produced in phase 1 until we have a sample; the enum value is reserved.
 - Which marketplaces expose a buyer id (Q6): unknown until sample exports exist.
 
+## Rules confirmed after integration (v0.3)
+- **A refund counts on the day it is issued**, not the day of the original order: its `business_date` is the refund's own date. (Asked by Orlando; this is how the sample answer keys count it.)
+- **Several lines of one order in the same file become one row.** Amazon lists one row per item and Cash Monkey one line per unit, so a multi-item order is summed into one `sale` row per order, per file. The same order appearing again in another file is a duplicate and is counted once (first copy wins, the rest are logged).
+- **`customer_basis` can be `order` even when `customer_id` is filled.** Upright has a buyer column, but staff count rows (deck slide 26), so its rows say `order` and the pulse counts orders. The buyer id is kept.
+- **`source` values in use:** `upright`, `cashmonkey`, `shopgoodwill`, `amazon`, `ebay`. `marketplace` is what the pulse groups by; a Cash Monkey file carries `amazon`, `ebay` and `other` rows.
+- **`source_status.json` is keyed by marketplace** (see its section above).
+
 ## Changelog
+- v0.3: status agreed; rules above written down; sources and `source_status.json` keyed by marketplace; Upright and Cash Monkey added.
 - draft v0.2: narrowed to phase 1; added cleaning rules; dropped close-only columns and sources.
 - draft v0.1: initial (superseded).

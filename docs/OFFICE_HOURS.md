@@ -2,6 +2,8 @@
 
 Room 109B, 3:00-5:00 PM. Record answers in `docs/decisions/001-partner-answers.md` (Orlando, task 0.4). Questions marked **MUST** block the build; get those first. Ask for **real or anonymized sample files** wherever possible, since that matters more than any answer.
 
+> **Status, 2026-10-03.** Answered at office hours (decisions 004 and 005): assume an API for getting reports in; reports arrive as emailed Excel; brick-and-mortar sends at 1 PM and 10 PM Eastern (out of scope); e-commerce finalizes at 9 PM Pacific = midnight Eastern. **Not answered yet:** Q1 (real sample files), Q2-Q3 (Business Central, the rules), Q5 (revenue definition), Q6 (customers; the deck says staff count rows), Q9 (what is Other), Q12. New questions from the deck check are in `docs/PHASE1_ALIGNMENT.md` and `docs/office-hours-victor.md`.
+
 ## Ask first (blocks the build)
 1. **MUST** Can we have real or anonymized sample exports from each source (ShopGoodwill, Amazon, eBay, Cash Monkey, Upright, Books, bank activity), ideally one messy month?
 2. **MUST** Business Central: cloud or on-prem? How do entries go in today (journal, Excel paste, configuration package)? Can we get the chart of accounts and one finished month-end journal?

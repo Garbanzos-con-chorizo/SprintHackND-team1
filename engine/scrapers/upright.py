@@ -2,7 +2,7 @@
 
 ASSUMPTION (Amanda, office hours 2026-10-03): an API exists for Upright. We assume it can generate the
 Paid orders report for a date range (and timezone) and that Upright then EMAILS the report as an Excel
-attachment, as the deck shows (slides 7-9, 38: "generate; email delivery"). So this scraper only has to
+attachment, as the deck shows (slides 24-25, 38: "generate; email delivery"). So this scraper only has to
 ask for the report. The file itself arrives in the inbox folder by email, where
 engine/ingest/email_adapter.py reads it; nothing here parses or downloads it.
 

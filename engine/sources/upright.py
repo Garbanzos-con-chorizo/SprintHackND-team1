@@ -33,7 +33,7 @@ class Upright(OrderReportParser):
     channel_marketplaces = {"shopgoodwill": "shopgoodwill"}
     strict_channels = True
     # The report form has a timezone field whose default is Pacific ("Use America/Los_Angeles for SGW",
-    # slide 7), and the exported timestamps carry no zone. Assume the default was used. If staff pick
+    # slide 24), and the exported timestamps carry no zone. Assume the default was used. If staff pick
     # another zone in the form, change this one line.
     date_assume_tz = "America/Los_Angeles"
     # Staff count customers as the rows of this report (slide 26), not distinct buyers.
