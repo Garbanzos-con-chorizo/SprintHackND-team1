@@ -34,6 +34,7 @@ CSS = """
   --fw-regular:400; --fw-medium:500; --fw-semi:600; --fw-bold:700;
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-7:32px;
   --page:1200px;
+  --ease-out:cubic-bezier(.2,.8,.2,1); --t-press:120ms; --t-hover:200ms; --t-reveal:240ms; --t-enter:560ms;
 }
 *, *::before, *::after { box-sizing:border-box; }
 html { -webkit-text-size-adjust:100%; text-size-adjust:100%; }
@@ -62,14 +63,22 @@ th, .label, .facts dt { font-size:var(--fs-label); font-weight:var(--fw-semi); l
 .topbar b { font-size:13px; font-weight:var(--fw-semi); color:var(--accent); }
 .topbar .brand span { font-size:13px; color:var(--muted); }
 .topbar .grow { flex:1; }
-.tb-link { font-size:13px; color:var(--muted); }
+.topbar .brand::before { content:""; align-self:center; width:8px; height:8px; border-radius:50%; background:var(--accent); }
+.crumb { display:flex; align-items:center; gap:10px; font-size:13px; }
+.crumb::before { content:"/"; color:var(--line-2); }
+.crumb a { color:var(--ink); font-weight:var(--fw-medium); }
+.tb-link { font-size:13px; color:var(--muted); transition:color var(--t-hover) var(--ease-out); }
+.tb-link:hover, .tb-link[aria-current] { color:var(--ink); }
 .home-btn { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 12px; border-radius:980px;
+  transition:transform var(--t-press) var(--ease-out), background-color var(--t-hover) var(--ease-out), box-shadow var(--t-hover) var(--ease-out);
   background:var(--accent); color:#fff; font-size:13px; font-weight:var(--fw-semi); }
-.home-btn:hover { text-decoration:none; filter:brightness(1.1); }
+.home-btn:hover { text-decoration:none; background:#0062bf; box-shadow:0 4px 14px rgba(0,84,164,.25); }
+.home-btn:active { transform:scale(.97); }
+.home-btn[aria-current] { background:transparent; color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent-tint); }
 .home-btn svg { width:14px; height:14px; }
 main { max-width:var(--page); margin:0 auto; padding:var(--sp-7) var(--sp-6) 56px; }
 header { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:var(--sp-1) var(--sp-6); margin-bottom:var(--sp-5); }
-header h1 { font-size:var(--fs-title); font-weight:var(--fw-bold); line-height:1.15; letter-spacing:-0.025em; }
+header h1 { font-size:var(--fs-title); font-weight:var(--fw-bold); line-height:1.15; letter-spacing:-0.025em; text-wrap:balance; }
 header p { font-size:13px; color:var(--muted); }
 
 /* Cards: white floating panels */
@@ -151,7 +160,8 @@ dl.kv dd { font-weight:var(--fw-medium); }
   background:rgba(29,29,31,.86); -webkit-backdrop-filter:blur(12px) saturate(160%); backdrop-filter:blur(12px) saturate(160%);
   color:#F5F5F7; border-radius:var(--radius-sm); box-shadow:var(--shadow-pop); font-size:12px; font-weight:var(--fw-regular);
   line-height:1.45; letter-spacing:0; text-transform:none; text-align:left; white-space:normal;
-  opacity:0; visibility:hidden; transform:translateY(-4px); transition:opacity .15s ease, transform .15s ease, visibility .15s; }
+  opacity:0; visibility:hidden; transform:translateY(-4px) scale(.98); transform-origin:top left;
+  transition:opacity var(--t-reveal) var(--ease-out), transform var(--t-reveal) var(--ease-out), visibility var(--t-reveal); }
 .tip::before { content:""; position:absolute; left:0; right:0; top:-10px; height:10px; }
 .info:hover ~ .tip, .info:focus ~ .tip, .tip:hover { opacity:1; visibility:visible; transform:none; }
 .tip .k { display:block; margin-top:7px; font-size:10px; font-weight:var(--fw-semi); letter-spacing:.06em; text-transform:uppercase;
@@ -182,6 +192,49 @@ ul.days li + li { border-top:1px solid var(--hair); }
 ul.days a { display:flex; justify-content:space-between; padding:14px var(--sp-5); font-weight:var(--fw-medium); color:var(--ink); }
 ul.days a::after { content:"\\203A"; color:var(--faint); }
 ul.days a:hover { background:var(--hover); text-decoration:none; }
+
+/* Links without their own style grow an underline from the left */
+:where(main) a:where(:not([class])) { background:linear-gradient(currentColor,currentColor) left bottom / 0 1px no-repeat;
+  transition:background-size var(--t-hover) var(--ease-out); }
+:where(main) a:where(:not([class])):hover { background-size:100% 1px; text-decoration:none; }
+
+/* Hover: cards that lead somewhere lift; controls press; rows and chevrons answer */
+.hub-card, .file, .node, ul.days a { transition:transform var(--t-hover) var(--ease-out), box-shadow var(--t-hover) var(--ease-out), background-color var(--t-hover) var(--ease-out); }
+.hub-card:hover, .file:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(0,0,0,.06); }
+ul.days a::after { transition:transform var(--t-hover) var(--ease-out); }
+ul.days a:hover::after { transform:translateX(3px); }
+.xbtn:active, details > summary:active, .file:active { transform:scale(.98); }
+.info { transition:color var(--t-hover) var(--ease-out), transform var(--t-press) var(--ease-out); }
+.info:hover { transform:scale(1.1); }
+tbody > tr > td { transition:background-color var(--t-hover) var(--ease-out); }
+details.acc > summary { transition:background-color var(--t-hover) var(--ease-out); }
+
+/* Reveals: opened content settles in */
+details[open] > .acc-body, details[open] > p, tr.xdetail:not([hidden]) dl.kv { animation:settle var(--t-reveal) var(--ease-out); }
+@keyframes settle { from { opacity:0; transform:translateY(-4px); } }
+
+/* Entrance: the page's blocks rise once, one after another */
+main > *, .areas > *, .hub-grid > *, .kpis > *, .files > * { animation:rise var(--t-enter) var(--ease-out) both; }
+main > :nth-child(2), .areas > :nth-child(2), .hub-grid > :nth-child(2), .kpis > :nth-child(2), .files > :nth-child(2) { animation-delay:50ms; }
+main > :nth-child(3), .areas > :nth-child(3), .hub-grid > :nth-child(3), .kpis > :nth-child(3), .files > :nth-child(3) { animation-delay:100ms; }
+main > :nth-child(4), .areas > :nth-child(4), .hub-grid > :nth-child(4), .kpis > :nth-child(4), .files > :nth-child(4) { animation-delay:150ms; }
+main > :nth-child(5), .areas > :nth-child(5), .hub-grid > :nth-child(5) { animation-delay:200ms; }
+main > :nth-child(6), .areas > :nth-child(6) { animation-delay:250ms; }
+main > :nth-child(n+7) { animation-delay:300ms; }
+@keyframes rise { from { opacity:0; transform:translateY(12px); } }
+
+/* Lamps: a red lamp breathes slowly; green and grey stay still */
+.summary.alert::before, .banner::before, .lamp.bad { animation:breathe 2.4s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity:.35; } }
+.lamp { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--faint); vertical-align:1px; }
+.lamp.ok { background:var(--ok); }
+.lamp.bad { background:var(--bad); }
+.lamp.warn { background:var(--warn); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration:.01ms !important; animation-delay:0s !important; animation-iteration-count:1 !important;
+    transition-duration:.01ms !important; scroll-behavior:auto !important; }
+}
 
 @media (max-width:640px) {
   main { padding:var(--sp-5) var(--sp-4) 40px; }
@@ -226,7 +279,8 @@ ul.days a:hover { background:var(--hover); text-decoration:none; }
   tr.xdetail > td { background:none; padding-bottom:3pt; }
   dl.kv { padding:0 0 0 2pt; gap:1pt 10pt; font-size:7pt; }
   tbody > tr:hover > td { background:none; }
-  .info, .xbtn, .xpad, .tip, details.acc, .nav, .noprint { display:none !important; }
+  *, *::before, *::after { animation:none !important; transition:none !important; }
+  .info, .xbtn, .xpad, .tip, details.acc, .nav, .noprint, .crumb, .tb-link { display:none !important; }
   .print-only { display:block; }
   .print-notes { display:block; margin-top:5pt; padding-top:3pt; border-top:0.5pt solid #d2d2d7; font-size:6.5pt; line-height:1.3; color:#515154; }
   .print-notes p { margin:0; }
@@ -273,7 +327,7 @@ class Page:
 </head>
 <body>
 <nav class="topbar" aria-label="Reports"><div>
-  <a class="brand" href="${root}index.html"><b>Goodwill Michiana</b><span>E-commerce reporting</span></a>
+  <a class="brand" href="${root}index.html"><b>Goodwill Michiana</b><span>E-commerce reporting</span></a>$crumb
   <span class="grow"></span>
   <a class="tb-link" href="${root}map.html"$map_current>Site map</a>
   <a class="home-btn" href="${root}index.html"$home_current>""" + HOME_ICON + """<span>Home</span></a>
@@ -286,10 +340,12 @@ $body
 </html>
 """)
 
-    def substitute(self, title, css, body, root="../", current=""):
-        """`current` is "home" or "map" on those two pages (marks the top-bar link as the page you are on)."""
+    def substitute(self, title, css, body, root="../", current="", section=None):
+        """`current` is "home" or "map" on those two pages (marks the top-bar link as the page you are on);
+        `section` is (label, href) for the crumb after the brand, e.g. ("Scorecards", "index.html")."""
         mark = ' aria-current="page"'
-        return self.TEMPLATE.substitute(title=title, css=css, body=body, root=root,
+        crumb = (f'<span class="crumb"><a href="{section[1]}">{section[0]}</a></span>' if section else "")
+        return self.TEMPLATE.substitute(title=title, css=css, body=body, root=root, crumb=crumb,
                                         home_current=mark if current == "home" else "",
                                         map_current=mark if current == "map" else "")
 
