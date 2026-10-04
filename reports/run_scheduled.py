@@ -10,7 +10,8 @@ For business date D (the day that just ended; the job runs on D+1 at 00:15 Easte
      synthetic files, labelled as such), the one-command close runs on the month's sample inbox plus
      those files (`python -m reports.close`: import files and a page, nothing posted), and the store
      logs the run (`engine.store log-close`).
-  4. Emails to the active subscribers of each report built (reports/config/subscribers.csv).
+  4. Emails to the active subscribers of each report built (reports/config/subscribers.csv): the
+     pulse, the weekly dashboard, the scorecard and the close. Written as drafts, never sent.
 Each night is also loaded into the store by run_nightly (V2.11), which the KPIs read. The first run
 seeds September: mock pulse history for the weekly page, and the real engine into the store.
 In production Windows Task Scheduler or cron starts this once a night; nothing here waits for a clock.
@@ -144,13 +145,15 @@ def night(day):
             print(f"    monthly: skipped ({e})")
         inbox = month_inbox(month)
         if inbox:
-            run_close(month, inbox)
+            if run_close(month, inbox):
+                built["close"] = month
         else:
             print(f"    close: no month inbox for {month}")
     else:
         print("    monthly: not due (not the 1st)")
 
-    written, problems = email_gen.distribute(run_day, built.get("daily"), built.get("weekly"), built.get("monthly"))
+    written, problems = email_gen.distribute(run_day, built.get("daily"), built.get("weekly"), built.get("monthly"),
+                                             close=built.get("close"))
     for row in written:
         print(f"    email: {row['Report_Type']:<8} -> {row['Email']}")
     for p in problems:
