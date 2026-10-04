@@ -141,6 +141,55 @@ ul.days a { display:block; padding:12px 16px; text-decoration:none; font-weight:
 }
 """
 
+# Motion, from the report-design skill (o/ui-map): modest and honest. Blocks rise in once, cards that
+# lead somewhere lift on hover, controls answer a press, pop-outs and opened details settle in, the
+# portal's bars grow from the baseline. Only transform and opacity move (plus colour and shadow on
+# hover); numbers never animate, so a screenshot or PDF can't catch a wrong value. Everything stops for
+# prefers-reduced-motion and in print.
+MOTION_CSS = """
+:root { --ease-out:cubic-bezier(.2,.8,.2,1); --t-press:120ms; --t-hover:200ms; --t-reveal:220ms; --t-enter:520ms;
+  --lift:0 10px 26px rgba(35,31,32,.12); }
+main > *, .kpis > *, .hub-grid > *, .areas > * { animation:rise var(--t-enter) var(--ease-out) both; }
+main > :nth-child(2), .kpis > :nth-child(2), .hub-grid > :nth-child(2), .areas > :nth-child(2) { animation-delay:50ms; }
+main > :nth-child(3), .kpis > :nth-child(3), .hub-grid > :nth-child(3), .areas > :nth-child(3) { animation-delay:100ms; }
+main > :nth-child(4), .kpis > :nth-child(4), .hub-grid > :nth-child(4), .areas > :nth-child(4) { animation-delay:150ms; }
+main > :nth-child(5), .hub-grid > :nth-child(5), .areas > :nth-child(5) { animation-delay:200ms; }
+main > :nth-child(n+6) { animation-delay:250ms; }
+@keyframes rise { from { opacity:0; transform:translateY(10px); } }
+
+.hub-card, ul.days li, .kpi, .tile, .summary { transition:transform var(--t-hover) var(--ease-out), box-shadow var(--t-hover) var(--ease-out); }
+.hub-card:hover, ul.days li:hover { transform:translateY(-2px); box-shadow:var(--lift); }
+.kpi:hover, .tile:hover { box-shadow:0 6px 18px rgba(35,31,32,.09); }
+ul.days a { transition:color var(--t-hover) var(--ease-out); }
+.topbar nav a { transition:border-color var(--t-hover) var(--ease-out); }
+.topbar .brand { transition:opacity var(--t-hover) var(--ease-out); }
+.topbar .brand:hover { opacity:.85; }
+tbody > tr > td { transition:background-color var(--t-hover) var(--ease-out); }
+.card tbody > tr:hover > td:not(.nodata) { background-color:#f7f8fa; }
+.info, .chip, .btn, .col .seg { transition:background-color var(--t-hover) var(--ease-out), color var(--t-hover) var(--ease-out),
+  transform var(--t-press) var(--ease-out), opacity var(--t-hover) var(--ease-out); }
+.info:hover { transform:scale(1.08); }
+.info:active, .chip:active, .btn:active:not(:disabled) { transform:scale(.96); }
+
+.about[popover] { opacity:0; transform:translateY(-4px) scale(.98); transform-origin:top left;
+  transition:opacity var(--t-reveal) var(--ease-out), transform var(--t-reveal) var(--ease-out),
+    overlay var(--t-reveal) allow-discrete, display var(--t-reveal) allow-discrete; }
+.about[popover]:popover-open { opacity:1; transform:none; }
+@starting-style { .about[popover]:popover-open { opacity:0; transform:translateY(-4px) scale(.98); } }
+details[open] > :not(summary) { animation:settle var(--t-reveal) var(--ease-out); }
+@keyframes settle { from { opacity:0; transform:translateY(-4px); } }
+
+.col .seg { transform-origin:50% 100%; animation:grow 700ms var(--ease-out) both 250ms; }
+@keyframes grow { from { transform:scaleY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration:.01ms !important; animation-delay:0s !important; animation-iteration-count:1 !important;
+    transition-duration:.01ms !important; scroll-behavior:auto !important; }
+}
+@media print { *, *::before, *::after { animation:none !important; transition:none !important; } }
+"""
+CSS += MOTION_CSS
+
 # On every page, in the top bar and the footer. Everything the suite reads today is synthetic (sample
 # files and simulated APIs); change these two when a real Goodwill export is read.
 DATA_LABEL = "Synthetic sample data"
