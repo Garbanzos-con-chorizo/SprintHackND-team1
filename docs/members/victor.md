@@ -2,12 +2,13 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 01:15 · **Branch:** victor/internal-pull
+**Last updated:** 2026-10-04 01:45 · **Branch:** victor/nightly-store
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`
 **Decision 007:** agreed by all three, SQLite included (Orlando's amendment at 21:30, my response appended). Tripwire: if September isn't in the store by 10:00 Sunday, the KPIs read the files instead.
 
 ### Done
+- **V2.11** (branch `victor/nightly-store`): `python -m reports.run_nightly --scenario <day>` now has 7 steps: inbox, engine, pulse, **store load, internal pull, KPIs** (day, week to date, month to date into `out/kpi/`), render. The store, internal and KPI steps don't stop the night: if one fails, the log says FAILED, the pulse page still renders, and the command exits 1. `--simulated` skips them. `gw_day_clean` runs in about 3 s. `run_scheduled` works unchanged. 3 tests in `reports/tests/test_run_nightly.py`.
 - **V2.6** (branch `victor/internal-pull`): `python -m engine.internal_api pull (--date D | --from D1 --to D2)` writes the snapshot into `internal_daily` (same rules as load: delete then insert, a failed pull changes nothing). `store backfill` now pulls each day after loading it, and `store status` shows internal coverage. 7 tests in `engine/tests/test_internal_pull.py`.
 - **Checkpoint 1 data side ready:** `python -m engine.store backfill --inbox data/sample/clean_month/inbox --from 2026-09-01 --to 2026-09-30` gives 30 of 30 days complete, the internal snapshot on 30 of 30 days (1,890 rows, 10 metrics, simulated), and category sales equal to revenue on every day. About 12 s.
 - **Checkpoint 1 data path, end to end:** on that store, Dani's `python -m recon.kpi --month 2026-09` (also `--week 2026-W38`, `--date 2026-09-14`) gives 13 ok, 1 partial (repeat buyers: no Amazon buyer ids), 1 no data (growth: no August). Net margin 23.0%, $51.93 per labor hour, simulated KPIs flagged. It wrote 33 `kpi_values` rows per period and logged `kpi` runs. What's left for the checkpoint is Orlando's page reading the KPI file.
@@ -25,7 +26,6 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 ### Next, in order (sizes S < 30 min, M 30-90 min)
 | ID | Task | Size | Target |
 |---|---|---|---|
-| V2.11 | `run_nightly`: add store load, internal pull, kpi | S | after CP1 |
 | V2.8 | `export kpi-csv` from the KPI file (against Dani's sample file) | S | |
 | V2.9 | `export pdf`: headless Edge prints Orlando's scorecard page (needs O2.4); goes to Orlando if late | M | |
 | V2.10 | Attach the PDF to Orlando's `email_gen.py` `.eml` (already writes drafts) | S | |
