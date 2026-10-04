@@ -25,7 +25,7 @@ engine.internal_api (mock | http client) ──> python -m engine.internal_api p
 | Endpoint | `data` fields -> stored metrics |
 |---|---|
 | `labor` | `labor_hours`, `labor_cost_cents`, `employees` |
-| `listings` | `listings_created` by marketplace, `active_listings_by_age` by age bucket, `unlisted_backlog`, `donation_to_listing_days` (days -> items) |
+| `listings` | `listings_created` by marketplace, `active_listings_by_age` by age bucket, `unlisted_backlog`, `donation_to_listing_days` (days -> items), `listing_to_sale_days` (days -> units sold) |
 | `costs` | `shipping_net_cost_cents`, `category_cogs_cents` by category |
 | `categories` | `category_sales_cents` by category |
 
@@ -43,6 +43,7 @@ One row per `(business_date, metric, dimension)`. **Flow** metrics are the day's
 | `employees` | `total` (full-time equivalents) | snapshot | `fte` | 6, 12 |
 | `listings_created` | marketplace | flow | `listings` | 4, 6, 11 |
 | `donation_to_listing_days` | whole days as text (`"0"`, `"1"`, ...); value = items listed that day with that age | flow | `items` | 7 (an exact median from the summed counts) |
+| `listing_to_sale_days` | whole days as text; value = units sold that day that had been listed that many days before | flow | `items` | 11, sell-through's two boxes (kpi.md "Sell-through in two boxes") |
 | `unlisted_backlog` | `total` | snapshot | `items` | 8 |
 | `active_listings_by_age` | `0-30`, `31-60`, `61-90`, `91+` (days listed) | snapshot | `listings` | 9 |
 | `shipping_net_cost_cents` | `total`: paid to carriers minus charged to buyers | flow | `cents` | 3 |
@@ -56,6 +57,7 @@ One row per `(business_date, metric, dimension)`. **Flow** metrics are the day's
 - Cost of goods for donated items is a seeded share of category sales. Goodwill may track processing cost per item instead; that changes only the mock, not this table or the KPI file.
 
 ## Changelog
+- draft v0.5 (2026-10-04, Victor): `listing_to_sale_days`, asked by Dani. The mock spreads the day's units sold, read from the store's sale rows (an order without a unit count counts once), over ages with a seeded distribution (median about 6 days, few on day 0). There are no rows on a day without sales. `store backfill` also pulls the snapshot of the day before its range, so sell-through's "left from earlier" box has its stock count.
 - draft v0.4 (2026-10-04, Victor): `python -m engine.internal_api pull (--date D | --from D1 --to D2)` built. It writes `internal_daily` per date (delete then insert, one transaction, a failed pull changes nothing), logs a `pull` run, and says when there's no pulse for the date (no category rows). `store backfill` pulls each day after loading it.
 - draft v0.3 (2026-10-04, Victor): built. Seeded sizes: about 53 labor hours a day at $17.25-18.25 an hour, 9 FTE plus or minus 1 (changes by ISO week), 124 listings a day (less at the weekend), donation-to-listing median about 6 days, 3,700 active listings, 1,800 unlisted, shipping net cost about $110 a day, cost of goods 20-45% of sales by category. On September (`clean_month`) that gives revenue per labor hour about $52 and net margin about 23%.
 - draft v0.2 (2026-10-03, Victor): metric names, dimensions and kinds switched to Dani's list in `kpi.md` (`employees`, `donation_to_listing_days`, `active_listings_by_age`, `shipping_net_cost_cents`, `category_sales_cents`, `category_cogs_cents`; single values use `dimension = 'total'`). Category sales are scaled to the pulse revenue.

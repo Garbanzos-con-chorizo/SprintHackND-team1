@@ -9,6 +9,7 @@ METRICS = [
     ("employees", "labor", "fte"),
     ("listings_created", "listings", "listings"),
     ("donation_to_listing_days", "listings", "items"),
+    ("listing_to_sale_days", "listings", "items"),
     ("unlisted_backlog", "listings", "items"),
     ("active_listings_by_age", "listings", "listings"),
     ("shipping_net_cost_cents", "costs", "cents"),

@@ -75,6 +75,19 @@ def test_a_failed_pull_changes_nothing_but_the_runs_log(conn):
     assert conn.execute("SELECT result FROM runs ORDER BY rowid DESC LIMIT 1").fetchone()[0] == "failed"
 
 
+def test_pull_spreads_the_stored_units_sold(conn):
+    add_pulse(conn)
+    with conn:
+        conn.executemany("INSERT INTO transactions (txn_id, source, marketplace, type, business_date, order_id, "
+                         "customer_basis, gross_cents, units, source_file, source_row, run_id) "
+                         "VALUES (?, 'ebay', 'ebay', ?, ?, ?, 'order', 100, ?, 'f', 1, 'r')",
+                         [("a", "sale", DAY, "1", 3), ("b", "sale", DAY, "2", None), ("c", "refund", DAY, "1", 0)])
+    pull_day(conn, DAY)
+    n = conn.execute("SELECT SUM(value) FROM internal_daily WHERE business_date = ? AND metric = 'listing_to_sale_days'",
+                     (DAY,)).fetchone()[0]
+    assert n == 4  # 3 units, plus 1 for the order with no unit count; refunds don't count
+
+
 def test_other_dates_are_untouched(conn):
     add_pulse(conn, "2026-09-13")
     add_pulse(conn)
@@ -99,6 +112,10 @@ def test_backfill_pulls_each_day_and_status_reports_it(conn, tmp_path):
         sales = conn.execute("SELECT SUM(value) FROM internal_daily WHERE business_date = ? "
                              "AND metric = 'category_sales_cents'", (r["date"],)).fetchone()[0]
         assert sales == r["revenue_cents"]
+    # the day before the range has its snapshot too (stock count for sell-through), without a pulse
+    assert conn.execute("SELECT COUNT(*) FROM internal_daily WHERE business_date = '2026-08-31' "
+                        "AND metric = 'active_listings_by_age'").fetchone()[0] == 4
+    assert conn.execute("SELECT COUNT(*) FROM pulse_daily WHERE business_date = '2026-08-31'").fetchone()[0] == 0
     s = store_status(conn, "2026-09-01", "2026-09-05")
     assert s["internal"] == {"days": 3, "missing": ["2026-09-04", "2026-09-05"], "sources": ["mock"]}
     assert "internal API snapshot: 3 of 5 days (source mock: simulated); missing: 2026-09-04..2026-09-05" \
