@@ -46,6 +46,17 @@ Decided by Dani, 2026-10-04, for phase 3 (`docs/PLAN_PHASE_3.md`, decision 009).
 | 2c.6 | **ShopGoodwill's periodic report lists its payouts with the period each one covers**, and the Goodwill Books statement lists the prior month's sales, fees and net payment, posted in the month it is paid. What "Period 1" and "Period 3" mean is unknown and not modeled. | Slide 38 names both reports and shows neither. | guess |
 | 2c.7 | **Cash Monkey's month file is a cross-check, not a second count.** eBay and Amazon post from their own reports; Cash Monkey's totals for the same marketplaces are shown beside them. | Both files hold the same sales; adding them would double the revenue. Which one Goodwill's workbook uses is unknown. | default, **open** |
 
+## 2d. The rules of the close
+Every rule the close applies is listed in `docs/contracts/close-rules.md`, with where it lives and whether it is from the deck or assumed. We have never seen Goodwill's allocation workbook, so none of them has been compared with it. The ones that would change the numbers:
+
+| # | Assumption | Why | Confidence |
+|---|---|---|---|
+| 2d.1 | **How each marketplace pays**: eBay every day for the day before (Eastern days), Amazon through the day before each settlement is paid (Pacific days), ShopGoodwill weekly through Sunday (Pacific days). | The close checks each payout against the files for the days it covers, so it has to know those days. These cycles are the ones our sample generator uses; the real ones are in the marketplaces' payout reports. | guess (`Payout_Cutoff`, `Payout_Timezone` in `reports/config/bc_mapping.csv`) |
+| 2d.2 | **A deposit matches its payouts to the cent, at most 5 days after they were paid**, and one deposit may cover several payouts of the same marketplace. | Banks batch weekend payouts. A tolerance would hide exactly the differences the close exists to show. | default (`WINDOW_DAYS` in `reports/reconcile.py`) |
+| 2d.3 | **ShopGoodwill posts through an AR invoice; eBay and Amazon through the General Journal.** | Slide 39 has journal entry tabs "for each report" and one Invoices tab; it does not say which source uses which. | guess (`Path` in `bc_mapping.csv`) |
+| 2d.4 | **The month starts with no opening balance.** Last month's payouts that settle in the first days of the month, and last month's unpaid activity, are not carried over. | The samples hold one month. In the real close this is what "roll the workbook" carries forward. | not modeled |
+| 2d.5 | **Exception owners are role names we chose** (Accounting, E-commerce, IT), and there is no approval step. | The deck asks for "owned exceptions" and "approvals" without naming anyone. | placeholder (`reports/config/close_exceptions.csv`) |
+
 ## 3. How the data gets in (acquisition)
 | # | Assumption | Why | Confidence |
 |---|---|---|---|

@@ -46,7 +46,7 @@ Original outline, kept for the record:
 | **Orlando** | O5 monthly dashboard, which became the scorecard pages |
 
 ## Phase 3: Month-end close
-**Status, 2026-10-04:** built in `reports/` and run on a synthetic messy month: `reports.reconcile`, `reports.bc_export` and `reports.close_report` write the General Journal (56 lines in 25 documents, each balanced), an AR invoice file, control totals and an exceptions list, as import files and not a live posting. Detail: `docs/PLAN_PHASE_2_3.md` section 8 and `docs/decisions/006-*` (Resolution). The task table below is the original outline.
+**Status, 2026-10-04 01:45 EDT:** one command, `python -m reports.close --inbox <folder> --month 2026-09`, runs the close on a synthetic tidy month and a synthetic messy month. It writes the General Journal (56 lines in 25 documents, each balanced), an AR invoice file, control totals and an exceptions list with an owner for each, archives the run, and renders the page. Every payout is compared with the files for the days it covers, so nothing is netted: the messy month names the two missing reports and their amounts ($743.10, $1,875.64) and holds out the $412.37 deposit; dropping in the two late reports closes the gaps. **Import files, not a live posting; three of Goodwill's nine month-end sources reach the close from sample files, the rest are not modeled until their simulated sources land.** Plan, tasks and what is left: `docs/PLAN_PHASE_3.md` (decision 009). Who has done what: `docs/members/dani.md`, `docs/members/victor.md`. The task table below is the original outline.
 
 Contracts first: **0.2** (`rules.md`, Victor) and **0.3** (`outputs.md`, Dani).
 
