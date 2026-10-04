@@ -21,6 +21,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
   - **Also checked in the browser:** with the two files placed in the page's file input, the button sent them, the close ran and the page reloaded with all sources `OPEN`; both stored files have the same hash as the samples. The operating system's own file dialog cannot be driven by a test: choose the files once by hand before recording.
   - **Next:** the demo script can use the panel for its third run (Dani's call).
 - **Dani's tasks (in her inbox, 11:50):** a clear place on the close page to export the Business Central import files, and a visible list of who receives the Monthly and Close emails.
+- **Orlando's tasks (paged 12:40, in his inbox):** check the design on `main`; bring over from `o/ui-map` what still helps (site map, store card, previous/next, print fixes), since that branch conflicts with `main`; change the theme and palette to Goodwill's brand colours and add their logo (from a file Goodwill gives us, with their OK, the "Synthetic sample data" label kept beside it). His 11:46 review request for `o/ui-map` was only on his branch and was answered by this page.
 
 ## Phase 3: decision 009, plan in `docs/PLAN_PHASE_3.md` (my tasks V3.1 to V3.10)
 ### Done
