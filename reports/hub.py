@@ -7,6 +7,8 @@ flags missing data, so staff see the state of things before clicking.
     python -m reports.hub [--root reports]     # also run at the end of run_nightly, weekly and monthly
 """
 import argparse
+import csv
+import math
 import re
 from datetime import date, datetime
 from html import escape, unescape
@@ -28,7 +30,30 @@ HUB_CSS = """
 .hub-card .headline { margin:0 0 10px; font-weight:600; }
 .hub-card .links, .hub-card .built { font-size:14px; color:var(--muted); margin:4px 0 0; }
 .hub-card .links { line-height:1.8; }
+/* Revenue by night: plain HTML columns, no script. A 2px gap in the card color separates the segments. */
+.trend-head { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 16px; margin-top:14px; }
+.trend-head h2.sec { margin:0 0 6px; }
+.legend { display:flex; flex-wrap:wrap; gap:4px 16px; font-size:13px; }
+.legend i { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; }
+.trend { padding:14px 16px 10px; overflow:visible; }
+.plot { position:relative; margin:18px 0 0 56px; border-bottom:1px solid var(--muted); }
+.tick { position:absolute; left:0; right:0; border-top:1px solid #e6e6e8; }
+.tick span { position:absolute; right:100%; margin-right:8px; transform:translateY(-50%); font-size:12px;
+  color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.cols { position:absolute; inset:0; display:flex; align-items:flex-end; }
+.col { flex:1; display:flex; flex-direction:column; align-items:center; text-decoration:none; }
+.col .cap { font-size:12px; font-weight:600; color:var(--ink); margin-bottom:3px; white-space:nowrap; }
+.seg { display:block; width:24px; }
+.seg:first-of-type { border-radius:4px 4px 0 0; }
+.seg + .seg { border-top:2px solid var(--card); }
+.col:hover .seg { opacity:.82; }
+.xlabels { display:flex; margin:6px 0 0 56px; }
+.xlabels div { flex:1; text-align:center; font-size:12px; line-height:1.35; color:var(--muted); padding:0 2px; }
+.xlabels b { display:block; color:var(--ink); font-weight:600; }
+.xlabels .gap { display:block; color:var(--down); font-weight:600; }
+.trend + .links { color:var(--muted); margin:6px 0 0; }
 @media print {
+  .seg, .legend i { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   @page { size:letter portrait; margin:0.5in; }
   .hub-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
   .hub-card { padding:8px 10px; break-inside:avoid; }
@@ -130,6 +155,66 @@ def card(root, item):
             f'<p class="built">{escape(item["what"])} Built {stamp(built.isoformat())}.</p></div>')
 
 
+# Marketplace colors for the chart, bottom of the column first. Checked as a set for color-blind
+# separation on white; none is the green or red the pages use for change and missing data.
+SERIES = [("ShopGoodwill", "#0054A4"), ("Amazon", "#eb6834"), ("eBay", "#1baf7a")]
+PLOT_PX = 130
+
+
+def nights(root, count=8):
+    """The last nights from the pulse CSVs beside the pages: (date, {marketplace: dollars}, [marketplaces with no data])."""
+    files = sorted(f for f in (root / "pulse").glob("*.csv") if re.fullmatch(r"\d{4}-\d{2}-\d{2}", f.stem))
+    found = []
+    for f in files[-count:]:
+        with open(f, encoding="utf-8", newline="") as fh:
+            rows = list(csv.DictReader(fh))
+        revenue = {r["Marketplace"]: float(r["Revenue"]) for r in rows if r["Status"] == "ok" and r["Revenue"]}
+        gaps = [r["Marketplace"] for r in rows if r["Status"] in ("missing", "stale", "unknown")]
+        found.append((f.stem, revenue, gaps))
+    return found
+
+
+def _axis(top):
+    """A round step for about three gridlines, and the axis maximum (a whole number of steps)."""
+    raw = max(top, 1) / 3
+    mag = 10 ** math.floor(math.log10(raw))
+    step = next(m * mag for m in (1, 2, 5, 10) if m * mag >= raw)
+    return step, step * math.ceil(max(top, 1) / step)
+
+
+def trend(root):
+    """Revenue by night and marketplace, as stacked columns. A marketplace with no data is named under its night,
+    never drawn as zero. Each column links to that night's pulse."""
+    days = nights(root)
+    if len(days) < 2:
+        return ""
+    totals = [sum(rev.get(name, 0) for name, _ in SERIES) for _, rev, _ in days]
+    step, top = _axis(max(totals))
+    ticks = "".join(f'<div class="tick" style="bottom:{PLOT_PX * v / top:.0f}px"><span>${v:,.0f}</span></div>'
+                    for v in (step * i for i in range(1, round(top / step) + 1)))
+    labelled = {len(days) - 1, totals.index(max(totals))}  # the latest night and the best one; the axis reads the rest
+    cols, labels = [], []
+    for i, ((day, rev, gaps), total) in enumerate(zip(days, totals)):
+        d = date.fromisoformat(day)
+        when = f"{d:%a}, {d:%b} {d.day}"
+        segs = "".join(f'<i class="seg" style="height:{PLOT_PX * rev[name] / top:.1f}px;background:{color}" '
+                       f'title="{when} · {name}: ${rev[name]:,.2f}"></i>'
+                       for name, color in reversed(SERIES) if rev.get(name))
+        cap = f'<span class="cap">${total:,.0f}</span>' if i in labelled else ""
+        note = f" (no data: {', '.join(gaps)})" if gaps else ""
+        cols.append(f'<a class="col" href="pulse/{day}.html" title="{when}: ${total:,.2f}{escape(note)}">{cap}{segs}</a>')
+        gap = f'<span class="gap">No data: {escape(", ".join(gaps))}</span>' if gaps else ""
+        labels.append(f'<div><b>{d:%a}</b>{d:%b} {d.day}{gap}</div>')
+    legend = "".join(f'<span><i style="background:{color}"></i>{name}</span>' for name, color in SERIES)
+    return (f'<div class="trend-head"><h2 class="sec">Revenue by night · last {len(days)} nights</h2>'
+            f'<div class="legend">{legend}</div></div>'
+            f'<div class="card trend"><div class="plot" style="height:{PLOT_PX}px">{ticks}'
+            f'<div class="cols">{"".join(cols)}</div></div><div class="xlabels">{"".join(labels)}</div></div>'
+            f'<p class="links">Revenue as on the nightly pulse: sales minus refunds, before marketplace fees. '
+            f'A night with a missing file shows only the marketplaces that reported. '
+            f'Select a column for that night, or see <a href="pulse/index.html">all days</a>.</p>')
+
+
 def close_index(root):
     """<root>/close/index.html, the months closed (newest first): where the top bar's "Month-end close" lands."""
     folder = root / "close"
@@ -150,6 +235,7 @@ def build(root=ROOT / "reports"):
     close_index(root)
     body = (f'<header><h1>Latest reports</h1>'
             f'<p>Goodwill Michiana e-commerce · updated {stamp(datetime.now().isoformat())}</p></header>'
+            f'{trend(root)}'
             f'<div class="hub-grid">\n' + "\n".join(cards) + '\n</div>'
             f'<p class="simnote"><strong>{DATA_LABEL}.</strong> Every figure on these pages comes from synthetic sample '
             f'files and simulated APIs: {DATA_NOTE}. KPIs marked "Simulated internal data" use a mock of Goodwill\'s '
