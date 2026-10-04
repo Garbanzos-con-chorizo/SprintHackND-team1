@@ -302,6 +302,7 @@ ADD_CSS = """
 .addfiles ul { padding-left:20px; }
 .addrow { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0 4px; }
 .addrow input[type=file] { font:inherit; font-size:14px; max-width:100%; }
+.addfiles [hidden] { display:none; }  /* .btn sets display, which would show a hidden button */
 /* The export files of a month: one button each, in a column that wraps. */
 table.lib td.files { white-space:normal; min-width:300px; }
 table.lib td.files a.btn { margin:0 6px 6px 0; }
