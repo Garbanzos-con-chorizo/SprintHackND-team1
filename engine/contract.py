@@ -15,6 +15,11 @@ COLUMNS = [
     "fee_cents",
     "source_file",
     "source_row",
+    # v2, appended so readers of v1 keep working: what the buyer paid for shipping and handling
+    # (signed like gross_cents), and units sold (sales only; empty when the export has no unit count).
+    "shipping_cents",
+    "handling_cents",
+    "units",
 ]
 
 # Marketplaces the pulse expects data for each day (keys of source_status.json). `other` is not

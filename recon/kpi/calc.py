@@ -58,6 +58,7 @@ def _shape(kpi, res, prior, simulated):
         "per": res.per or kpi.per,
         "value": value,
         "rows": (res.value if status != "no_data" else []) if ranking else None,
+        "parts": res.parts,
         "status": status,
         "reason": reason,
         "note": note,

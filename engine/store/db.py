@@ -22,7 +22,21 @@ def connect(path: str | Path | None = None) -> sqlite3.Connection:
     return conn
 
 
+# Columns added after version 1: CREATE TABLE IF NOT EXISTS leaves an existing table as it was,
+# so init adds them in place. Adding a column never breaks a reader.
+ADDED_COLUMNS = {
+    "transactions": [("shipping_cents", "INTEGER NOT NULL DEFAULT 0"), ("handling_cents", "INTEGER NOT NULL DEFAULT 0")],
+}
+
+
 def init(conn: sqlite3.Connection) -> int:
-    """Create the tables and views from schema.sql; returns the schema version."""
+    """Create the tables and views from schema.sql, add columns newer than the database; returns the
+    schema version."""
     conn.executescript(SCHEMA.read_text(encoding="utf-8"))
+    for table, columns in ADDED_COLUMNS.items():
+        have = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        for name, decl in columns:
+            if name not in have:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {name} {decl}")
+    conn.commit()
     return conn.execute("PRAGMA user_version").fetchone()[0]

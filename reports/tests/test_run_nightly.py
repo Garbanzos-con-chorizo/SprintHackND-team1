@@ -13,9 +13,17 @@ SCENARIO, DAY = "gw_day_clean", "2026-10-01"
 
 @pytest.fixture
 def db(tmp_path, monkeypatch):
+    """A temporary store, and temporary output and page folders: the tests never touch the real
+    out/ and reports/ that the demo shows (Dani's report, 2026-10-03 21:55)."""
     path = tmp_path / "ecom.db"
     monkeypatch.setenv("ECOM_DB", str(path))
+    monkeypatch.setattr(run_nightly, "OUT", tmp_path / "out")
+    monkeypatch.setattr(run_nightly, "REPORTS", tmp_path / "reports")
     return path
+
+
+def snapshot(folder):
+    return {p: p.stat().st_mtime_ns for p in folder.rglob("*") if p.is_file()} if folder.exists() else {}
 
 
 def test_a_real_night_fills_the_store_and_writes_the_three_kpi_files(db, capsys):
@@ -28,7 +36,7 @@ def test_a_real_night_fills_the_store_and_writes_the_three_kpi_files(db, capsys)
     assert c.execute("SELECT command, COUNT(*) FROM runs GROUP BY 1 ORDER BY 1").fetchall() == \
         [("kpi", 3), ("load", 1), ("pull", 1)]
     for name in (f"day-{DAY}", "week-2026-W40", "month-2026-10"):
-        k = json.loads((ROOT / "out" / "kpi" / f"{name}.json").read_text(encoding="utf-8"))
+        k = json.loads((db.parent / "out" / "kpi" / f"{name}.json").read_text(encoding="utf-8"))
         assert len(k["kpis"]) == 15, name
 
 
@@ -40,9 +48,17 @@ def test_simulated_night_skips_the_store(db, capsys):
 
 def test_a_store_failure_is_logged_and_the_pulse_page_still_renders(db, capsys, monkeypatch):
     monkeypatch.setattr(run_nightly, "STORE_CMD", ["-c", "import sys; print('store: disk full'); sys.exit(3)"])
-    page = ROOT / "reports" / "pulse" / f"{DAY}.html"
-    page.unlink(missing_ok=True)
+    page = db.parent / "reports" / "pulse" / f"{DAY}.html"
     assert run_nightly.main(["--scenario", SCENARIO]) == 1
     out = capsys.readouterr().out
     assert "store: disk full" in out and "FAILED: store load, internal pull, KPIs" in out
     assert page.exists()  # the morning page doesn't depend on the store
+
+
+def test_the_tests_leave_the_real_output_folders_alone(db):
+    real = {name: snapshot(ROOT / name) for name in ("out/kpi", "out/pulse", "reports/pulse", "out/" + SCENARIO)}
+    real_index = (ROOT / "reports" / "index.html").stat().st_mtime_ns if (ROOT / "reports" / "index.html").exists() else None
+    assert run_nightly.main(["--scenario", SCENARIO]) == 0
+    assert {name: snapshot(ROOT / name) for name in real} == real
+    assert ((ROOT / "reports" / "index.html").stat().st_mtime_ns if real_index else None) == real_index
+    assert (db.parent / "reports" / "index.html").exists() and (db.parent / "out" / "pulse" / f"{DAY}.json").exists()

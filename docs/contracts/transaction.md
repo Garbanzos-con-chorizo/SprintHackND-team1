@@ -1,7 +1,7 @@
 # Contract: canonical transaction, phase 1 (task 0.1)
 
 - **Owner:** Victor (`engine/`). **Consumers:** Dani (pulse calculation), Orlando (pulse rendering, and later the dashboard).
-- **Status:** agreed (v0.3). In use by `recon/` (pulse) and `reports/`; the engine implements it.
+- **Status:** agreed (v0.4: three columns appended, non-breaking). In use by `recon/` (pulse) and `reports/`; the engine implements it.
 - **Scope:** phase 1 only, the nightly pulse. Phase 3 (close) adds columns later (`fee`/`payout`/`bank` types, `net_cents`, `memo`, GL fields). Adding columns is not a breaking change: consumers ignore columns they don't know.
 
 ## What this contract does
@@ -31,6 +31,9 @@ CSV, UTF-8 (no BOM), header row, RFC 4180 quoting, `\n` line endings. One row pe
 | `fee_cents` | integer | yes | Marketplace fee in USD cents, positive = cost to us. 0 if the source doesn't report one. Reported separately; never subtracted from `gross_cents`. |
 | `source_file` | string | yes | Input filename. |
 | `source_row` | integer | yes | 1-based data row in that file. |
+| `shipping_cents` | integer | yes (v0.4) | What the buyer paid for shipping, USD cents, signed like `gross_cents` (a refund row carries the shipping refunded, negative). Not revenue; the close posts it. A source with one combined "shipping and handling" column (eBay) puts it all here. Upright: `Shipping Charged` minus `Shipping Discount`. 0 if the export has no shipping column. |
+| `handling_cents` | integer | yes (v0.4) | What the buyer paid for handling, same rules (Upright `Handling`, ShopGoodwill `Handling Fee`). 0 if the export has none. |
+| `units` | integer or empty | no (v0.4) | Units sold, on `sale` rows (summed over the lines of the order); `0` on `refund` rows. **Empty when the export has no unit count**, never 0, so readers fall back to per-order figures. Upright `Order Items`, Cash Monkey / eBay / Amazon `Quantity`, ShopGoodwill one per row. |
 
 Revenue by default (`OFFICE_HOURS.md` Q5): sum of `gross_cents` over `sale` and `refund` rows for a `business_date`, so net of refunds. Fees are summed separately. Changing the definition changes Dani's calculation only.
 
@@ -101,6 +104,7 @@ Until the engine runs, Dani and Orlando code against `examples/transactions.samp
 - **`source_status.json` is keyed by marketplace** (see its section above).
 
 ## Changelog
+- v0.4 (2026-10-04, Victor): `shipping_cents`, `handling_cents`, `units` appended (Orlando's request for the close; `units` for KPIs 10 and 11). Appended at the end, so v0.3 readers keep working. On `messy_month` the shipping and handling totals per marketplace equal the answer key to the cent.
 - v0.3: status agreed; rules above written down; sources and `source_status.json` keyed by marketplace; Upright and Cash Monkey added.
 - draft v0.2: narrowed to phase 1; added cleaning rules; dropped close-only columns and sources.
 - draft v0.1: initial (superseded).

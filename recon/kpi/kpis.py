@@ -23,6 +23,8 @@ PER_ORDER = ("Revenue / orders (per order until unit counts are available).",
              "Per order, not per unit: the exports do not give unit counts yet.")
 BY_ORDERS = ("Orders / listings created in the period (a stand-in for units sold / units listed).",
              "Orders / listings created, until unit counts are available.")
+# The two boxes of sell-through (kpi.md, "Sell-through in two boxes").
+BOXES = (("listed_in_period", "Listed in the period"), ("left_from_earlier", "Left from earlier"))
 
 
 @dataclass
@@ -37,6 +39,7 @@ class Result:
     per: str | None = None  # replaces the catalog's when a fallback changes it
     definition: str | None = None  # same
     note: str | None = None  # said even when the KPI is ok (a fallback)
+    parts: list | None = None  # the boxes of a KPI that is shown in several
 
     def problem(self, status, reason, note):
         self.problems.append((status, reason, note))
@@ -281,8 +284,36 @@ def _asp(f, prev):
     return res
 
 
+def _boxes(sold=None, listed=None, opening=None):
+    """Sell-through in two boxes: of what was listed in the period, and of what was left from earlier.
+
+    The data does not say which listing each sale came from, so the period's own listings are
+    taken to sell first: they explain at most `listed` of what sold, and the rest came from the
+    stock that was still active the night before.
+    """
+    mine = None if sold is None or listed is None else min(sold, listed)
+    older = None if mine is None else sold - mine
+
+    def rate(part, available):
+        return round(part / available, 4) if part is not None and available else None
+
+    return [
+        {"id": BOXES[0][0], "name": BOXES[0][1], "value": rate(mine, listed), "sold": mine, "available": listed},
+        {"id": BOXES[1][0], "name": BOXES[1][1], "value": rate(older, opening), "sold": older, "available": opening},
+    ]
+
+
+def _boxes_note(boxes, sold, things):
+    mine, older = boxes
+    stock = (f"the {older['available']:,} left from earlier" if older["available"] is not None
+             else "what was left from earlier (no stock count for the day before the period)")
+    return (f"Assumes what was listed in the period sold first: {mine['sold']:,} of the {sold:,} {things} sold count "
+            f"against the {mine['available']:,} listed in the period, {older['sold']:,} against {stock}.")
+
+
 def _sell_through(f, prev):
-    res = Result(inputs={"units_sold": f.units, "orders": f.files and f.files["orders"], "units_listed": None})
+    res = Result(parts=_boxes(), inputs={"units_sold": f.units, "orders": f.files and f.files["orders"],
+                                         "units_listed": None, "opening_stock": f.opening_stock})
     stop = _no_files(res, f)
     stop |= _no_internal(res, f, "listings_created")
     if stop:
@@ -293,9 +324,13 @@ def _sell_through(f, prev):
         res.definition, res.note = BY_ORDERS
     else:
         res.basis = "units"
+    sold = f.files["orders"] if f.units is None else f.units
+    res.parts = _boxes(sold, listed, f.opening_stock)
+    split = _boxes_note(res.parts, sold, "orders" if f.units is None else "units")
+    res.note = f"{split} {res.note}" if res.note else split
     if listed <= 0:
         return _zero(res, "No listings were created in the period.")
-    res.value = round((f.files["orders"] if f.units is None else f.units) / listed, 4)
+    res.value = round(sold / listed, 4)
     return res
 
 
