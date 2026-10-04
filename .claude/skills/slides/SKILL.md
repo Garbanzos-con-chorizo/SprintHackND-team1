@@ -14,7 +14,10 @@ Distilled from: frontend-slides (Zara Zhang, MIT), guizang-ppt-skill Swiss style
 4. **Signal over noise.** No drop shadows, gradients, decorative accent bars or card grids "because cards". Separate with whitespace and hairline rules.
 5. **Vary layouts.** No two consecutive slides with the same layout. Identical card rows are the #1 "AI slop" tell.
 6. **Readable remotely.** Text ≥ 24 px on a 1920×1080 canvas (body 32+). Contrast ≥ 4.5:1 (3:1 at ≥ 44 px). Color never carries meaning alone (say "INCOMPLETE", don't only paint it orange).
-7. **Honest.** Every number on a slide traces to a source run or file; synthetic data is labelled on the slide. An overclaim costs more than any design wins (CLAUDE.md rule 14).
+7. **No dependencies.** System fonts only (theme `plain`: Georgia + Segoe UI/Helvetica/Arial), no web fonts, CDNs or libraries. Present and record from the one offline file `build_deck.py --html docs/pitch/deck/deck.html`.
+8. **No AI tells** (`reference/ai-tells.md`): no tracked-caps eyebrows on every slide, no marketing verbs, no "not just X", no em dashes, no punchy fragments ("Watch it run."), no triads by reflex. Plain, specific, short: ≤ 25 words per slide.
+9. **Describe what the program does; never show output numbers from synthetic data** as if they were results (`"no_numbers": true` makes it a lint error). Counts that describe the build are fine only when the user wants them.
+10. **Honest.** Every number on a slide traces to a source run or file; synthetic data is labelled on the slide. An overclaim costs more than any design wins (CLAUDE.md rule 14).
 
 ## Workflow (follow the SDD skills: `spec` → `plan` → build → `audit`)
 1. **Spine and copy first** (`reference/copy-and-audience.md`). Write the story as assertion titles only (one line per slide). Read it top to bottom: it must make the argument without any visuals. Hackathon arc: problem in the partner's words → what we built → the demo → why trust it → honesty (built vs simulated) → limits → the ask.

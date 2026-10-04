@@ -11,7 +11,14 @@ import os
 import re
 from datetime import datetime, timezone
 
+SYSTEM_SANS = "'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+SYSTEM_SERIF = "Georgia, 'Times New Roman', serif"
+
 THEMES = {
+    # Default: no network, no font files. System fonts only (works offline, in PDF and in the recording).
+    "plain": {"ink": "#231F20", "paper": "#FFFFFF", "alt": "#F4F4F2", "anchor": "#0054A4",
+              "warn": "#B25000", "body": "#3D393A", "muted": "#5C5859", "line": "#D3D2D2",
+              "head_stack": SYSTEM_SERIF, "text_stack": SYSTEM_SANS, "faces": {}},
     "swiss": {"ink": "#231F20", "paper": "#FFFFFF", "alt": "#F4F4F2", "anchor": "#0054A4",
               "warn": "#B25000", "body": "#4A4647", "muted": "#5C5859", "line": "#D3D2D2",
               "head": "IBM Plex Sans", "text": "IBM Plex Sans",
@@ -48,19 +55,21 @@ def esc(s):
 class Renderer:
     def __init__(self, deck):
         self.deck = deck
-        self.t = THEMES[deck.get("theme", "swiss")]
+        self.t = THEMES[deck.get("theme", "plain")]
         t = self.t
-        self.ff_head = f"font-family:'{t['head']}', Georgia, serif" if t["head"] != t["text"] else f"font-family:'{t['head']}', Arial, sans-serif"
-        self.ff_text = f"font-family:'{t['text']}', Arial, sans-serif"
+        if "head_stack" in t:
+            self.ff_head, self.ff_text = f"font-family:{t['head_stack']}", f"font-family:{t['text_stack']}"
+        else:
+            self.ff_head = f"font-family:'{t['head']}', Georgia, serif" if t["head"] != t["text"] else f"font-family:'{t['head']}', Arial, sans-serif"
+            self.ff_text = f"font-family:'{t['text']}', Arial, sans-serif"
 
     # -- pieces ---------------------------------------------------------
     def eyebrow(self, s, color=None):
-        return (f'<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;'
-                f'color:{color or self.t["anchor"]}">{esc(s)}</p>') if s else ""
+        return (f'<p style="font-size:28px;font-weight:600;color:{color or self.t["anchor"]}">{esc(s)}</p>') if s else ""
 
     def title(self, s, size=64, color=None):
         return (f'<h2 style="{self.ff_head};font-size:{size}px;font-weight:700;line-height:1.1;'
-                f'letter-spacing:-1px;color:{color or self.t["ink"]};width:1500px">{esc(s)}</h2>')
+                f'color:{color or self.t["ink"]};width:1500px">{esc(s)}</h2>')
 
     def head(self, s):
         return self.eyebrow(s.get("eyebrow")) + self.title(s["title"])
@@ -86,7 +95,7 @@ class Renderer:
         t = self.t
         cols = "".join(
             f'<div style="flex:1;display:flex;flex-direction:column;gap:16px;border-top:4px solid {t["anchor"]};padding:24px 0 0 0">'
-            f'<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:{t["anchor"]}">{esc(q["label"])}</p>'
+            f'<p style="font-size:28px;font-weight:600;color:{t["anchor"]}">{esc(q["label"])}</p>'
             f'<p style="{self.ff_head};font-size:30px;line-height:1.4;color:{t["ink"]}">“{typo(q["text"])}”</p></div>'
             for q in s["quotes"])
         attr = self.p(esc(s.get("attribution", "")), 24, t["muted"])
@@ -109,7 +118,7 @@ class Renderer:
             rows.append(
                 f'<div style="display:flex;gap:32px;align-items:center;border-top:2px solid {t["line"]};padding:24px 0 24px 0">'
                 f'<div style="flex:1;display:flex;flex-direction:column;gap:8px">'
-                f'<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:{c}">{esc(r.get("status", ""))}</p>'
+                f'<p style="font-size:28px;font-weight:600;color:{c}">{esc(r.get("status", ""))}</p>'
                 f'<p style="font-size:36px;line-height:1.3;color:{t["ink"]}">{typo(r["label"])}</p></div>'
                 f'<p style="width:420px;text-align:right;{self.ff_head};font-size:64px;font-weight:700;{NUM};color:{c}">{esc(r["amount"])}</p></div>')
         rows.append(f'<hr style="border-top:2px solid {t["line"]};width:1664px">')
@@ -120,7 +129,7 @@ class Renderer:
         t = self.t
         cols = "".join(
             f'<div style="flex:1;display:flex;flex-direction:column;gap:16px;border-top:4px solid {t["ink"]};padding:24px 0 0 0">'
-            f'<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:{t["anchor"]}">{esc(c.get("label", ""))}</p>'
+            f'<p style="font-size:28px;font-weight:600;color:{t["anchor"]}">{esc(c.get("label", ""))}</p>'
             f'<h3 style="{self.ff_head};font-size:44px;font-weight:700;color:{t["ink"]}">{esc(c["head"])}</h3>'
             + self.p(typo(c["text"]), 36) + "</div>" for c in s["cols"])
         return self.head(s) + self.body(f'<div style="display:flex;gap:56px">{cols}</div>'), \
@@ -134,6 +143,25 @@ class Renderer:
         tbl = (f'<table style="font-size:28px;color:{t["ink"]};padding:16px 20px">'
                f'<tr style="background:{t["alt"]}">{head}</tr>{body}</table>')
         return self.head(s) + self.body(tbl), "display:flex;flex-direction:column;gap:48px"
+
+    def points(self, s):
+        """Two to four short lines, each a thing the program does, separated by hairlines."""
+        t = self.t
+        rows = "".join(f'<p style="font-size:44px;line-height:1.3;color:{t["ink"]};border-top:2px solid {t["line"]};padding:28px 0 28px 0">{typo(x)}</p>'
+                       for x in s["points"])
+        return self.head(s) + self.body(f'<div style="display:flex;flex-direction:column">{rows}</div>'),             "display:flex;flex-direction:column;gap:48px"
+
+    def flow(self, s):
+        """Steps left to right joined by arrows: what goes in, what happens, what comes out."""
+        t = self.t
+        parts = []
+        for i, st in enumerate(s["steps"]):
+            if i:
+                parts.append(f'<p style="font-size:64px;color:{t["muted"]}">→</p>')
+            parts.append(f'<div style="flex:1;display:flex;flex-direction:column;gap:12px">'
+                         f'<h3 style="{self.ff_head};font-size:48px;font-weight:700;color:{t["ink"]}">{esc(st["head"])}</h3>'
+                         + self.p(typo(st.get("text", "")), 32) + "</div>")
+        return self.head(s) + self.body(f'<div style="display:flex;gap:40px;align-items:center">{"".join(parts)}</div>'),             "display:flex;flex-direction:column;gap:48px"
 
     # -- slide ----------------------------------------------------------
     def slide(self, s, i, n):

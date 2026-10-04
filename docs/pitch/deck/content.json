@@ -1,31 +1,27 @@
 {
  "title": "Goodwill Reporting Pitch",
- "theme": "swiss",
- "footer": "All data synthetic · Goodwill Michiana · Chorizo Power",
+ "theme": "plain",
+ "no_numbers": true,
+ "footer": "Chorizo Power · Goodwill Michiana · built on synthetic data",
  "sections": [
   {
    "description": "Goodwill's problem in their words",
    "start": "problem"
   },
   {
-   "description": "What we built and the recorded take",
-   "start": "built"
+   "description": "What the program does",
+   "start": "what"
   },
   {
-   "description": "Why the numbers can be trusted",
-   "start": "trust"
-  },
-  {
-   "description": "Honesty, limits and the ask",
-   "start": "realsim"
+   "description": "Honesty and the ask",
+   "start": "real"
   }
  ],
  "slides": [
   {
    "id": "problem",
    "layout": "quotes",
-   "eyebrow": "Goodwill's problem, in Goodwill's words",
-   "title": "Three reports are still copied together by hand.",
+   "title": "Goodwill builds three reports by hand.",
    "quotes": [
     {
      "label": "Monthly",
@@ -41,152 +37,107 @@
     }
    ],
    "attribution": "Debie Coble, President and CEO, Goodwill Industries of Michiana",
-   "notes": "Beat 1: Goodwill's words, Debie Coble's deck. Beat 2: three reports, all by hand today. Beat 3: their own goal: automate the rules, not just the downloads. Point at: the three columns, left to right."
+   "notes": "Goodwill's words, from Debie Coble's deck. Three reports, all by hand today. Their goal: automate the rules, not just the downloads."
   },
   {
-   "id": "built",
-   "layout": "columns",
-   "eyebrow": "What we built",
+   "id": "what",
+   "layout": "flow",
    "alt": true,
-   "title": "All three now build themselves from files Goodwill already gets.",
-   "cols": [
+   "title": "Our program builds all three.",
+   "steps": [
     {
-     "label": "Every night",
-     "head": "The pulse",
-     "text": "Revenue and customers per marketplace"
+     "head": "Reports arrive",
+     "text": "Files Goodwill already receives"
     },
     {
-     "label": "Every month",
-     "head": "15 KPIs",
-     "text": "Goodwill’s scorecard, one page"
+     "head": "It cleans them",
+     "text": "Duplicates, bad rows"
     },
     {
-     "label": "Month-end",
-     "head": "The close",
-     "text": "Payouts matched to the bank"
+     "head": "People read",
+     "text": "Pages and Business Central files"
     }
    ],
-   "notes": "We automated all three. The nightly pulse runs every night with no one touching it. The scorecard is Goodwill's own fifteen KPIs on one page, with a CSV and a one-page PDF. The close is one command that matches payouts to the bank and writes Business Central import files. The data is synthetic, and we will show exactly what is real."
+   "notes": "Inputs are the files they already receive. The program cleans and checks them. Out come the nightly page, the monthly scorecard, and the month-end files."
   },
   {
    "id": "demo",
    "layout": "statement",
-   "eyebrow": "One take, no cuts",
    "invert": true,
-   "title": "Watch it run.",
-   "sub": "Three nights, the scorecard, then the close on a messy month",
-   "notes": "Cut to the terminal and the browser. Pulse: demo_script_pulse.md (clean night, missing report, duplicate). Scorecard: Victor's L7 script. Close: demo_script_close.md, three runs. One continuous take, no screenshots standing in for a step."
+   "title": "Here it is running.",
+   "notes": "Switch to terminal and browser. Pulse, scorecard, close. One continuous recording."
   },
   {
-   "id": "trust",
-   "layout": "hero",
-   "eyebrow": "Why you can trust the numbers",
-   "title": "September matches an independent answer key to the cent.",
-   "number": "$70,753.96",
-   "caption": "We compute the expected totals from the generated orders, apart from our code. All 35 payouts match too.",
-   "notes": "How do we know the numbers are right? We never ask our own code. We generate the orders, compute the expected totals from them separately, then run the real engine and compare. September revenue matches to the cent, 70,753 dollars and 96 cents. All 35 payouts in the close match. And the Business Central journal is never written unless every document sums to zero. What we cannot check is Goodwill's own workbook: we have not seen it."
+   "id": "checks",
+   "layout": "points",
+   "title": "It checks its own work.",
+   "points": [
+    "Matches totals to a separate answer key",
+    "Writes a journal only if it balances",
+    "Shows “no data,” not zero"
+   ],
+   "notes": "We never trust our own code. Expected totals come from the generated orders, computed apart from the program. The journal is refused unless it balances. A missing report shows as missing, not as zero."
   },
   {
-   "id": "exceptions",
-   "layout": "ledger",
-   "eyebrow": "The messy month",
-   "alt": true,
-   "title": "The close names each gap instead of hiding it.",
-   "rows": [
-    {
-     "status": "Amazon · incomplete",
-     "label": "No report covers Sep 21-22",
-     "amount": "-$743.10",
-     "warn": true
-    },
-    {
-     "status": "ShopGoodwill · incomplete",
-     "label": "No report covers Sep 7",
-     "amount": "-$1,875.64",
-     "warn": true
-    },
-    {
-     "status": "Bank · held out",
-     "label": "A deposit no payout explains",
-     "amount": "$412.37"
-    }
-   ],
-   "notes": "A month's net can look fine while two errors cancel out. The close checks every payout against the files for its own days. Amazon paid 743 dollars and 10 cents more than our files explain: no report covers September 21 and 22. ShopGoodwill is 1,875 dollars and 64 cents short for September 7. One deposit of 412 dollars and 37 cents matches nothing, so it stays out of the journal. Add the two late reports and both gaps close. Confirm these numbers at the 13:00 dry run."
-  },
-  {
-   "id": "realsim",
-   "layout": "table",
-   "eyebrow": "What is real",
-   "title": "We label what is simulated so you can trust what is real.",
-   "head": [
-    "Part",
-    "Status"
-   ],
-   "widths": [
-    38,
-    62
-   ],
-   "rows": [
-    [
-     "Engine, pulse, KPIs, close, export",
-     "Built by us; runs on every example"
-    ],
-    [
-     "All input data",
-     "Synthetic: no real Goodwill file read yet"
-    ],
-    [
-     "Provider APIs, mailbox, scheduler",
-     "Simulated; emails are drafts"
-    ],
-    [
-     "11 of the 15 KPIs",
-     "Use simulated internal data, badged on every page"
-    ],
-    [
-     "Month-end sources",
-     "3 from sample files plus the bank; the rest simulated or not modeled"
-    ],
-    [
-     "Business Central",
-     "Import files only; nothing posted; placeholder accounts"
-    ]
-   ],
-   "notes": "Read this slide out loud. Everything we built runs. The data is synthetic; the provider APIs, the mailbox and the scheduler are simulated. Eleven of the fifteen KPIs rest on simulated internal data and are badged. Say the month-end source count the close page shows at the dry run. Business Central gets import files: nothing is posted, and account numbers are placeholders except department 180."
-  },
-  {
-   "id": "limits",
+   "id": "gaps",
    "layout": "columns",
-   "eyebrow": "What comes next",
    "alt": true,
-   "title": "One real month makes this Goodwill’s own close.",
+   "title": "When something is missing, it says so.",
+   "notes": "The month-end close checks every payout against the files for its own days, so errors can't cancel out in a total. Anything it can't explain goes on a list with an owner.",
    "cols": [
     {
-     "label": "Day 1",
-     "head": "Nightly pulse",
-     "text": "One real file confirms the columns"
+     "head": "Missing days",
+     "text": "Named for follow-up"
     },
     {
-     "label": "Week 1",
-     "head": "The close",
-     "text": "Your accounts and allocation workbook"
+     "head": "Stray deposits",
+     "text": "Kept out of the journal"
     },
     {
-     "label": "After",
-     "head": "Posting",
-     "text": "Into Business Central, behind your sign-in"
+     "head": "Open items",
+     "text": "Listed with an owner"
     }
+   ]
+  },
+  {
+   "id": "real",
+   "layout": "table",
+   "title": "What is real, and what we simulated.",
+   "head": [
+    "Real, built by us",
+    "Simulated for now"
    ],
-   "notes": "Could Goodwill start tomorrow? The nightly report, yes, once one real file of each kind confirms the column names. The close needs their chart of accounts and the allocation workbook's rules; then we compare our journal with theirs line by line. After that, posting through Business Central's API, inside Goodwill's environment and sign-in."
+   "widths": [
+    50,
+    50
+   ],
+   "rows": [
+    [
+     "Cleaning and checks",
+     "All input data"
+    ],
+    [
+     "Pulse, scorecard, close",
+     "Provider APIs and mailbox"
+    ],
+    [
+     "Business Central files",
+     "Internal data behind most KPIs"
+    ],
+    [
+     "Web pages and Docker image",
+     "Posting to Business Central"
+    ]
+   ],
+   "notes": "Read it plainly. Nothing real from Goodwill has gone through it yet. The files for Business Central are import files; nothing is posted."
   },
   {
    "id": "ask",
    "layout": "statement",
-   "eyebrow": "The ask",
    "invert": true,
-   "title": "Send us one real month and last month’s allocation workbook.",
-   "sub": "We’ll show you your own close.",
-   "notes": "Send us one real month of files and last month's allocation workbook, and we will show you your own close. Thank you."
+   "title": "Send us one real month of files.",
+   "sub": "We’ll run your close on it.",
+   "notes": "One real month and last month's allocation workbook. Then we compare our journal with theirs, line by line."
   }
  ]
 }
