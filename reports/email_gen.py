@@ -64,28 +64,6 @@ def _fmt(value, unit):
     return f"{int(v):,}" if unit == "count" else f"{v:,.1f}"
 
 
-def _kpi_body(title, period, text, kpi_csv, attachments_note):
-    """Inline-styled table email (Outlook renders with Word: tables, inline styles, hex colors)."""
-    rows = [r for r in csv.DictReader(open(kpi_csv, encoding="utf-8"))
-            if r["Source"] == "Marketplace files" and r["Section"] != "Category Effectiveness"]
-    td = f'style="{EMAIL_FONT}font-size:14px;color:{E["ink"]};padding:6px 10px;border-bottom:1px solid {E["line"]};"'
-    tdr = td.replace('padding', 'text-align:right;padding')
-    lines = "\n".join(
-        f'<tr><td {td}>{escape(r["KPI"])}{"" if r["Marketplace"] == "All" else " - " + escape(r["Marketplace"])}</td>'
-        f'<td {tdr}>{_fmt(r["Value"], r["Unit"])}</td></tr>'
-        for r in rows if r["KPI"] != "Days with data")
-    return f"""<table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:100%;">
-<tr><td style="{EMAIL_FONT}background:{E['primary']};color:#ffffff;padding:16px 20px;">
-  <div style="font-size:20px;font-weight:bold;">{escape(title)}</div>
-  <div style="font-size:12px;">{escape(period)}</div></td></tr>
-<tr><td style="{EMAIL_FONT}font-size:16px;font-weight:bold;color:{E['ink']};border-left:5px solid {E['primary']};padding:12px 14px;">{escape(text)}</td></tr>
-<tr><td style="padding-top:8px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-{lines}
-</table></td></tr>
-<tr><td style="{EMAIL_FONT}font-size:12px;color:{E['muted']};padding:12px 2px;">{escape(attachments_note)}</td></tr>
-</table>"""
-
-
 def _scorecard_body(title, period, text, kpi_file, attached="The full scorecard page and its KPI file are attached."):
     """The 15 KPIs as an inline-styled table; simulated ones say so, no-data ones say so."""
     from reports.scorecard import fmt
@@ -125,27 +103,18 @@ def payload(kind, key, root=REPORTS):
         body = re.search(r"<body[^>]*>(.*)</body>", mail.read_text(encoding="utf-8"), re.S)[1]
         return {"subject": f"Nightly pulse - {long_date(key)} - {text.split(';')[0]}",
                 "text": text, "html": body, "attachments": [root / "pulse" / f"{key}.csv"]}
-    if kind == "Monthly":
-        page, kfile = root / "scorecard" / f"month-{key}.html", root / "scorecard" / f"month-{key}.json"
-        if not (page.exists() and kfile.exists()):
-            return None
-        text, _ = headline(page)
-        title, period = "COO scorecard", f"{date.fromisoformat(key + '-01'):%B %Y}"
-        # The one-page PDF and the CSV for Excel (python -m engine.export) go first when they were built.
-        exports = [p for p in (page.with_suffix(".pdf"), page.with_suffix(".csv")) if p.exists()]
-        attached = ("Attached: the scorecard as a one-page PDF" if page.with_suffix(".pdf").exists() else "Attached: the scorecard page")
-        attached += (", its numbers as a CSV for Excel" if page.with_suffix(".csv").exists() else "") + ", the full page and its KPI file."
-        return {"subject": f"{title} - {period} - {text.split(';')[0]}", "text": text,
-                "html": _scorecard_body(title, period, text, kfile, attached), "attachments": exports + [page, kfile]}
-    page, kcsv = root / "weekly" / f"{key}.html", root / "weekly" / f"{key}.csv"
-    title, period = "Weekly dashboard", key
-    if not (page.exists() and kcsv.exists()):
+    stem, period = (f"week-{key}", key) if kind == "Weekly" else (f"month-{key}", f"{date.fromisoformat(key + '-01'):%B %Y}")
+    page, kfile = root / "scorecard" / f"{stem}.html", root / "scorecard" / f"{stem}.json"
+    if not (page.exists() and kfile.exists()):
         return None
     text, _ = headline(page)
-    note = ("KPIs calculated from the marketplace exports. The attached report also has the KPIs that use "
-            "simulated internal data (labor, listings, cost of goods, categories), marked SIMULATED.")
+    title = "Weekly dashboard" if kind == "Weekly" else "COO scorecard"
+    # The one-page PDF and the CSV for Excel (python -m engine.export) go first when they were built.
+    exports = [p for p in (page.with_suffix(".pdf"), page.with_suffix(".csv")) if p.exists()]
+    attached = ("Attached: the scorecard as a one-page PDF" if page.with_suffix(".pdf").exists() else "Attached: the scorecard page")
+    attached += (", its numbers as a CSV for Excel" if page.with_suffix(".csv").exists() else "") + ", the full page and its KPI file."
     return {"subject": f"{title} - {period} - {text.split(';')[0]}", "text": text,
-            "html": _kpi_body(title, period, text, kcsv, note), "attachments": [page, kcsv]}
+            "html": _scorecard_body(title, period, text, kfile, attached), "attachments": exports + [page, kfile]}
 
 
 def message(sub, report, sent):
