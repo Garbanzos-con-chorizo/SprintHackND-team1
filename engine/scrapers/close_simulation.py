@@ -1,4 +1,8 @@
-"""Simulated month-end sources: what each API we assume (docs/ASSUMPTIONS.md, section 2c) would deliver.
+"""Simulated month-end sources: the files the Controller downloads by hand at month end.
+
+Goodwill told us (decision 012) there is no API or scheduled report for these; we had assumed one
+(docs/ASSUMPTIONS.md, section 2c). These simulators stand in for the download in the demo, and for a
+possible later step. They are not Goodwill's process.
 
 Nobody on the team has seen these sources, so EVERY LAYOUT AND EVERY VALUE HERE IS OURS: synthetic, seeded
 by the month, so the same month always gives the same files. `python -m engine fetch --simulate

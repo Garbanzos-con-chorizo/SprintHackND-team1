@@ -46,8 +46,9 @@ class Scraper:
         raise NotConfigured(f"{self.source} has no month-end client")
 
     def simulate_month(self, month: str, dest_dir: Path) -> tuple[list[Path], dict]:
-        """Demo stand-in for a month-end API: write the file(s) it would have delivered (synthetic data) and
-        return them with their answer key, computed from the generated records."""
+        """Demo stand-in for the Controller's manual download (Goodwill has no API for these: decision 012):
+        write the file(s) (synthetic data) and return them with their answer key, computed from the generated
+        records."""
         raise NotConfigured(f"{self.source} has no month-end simulator")
 
     def target(self, dest_dir: Path, business_date: str, suffix: str) -> Path:

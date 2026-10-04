@@ -2,11 +2,13 @@
 
 Written by Dani's agent for whoever records (Orlando); last updated 2026-10-04 10:30 EDT, after the simulated sources, the shipping cost and Goodwill Books landed. Target: **about 65 seconds** inside the three-minute video (`docs/pitch/presentation_guide.md`, section 3). Three runs of **one command**, on the real pipeline: Victor's engine reads the files, Dani's rules match the money, the export writes the Business Central files. Every step below was run on the branch that carries this file; the numbers are from those runs.
 
-**Everything is synthetic.** The sample files are generated (`data/generate.py`), four of Goodwill's nine sources come from simulated APIs (`engine fetch --simulate`), the account numbers are placeholders, and nothing is posted to Business Central. The page says so in its first lines; say it once out loud too.
+**Everything is synthetic.** The sample files are generated (`data/generate.py`), four of Goodwill's nine sources come from our simulators (`engine fetch --simulate`), the account numbers are placeholders, and nothing is posted to Business Central. The page says so in its first lines; say it once out loud too.
+
+**What Goodwill told us (decision 012):** the Controller downloads the month-end reports by hand; there is no API. Our simulators stand in for that download. Say "we automate everything after the download", never that the program fetches these reports from Goodwill's systems.
 
 ## Before you record (5 minutes)
 1. From a fresh clone: `pip install -r engine/requirements.txt`. Delete `out/close`, `out/archive` and `out/sim`, so the run history on the page starts at one run.
-2. Deliver the four simulated sources once (the ledger for FedEx, the carriers' bank feed, the Goodwill Books statement, the Jewelry report):
+2. Write the four simulated sources once, standing in for the Controller's download (the ledger for FedEx, the carriers' bank feed, the Goodwill Books statement, the Jewelry report):
    ```
    python -m engine fetch --simulate --close-month 2026-09 --inbox out/sim/2026-09 --out out/sim_fetch
    ```
@@ -19,7 +21,7 @@ Written by Dani's agent for whoever records (Orlando); last updated 2026-10-04 1
    Each prints six numbered lines, Goodwill's own six steps (their slide 40), and ends `posting: NOT POSTED (import files ready)`. Then delete `out/close` and `out/archive` again before the take.
 4. Terminal with a large font in the repo root, cleared. Browser on `reports/close/2026-09.html`, zoom 110-125%. Excel ready to open `out/close/2026-09/general_journal_2026-09.csv`.
 
-Each `--inbox` is a folder the files arrive in: the marketplace reports, ShopGoodwill's periodic report, and what the simulated APIs delivered. A shorter command works too (`--inbox data/sample/tidy_month/inbox` alone): the page then says "not in this inbox" for the sources that are not there.
+Each `--inbox` is a folder the files arrive in: the marketplace reports, ShopGoodwill's periodic report, and what the simulators wrote in place of the Controller's download. A shorter command works too (`--inbox data/sample/tidy_month/inbox` alone): the page then says "not in this inbox" for the sources that are not there.
 
 Numbers to expect (synthetic data):
 
@@ -59,15 +61,16 @@ Numbers to expect (synthetic data):
 
 ## If there are fifteen more seconds
 Pick one, not all:
-- **Goodwill's nine sources, honestly.** The table near the bottom of the page: every source of their slide 38, with what this run has for it. Five are sample files we generated, four come from simulated APIs, and it says so on each line.
+- **Goodwill's nine sources, honestly.** The table near the bottom of the page: every source of their slide 38, with what this run has for it. Five are sample files we generated, four come from our simulators, and it says so on each line. The page also says the Controller downloads these by hand.
 - **The two shipping rules on their slide.** The "Shipping cost" table: the carriers paid from bank account 0101, and FedEx from the ledger entries on G/L 40356, department 180, vendor V00122, net of the refunds that came back as deposits. Those four codes are Goodwill's own.
 - **A rule is a line of config, not code.** In `reports/config/bc_mapping.csv` change eBay's fees account from `61210` to `61215`, run the messy month again, and show the line `eBay marketplace fees Sep 2026` in the journal with the new account. Put the file back afterwards: `git checkout reports/config/bc_mapping.csv`.
 - **A second file agrees or it does not.** Add `--inbox data/sample/messy_month/cashmonkey` to the second command: the Cash Monkey month report is compared with the eBay and Amazon reports order by order, never added. eBay agrees to the order. For Amazon it finds 34 orders ($835.11) the Amazon reports do not hold: the two missing days again, seen from a different file, plus one order sold three minutes after midnight Eastern on the 1st, which is still August in Pacific time.
-- **Without a person:** `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04` fetches the simulated sources and runs this close on the 1st, with the nightly job.
+- **Without a person:** `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04` writes the simulated sources (standing in for the Controller's download) and runs this close on the 1st, with the nightly job.
 
 ## What to say plainly (and what goes in "built versus used")
 - All data is synthetic. No real Goodwill file has been read. Only Upright's columns come from Goodwill's slide; every other layout is ours.
-- All nine month-end sources reach the close, none of them real: five from sample files we generated (Upright, eBay, Amazon, ShopGoodwill's periodic report, Cash Monkey's month file) and four from simulated APIs (the Jewelry report, the carriers' bank feed, FedEx's ledger entries, the Goodwill Books statement). We assumed those APIs exist; nobody has confirmed it.
+- All nine month-end sources reach the close, none of them real: five from sample files we generated (Upright, eBay, Amazon, ShopGoodwill's periodic report, Cash Monkey's month file) and four from our simulators (the Jewelry report, the carriers' bank feed, FedEx's ledger entries, the Goodwill Books statement). Goodwill told us there is no API for these: the Controller downloads them by hand (decision 012). The simulators stand in for that download.
+- Business Central is cloud and accepts CSV uploads (Goodwill, decision 012); today the Controller makes a recurring entry. We have not tested an import.
 - Nothing is posted. The output is import files; they have never been loaded into a Business Central. The status file of every run says `not_posted`.
 - Account, customer and document numbers are placeholders, except the codes on their slide 38 (department 180, G/L 40356 and 10009, vendor V00122).
 - The rules are our reading. We have not seen the allocation workbook, so nothing is compared with it. Our rules are listed in `docs/contracts/close-rules.md`, each marked "deck" or "assumed". What entry the workbook makes for shipping cost, and what Supplier is for on the Jewelry report, we do not know.

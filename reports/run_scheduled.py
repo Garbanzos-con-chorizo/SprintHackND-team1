@@ -6,8 +6,8 @@ For business date D (the day that just ended; the job runs on D+1 at 00:15 Easte
   2. Weekly dashboard if D+1 is a Monday (the Monday-Sunday week that ended on D).
   3. On the 1st (the month that ended on D): Dani's KPIs from the store (`recon.kpi`), the COO
      scorecard page, and the month-end close. The close is three steps: the month-end sources nobody
-     has shown us are delivered by their SIMULATED APIs (`engine fetch --simulate --close-month`:
-     synthetic files, labelled as such), the one-command close runs on the month's sample inbox plus
+     has shown us are written by SIMULATORS standing in for the Controller's manual download (decision 012;
+     `engine fetch --simulate --close-month`: synthetic files, labelled as such), the one-command close runs on the month's sample inbox plus
      those files (`python -m reports.close`: import files and a page, nothing posted), and the store
      logs the run (`engine.store log-close`).
   4. Emails to the active subscribers of each report built (reports/config/subscribers.csv): the
@@ -72,11 +72,13 @@ def run_close(month, inbox):
     """The month-end close of `month` on the 1st (V3.4). Returns True when the close wrote its files.
 
     Inboxes: the month's sample inbox; its `periodic/` folder when the sample has one (ShopGoodwill's
-    periodic report, which states each payout's period); and the month-end sources delivered by their
-    SIMULATED APIs (FedEx ledger, carriers' bank feed, Goodwill Books statement, Jewelry Report). The
-    simulated ShopGoodwill periodic report is not asked for: the sample months bring their own."""
+    periodic report, which states each payout's period); and the month-end sources written by their
+    SIMULATORS (FedEx ledger, carriers' bank feed, Goodwill Books statement, Jewelry Report), which stand in
+    for the Controller's manual download (decision 012). The simulated ShopGoodwill periodic report is not
+    asked for: the sample months bring their own."""
     sources = OUT / "close_sources" / month
-    print(f"    close: {month}: month-end sources from their simulated APIs (synthetic) into {rel(sources / 'inbox')}")
+    print(f"    close: {month}: month-end sources from their simulators (synthetic, in place of the Controller's "
+          f"download) into {rel(sources / 'inbox')}")
     if sh("engine", "fetch", "--simulate", "--close-month", month, "--inbox", str(sources / "inbox"),
           "--out", str(sources)):
         print("    close: a simulated source failed (see above); the close runs on what arrived")

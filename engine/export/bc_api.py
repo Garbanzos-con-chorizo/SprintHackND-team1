@@ -1,7 +1,10 @@
 """Business Central API (v2.0): the month-end close as API requests, built and shown, sent only when configured.
 
-NOT CONNECTED. There is no Business Central for us to reach: no tenant, no credentials, no sandbox. This
-module is the backend half of "load the close into Business Central", ready for the day there is one:
+NOT CONNECTED. There is no Business Central for us to reach: no tenant, no credentials, no sandbox. Goodwill
+told us (decision 012) that their Business Central is cloud, that the Controller does a recurring entry today,
+and that they can also upload CSV; nobody has said the API route is open to us. So the CSV import files are
+the path Goodwill named, and this module is a possible later step, the backend half of "load the close into
+Business Central", ready for the day there is one:
 
   - `build_requests` turns the close's two import files (general_journal_<month>.csv, ar_invoice_<month>.csv,
     docs/contracts/close-outputs.md) into the ordered requests of Microsoft's standard API v2.0: one journal

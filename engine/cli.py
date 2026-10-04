@@ -84,8 +84,9 @@ def fetch(inbox: Path, out: Path, business_date: str, only: str | None = None,
 def fetch_close(inbox: Path, out: Path, month: str, only: str | None = None, scrapers=None,
                 env: dict | None = None, simulate: bool = False) -> int:
     """The month-end sources of `month` (YYYY-MM) into inbox/. With `simulate`, each provider's simulator
-    writes the file its API would have delivered, and `out/expected_close_sources.json` holds the answer
-    key for those files, computed from the generated records (never by a parser)."""
+    writes the file the Controller would have downloaded (Goodwill has no API for these: decision 012), and
+    `out/expected_close_sources.json` holds the answer key for those files, computed from the generated
+    records (never by a parser)."""
     from .scrapers.base import load_scrapers
     from .scrapers.env import load_env
     from .scrapers.runner import run_close_scrapers, write_log

@@ -3,10 +3,11 @@
 - **Owner:** Victor (`engine/export/bc_api.py`). **Reads:** the close's outputs (`docs/contracts/close-outputs.md`, Dani). **Consumers:** nobody yet: this is the backend for a later "load into Business Central" step.
 - **Status:** v0.1, 2026-10-04. **Built and tested against a local stand-in. Never run against a real Business Central**: we have no tenant, no sandbox and no credentials.
 - **What does not change:** the close still writes import files and posts nothing (`docs/ASSUMPTIONS.md` 1.2, decision 007 point 7). This adds a second way to hand over the same lines.
+- **What Goodwill told us (decision 012, 2026-10-04):** Business Central is cloud; today the Controller does a recurring entry and changes the monthly amount; "we can also do CSV uploads". Nobody has said the API route is available to us. The CSV import files are the path Goodwill named; these requests are a possible later step.
 
 ## What to say about it (and what not to)
 - **Say:** "The close writes import files today. The backend can also produce the same lines as requests to Business Central's standard API, and has a client that loads them as drafts for a person to review and post. It has never been connected to a Business Central."
-- **Do not say:** "integrated with Business Central", "posts to Business Central", or anything that suggests a connection exists.
+- **Do not say:** "integrated with Business Central", "posts to Business Central", "Goodwill uses the API", or anything that suggests a connection exists.
 
 ## The command
 ```

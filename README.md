@@ -87,7 +87,8 @@ Files are the contract between the three parts (`docs/contracts/`), so each part
 | **Providers** | The adapter structure; one class per provider | **The APIs.** Amanda (Goodwill) told us to assume an Upright API that emails the report; we have never seen it. The clients are stubs, and `--simulate` writes synthetic reports, marked `simulated` in the log |
 | **Scheduling and email** | The nightly job and the email files (`.eml` drafts) | **No scheduler and no mailbox.** `run_nightly` runs once when called; no mail is sent |
 | **KPIs** | The 15-KPI calculation, the store, the scorecard | **Company data (cost of goods, labor, listings, inventory) comes from a mock internal API**, badged on every page that uses it |
-| **Close** | Matching deposits to payouts, exceptions, balanced journal files | **Business Central is not connected.** The output is import files (CSV) |
+| **Month-end sources** | Readers for each source; a file picker per source on the close page | **The Controller downloads these reports by hand** (Debie, Goodwill's CEO, on Sunday: decision 012). Goodwill has no API for them. Four of them (FedEx ledger, carriers' bank feed, Goodwill Books, Jewelry) come from our simulators, which stand in for that download and for a possible later step. The data is synthetic |
+| **Close** | Matching deposits to payouts, exceptions, balanced journal files | **Business Central is not connected.** The output is import files (CSV). Goodwill confirmed Business Central is cloud and accepts CSV uploads; today the Controller does a recurring entry (decision 012). The API requests of `engine.export bc-api` are a dry run: nobody has said Goodwill can use that route |
 | **Checking** | Tests for every lane; answer keys computed **independently of the engine** | |
 
 ## Known gaps

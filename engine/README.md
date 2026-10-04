@@ -33,12 +33,12 @@ Without `--simulate`, `fetch` calls the real provider APIs, which are stubs that
 
 The three outputs are the contract with Dani's side: `transactions.csv` (clean rows), `source_status.json` (per marketplace: `ok`, `stale`, `missing`), `warnings.json` (what was dropped and why). For the month-end close the same run also writes `payouts.csv` (eBay `Payout` and Amazon `Transfer` rows, de-duplicated) and `bank.csv` (every bank line, credits positive): `docs/contracts/close-inputs.md`.
 
-## Month-end sources for the close (simulated APIs)
+## Month-end sources for the close (simulators standing in for a manual download)
 ```
 python -m engine fetch --simulate --close-month 2026-09 --inbox out/sim/inbox --out out/sim   # the files and their answer key
 python -m engine run --inbox out/sim/inbox --out out/sim/out --date 2026-09-30               # ledger.csv, statements.csv, jewelry.csv, bank.csv
 ```
-Goodwill's slide 38 lists month-end sources nobody has shown us. We assume each can be fetched through an API (`docs/ASSUMPTIONS.md` 2c) and build each as a provider whose real client is a stub and whose simulator writes the file the API would have delivered. **Every layout and every value is ours and synthetic.** The only values that are Goodwill's are the four FedEx codes on the slide.
+Goodwill's slide 38 lists month-end sources nobody has shown us. **Goodwill told us on Sunday that the Controller downloads these reports by hand** (decision 012): there is no API and no scheduled report for them. The real path is the file drop: the report goes into an inbox folder, or into the file picker beside the source on the close page. Before that answer we had assumed an API (`docs/ASSUMPTIONS.md` 2c), so each source is built as a provider class whose real client is a stub and whose simulator writes the file the Controller would have downloaded. The simulators stand in for that download in the demo, and for a possible later step; they are not Goodwill's process. **Every layout and every value is ours and synthetic.** The only values that are Goodwill's are the four FedEx codes on the slide.
 
 | Source | What the simulator writes | Engine output |
 |---|---|---|
@@ -54,7 +54,7 @@ The fetch log, `<inbox>/_simulated.json` and `source_coverage.json` mark every s
 ```
 python -m engine.export bc-api --month 2026-09     # after python -m reports.close: writes the requests, sends nothing
 ```
-The close writes import files. This turns the same journal and invoice lines into the requests of Business Central's standard API v2.0 and writes them to `out/close/<month>/bc_api_requests_<month>.json`. With `--send` and the `BC_*` variables of `.env.example` a client would load them as **drafts** (it never posts). **It has never been run against a real Business Central**: we have none. The tests run it against a local stand-in. Details and known gaps: `docs/contracts/bc-api.md`.
+The close writes import files. This turns the same journal and invoice lines into the requests of Business Central's standard API v2.0 and writes them to `out/close/<month>/bc_api_requests_<month>.json`. With `--send` and the `BC_*` variables of `.env.example` a client would load them as **drafts** (it never posts). **It has never been run against a real Business Central**: we have none. The tests run it against a local stand-in. Goodwill confirmed Business Central is cloud and accepts CSV uploads, and that today the Controller does a recurring entry (decision 012); nobody has said the API route is open to us, so this stays a dry run and a possible later step. Details and known gaps: `docs/contracts/bc-api.md`.
 
 ## Where things are
 | Path | What it is |
