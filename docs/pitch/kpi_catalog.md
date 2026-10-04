@@ -1,47 +1,50 @@
-# KPI catalog (decision 006)
+# KPI catalog: the 15 KPIs of the COO scorecard
 
-Five groups from the team sync. For each KPI: how it is defined, and where the data comes from.
-- **Files**: computable today from the exports we parse (`data/sample/`, engine output).
-- **Internal API (assumed)**: needs company data we don't have; served by the mock Goodwill internal API with synthetic values, and **labelled "simulated internal data" wherever shown**.
+Rewritten 2026-10-04 (task L7). The earlier version listed 34 KPIs in five groups of our own (decision 006); decision 007 replaced them with **Goodwill's own scorecard: 15 KPIs in five areas, three each (deck slide 35)**. This page is a reading aid for the presentation. The definitions that count are in `docs/contracts/kpi.md`; the code is `recon/kpi/`.
 
-Build priority: **P1** = in the demo, **P2** = if time allows.
+**Source** says where the number comes from:
+- **Files**: the sales exports the engine parses. All sample data is synthetic.
+- **Internal (simulated)**: Goodwill's internal data (labor hours, listings, stock, cost of goods), which we have never seen. A mock API stands in for it (`engine/internal_api/`), and the KPI is **badged "Simulated internal data"** on the page, in the CSV and in the PDF.
+- **Mixed (simulated)**: revenue from the files combined with simulated internal data. Badged the same way.
+
+**Pillar** is the one of slide 32's five (growth, profitability, productivity, inventory, engagement) each KPI speaks to. September values are from the scheduled run on the synthetic samples (`python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04`).
 
 ## Financial
-| KPI | Definition | Source | Pri |
-|---|---|---|---|
-| Net revenue | Sales minus refunds, excl. shipping and tax (pulse definition) | Files | P1 |
-| Marketplace fees % | Fees / net revenue, per marketplace | Files | P1 |
-| Payout vs revenue | Cash received from marketplaces / net revenue; in-transit at month end | Files (messy month payouts + bank) | P1 |
-| Gross margin | (Net revenue - cost of goods) / net revenue | Internal API (COGS per item or per category) | P2 |
-| Shipping recovery | Shipping charged to buyers / shipping cost paid (FedEx) | Files (charged) + Internal API (FedEx cost from BC) | P2 |
+| KPI | Definition | Pillar | Source | September (synthetic) |
+|---|---|---|---|---|
+| Total E-Commerce Revenue | Sales minus refunds, before marketplace fees. Excludes shipping and tax | Growth | Files | $70,753.96 |
+| Revenue Growth % | Change in revenue against the period before, over the same number of days | Growth | Files | -33.3% (August is simulated: illustrative only) |
+| Net Margin % | (Revenue - marketplace fees - cost of goods - net shipping cost - labor cost) / revenue | Profitability | Mixed (simulated) | 23.0% |
 
-## Listings & Production
-| KPI | Definition | Source | Pri |
-|---|---|---|---|
-| Items listed per day | New listings per marketplace per day | Internal API (listing system) | P2 |
-| Items listed per labor hour | Listings / production labor hours | Internal API (listings + labor) | P2 |
-| Days to sell | Sale date - list date, median | Internal API (list dates) | P2 |
+## Productivity
+| KPI | Definition | Pillar | Source | September (synthetic) |
+|---|---|---|---|---|
+| Listings Created | New listings created in the period, all marketplaces | Productivity | Internal (simulated) | 3,120 |
+| Revenue per Labor Hour | Revenue / e-commerce labor hours | Productivity | Mixed (simulated) | $51.93 |
+| Listings per Employee | Listings created / average e-commerce employees (full-time equivalents) | Productivity | Internal (simulated) | 322.8 |
 
-## Sales Effectiveness
-| KPI | Definition | Source | Pri |
-|---|---|---|---|
-| Average order value | Net revenue / orders | Files | P1 |
-| Refund rate | Refunded amount / sales | Files | P1 |
-| Sell-through rate | Items sold / items listed in the period | Files (sold) + Internal API (listed) | P2 |
+## Inventory
+| KPI | Definition | Pillar | Source | September (synthetic) |
+|---|---|---|---|---|
+| Days from Donation to Listing | Median days between donation and listing, for items listed in the period | Inventory | Internal (simulated) | 6 days |
+| Unlisted Inventory Backlog | Items sent to e-commerce and not yet listed, on the last day of the period | Inventory | Internal (simulated) | 1,720 |
+| Unsold Inventory % | Active listings older than 30 days / active listings, on the last day of the period | Inventory | Internal (simulated) | 45.1% |
 
-## Category Effectiveness
-| KPI | Definition | Source | Pri |
-|---|---|---|---|
-| Revenue by category | Net revenue per category | Internal API (product master: SKU -> category); Upright and Cash Monkey files carry no category | P2 |
-| Average price by category | Revenue / units per category | Internal API + Files | P2 |
+## Sales
+| KPI | Definition | Pillar | Source | September (synthetic) |
+|---|---|---|---|---|
+| Average Selling Price | Revenue / units sold | Growth | Files | $28.67 |
+| Sell-Through Rate | Units sold / units listed, in the period. Shown as two boxes: listed in the period, and left from earlier | Inventory | Mixed (simulated) | 79.1% (61.3% and 15.3%) |
+| Sales per Employee | Revenue / average e-commerce employees (full-time equivalents) | Productivity | Mixed (simulated) | $7,319.38 |
 
-## Customer & Marketplace
-| KPI | Definition | Source | Pri |
-|---|---|---|---|
-| Orders and customers by marketplace | Pulse definitions, with `customer_basis` shown | Files | P1 |
-| Marketplace share of revenue | Marketplace net revenue / enterprise | Files | P1 |
-| Repeat buyer rate | Buyers with 2+ orders in the month / buyers (where a buyer id exists: ShopGoodwill via Upright, eBay seller report) | Files | P1 |
-| Month-over-month growth | Net revenue vs prior month | Files (needs two months; September + October samples) | P2 |
+## Category + Customer
+| KPI | Definition | Pillar | Source | September (synthetic) |
+|---|---|---|---|---|
+| Top 10 Categories by Revenue | Revenue split by category using the internal sales-by-category shares, largest first | Growth | Mixed (simulated) | Books & Media, Collectibles, Electronics lead |
+| Top 10 Categories by Margin | Category revenue minus category cost of goods, largest first | Profitability | Mixed (simulated) | Books & Media, Collectibles, Clothing & Shoes lead |
+| Repeat Buyer Rate | Buyers with two or more orders in the period / buyers, where the marketplace gives a buyer id | Engagement | Files | 56.8%, marked partial: Amazon gives no buyer id |
 
-## Mock internal API (what it must serve)
-`GET /api/internal/cogs?month=`, `/labor-hours?month=`, `/listings?month=`, `/products` (SKU -> category). JSON, every response carries `"source": "mock"`. Synthetic values are generated from a seed next to `data/generate.py` so they are consistent with the sample orders (same SKUs).
+## In one line
+**4 KPIs from the sales files, 11 that need internal data and are simulated and badged.** No KPI shows $0 for missing data: a period without data reads "No data", and an incomplete one reads "partial" with the reason.
+
+How to show them: `docs/pitch/demo_script_scorecard.md`.

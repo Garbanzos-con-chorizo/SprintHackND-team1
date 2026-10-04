@@ -1,7 +1,7 @@
 # Contract: canonical transaction, phase 1 (task 0.1)
 
 - **Owner:** Victor (`engine/`). **Consumers:** Dani (pulse calculation), Orlando (pulse rendering, and later the dashboard).
-- **Status:** agreed (v0.4: three columns appended, non-breaking). In use by `recon/` (pulse) and `reports/`; the engine implements it.
+- **Status:** agreed (v0.5: `occurred_at` appended, non-breaking; v0.4: three columns appended). In use by `recon/` (pulse) and `reports/`; the engine implements it.
 - **Scope:** phase 1 only, the nightly pulse. Phase 3 (close) adds columns later (`fee`/`payout`/`bank` types, `net_cents`, `memo`, GL fields). Adding columns is not a breaking change: consumers ignore columns they don't know.
 
 ## What this contract does
@@ -34,6 +34,7 @@ CSV, UTF-8 (no BOM), header row, RFC 4180 quoting, `\n` line endings. One row pe
 | `shipping_cents` | integer | yes (v0.4) | What the buyer paid for shipping, USD cents, signed like `gross_cents` (a refund row carries the shipping refunded, negative). Not revenue; the close posts it. A source with one combined "shipping and handling" column (eBay) puts it all here. Upright: `Shipping Charged` minus `Shipping Discount`. 0 if the export has no shipping column. |
 | `handling_cents` | integer | yes (v0.4) | What the buyer paid for handling, same rules (Upright `Handling`, ShopGoodwill `Handling Fee`). 0 if the export has none. |
 | `units` | integer or empty | no (v0.4) | Units sold, on `sale` rows (summed over the lines of the order); `0` on `refund` rows. **Empty when the export has no unit count**, never 0, so readers fall back to per-order figures. Upright `Order Items`, Cash Monkey / eBay / Amazon `Quantity`, ShopGoodwill one per row. |
+| `occurred_at` | datetime or empty | no (v0.5) | The moment of the sale or refund, ISO 8601 with its offset, e.g. `2026-09-01T01:28:05-07:00`. The offset is the one the export wrote (Amazon `PDT` gives `-07:00`), or the zone the engine assumes for that source when the export writes none (Upright: Pacific; Cash Monkey: UTC; anything else: Eastern). **Empty when the export gives only a date (eBay's Transaction report) or the day comes from the file name.** Several lines of one order: the first line's time. `business_date` is this moment read in Eastern time. The close uses it to rebuild payout windows that run on Pacific days (`docs/PLAN_PHASE_3.md`, V3.1, D3.1). The store ignores it. |
 
 Revenue by default (`OFFICE_HOURS.md` Q5): sum of `gross_cents` over `sale` and `refund` rows for a `business_date`, so net of refunds. Fees are summed separately. Changing the definition changes Dani's calculation only.
 
@@ -75,7 +76,7 @@ Lets the pulse show "no data" instead of `$0`. **Keyed by marketplace**, because
 ```json
 [ { "source_file": "ebay_2026-10-02.csv", "source_row": 12, "kind": "duplicate", "reason": "same order id as row 9" } ]
 ```
-`kind` is one of `duplicate`, `bad_date`, `bad_amount`, `missing_column`, `unsupported_currency`, `unparseable`. Orlando may show a count as a data-quality footnote.
+`kind` is one of `duplicate`, `bad_date`, `bad_amount`, `missing_column`, `unsupported_currency`, `unparseable`, and for the close's files (`close-inputs.md`) `missing_supplier`. Orlando may show a count as a data-quality footnote.
 
 ## Example (also in `examples/transactions.sample.csv`)
 ```csv
@@ -104,6 +105,7 @@ Until the engine runs, Dani and Orlando code against `examples/transactions.samp
 - **`source_status.json` is keyed by marketplace** (see its section above).
 
 ## Changelog
+- v0.5 (2026-10-04, Victor, task V3.1): `occurred_at` appended. On `messy_month` the rows whose `occurred_at`, read in Pacific time, falls in each Amazon and ShopGoodwill payout window sum (gross + shipping + handling - fee) to the answer key's `net_in_files_cents` for all six windows (`engine/tests/test_occurred_at.py`).
 - v0.4 (2026-10-04, Victor): `shipping_cents`, `handling_cents`, `units` appended (Orlando's request for the close; `units` for KPIs 10 and 11). Appended at the end, so v0.3 readers keep working. On `messy_month` the shipping and handling totals per marketplace equal the answer key to the cent.
 - v0.3: status agreed; rules above written down; sources and `source_status.json` keyed by marketplace; Upright and Cash Monkey added.
 - draft v0.2: narrowed to phase 1; added cleaning rules; dropped close-only columns and sources.

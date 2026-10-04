@@ -31,7 +31,24 @@ Without `--simulate`, `fetch` calls the real provider APIs, which are stubs that
 5. **De-duplicates** across files: the same transaction in two downloads counts once, and the log says which copy was dropped (and says so if the two copies disagree).
 6. **Never crashes and never hides a loss:** a bad row, an unreadable file or an unrecognized file becomes a line in `warnings.json`. A missing report becomes `missing` or `stale` in `source_status.json`, so the pulse shows "no data" instead of $0.
 
-The three outputs are the contract with Dani's side: `transactions.csv` (clean rows), `source_status.json` (per marketplace: `ok`, `stale`, `missing`), `warnings.json` (what was dropped and why).
+The three outputs are the contract with Dani's side: `transactions.csv` (clean rows), `source_status.json` (per marketplace: `ok`, `stale`, `missing`), `warnings.json` (what was dropped and why). For the month-end close the same run also writes `payouts.csv` (eBay `Payout` and Amazon `Transfer` rows, de-duplicated) and `bank.csv` (every bank line, credits positive): `docs/contracts/close-inputs.md`.
+
+## Month-end sources for the close (simulated APIs)
+```
+python -m engine fetch --simulate --close-month 2026-09 --inbox out/sim/inbox --out out/sim   # the files and their answer key
+python -m engine run --inbox out/sim/inbox --out out/sim/out --date 2026-09-30               # ledger.csv, statements.csv, jewelry.csv, bank.csv
+```
+Goodwill's slide 38 lists month-end sources nobody has shown us. We assume each can be fetched through an API (`docs/ASSUMPTIONS.md` 2c) and build each as a provider whose real client is a stub and whose simulator writes the file the API would have delivered. **Every layout and every value is ours and synthetic.** The only values that are Goodwill's are the four FedEx codes on the slide.
+
+| Source | What the simulator writes | Engine output |
+|---|---|---|
+| FedEx (Business Central ledger) | G/L entries: charges on 40356 / department 180 / vendor V00122, BNKDEPOSIT refunds, and rows the filter must leave out | `ledger.csv` |
+| OSM, PB, EasyPost (bank account 0101) | the account's month: carrier debits, other debits, the Goodwill Books payment as a credit | rows of `bank.csv` with account `0101` |
+| Goodwill Books | the prior month's payment statement | `statements.csv` |
+| Jewelry | the month's jewelry sales without a supplier, and a supplier lookup with one item missing | `jewelry.csv` (the engine joins them; an unknown item is a `missing_supplier` warning) |
+| ShopGoodwill periodic report | on request only (`--source shopgoodwill_periodic`): the sample months have their own in `data/sample/<month>/periodic/` | ShopGoodwill rows of `payouts.csv`, each with its period |
+
+The fetch log, `<inbox>/_simulated.json` and `source_coverage.json` mark every simulated file. `expected_close_sources.json` is the answer key, computed from the generated records and never by a parser. The engine applies no rule to these files: which ledger rows are FedEx and which bank lines are a carrier is the close's job. Columns: `docs/contracts/close-inputs.md`.
 
 ## Where things are
 | Path | What it is |
@@ -62,5 +79,6 @@ The three outputs are the contract with Dani's side: `transactions.csv` (clean r
 - **No real API client.** Amanda told us to assume an Upright API that emails the report; we have never seen it. The clients are stubs and the simulators produce synthetic data. The simulators are labelled in the fetch log.
 - **No scheduler.** `python -m reports.run_nightly` runs once when called. In production Windows Task Scheduler or cron would call it just after midnight Eastern.
 - **No mailbox reader.** An email rule would save attachments into `inbox/`.
-- **Brick and mortar is out of scope**, and the month-end close (rules, bank, Business Central) is phase 3.
+- **Brick and mortar is out of scope.** For the month-end close the engine only hands over clean files (`docs/contracts/close-inputs.md`); the rules, the matching and the Business Central files are `reports/`.
+- **No month-end source is real.** The Business Central ledger, the bank feed of account 0101, the Goodwill Books statement, the Jewelry Report with its supplier lookup and the ShopGoodwill periodic report are simulated, with layouts we made up.
 - Two unknowns could change the numbers: whether Cash Monkey's report covers only Goodwill Books, and how staff count customers for it. See `docs/PHASE1_ALIGNMENT.md`.

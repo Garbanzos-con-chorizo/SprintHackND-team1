@@ -60,6 +60,8 @@ def store_status(conn: sqlite3.Connection, start: str, end: str) -> dict:
         "WHERE business_date BETWEEN ? AND ? GROUP BY business_date", (start, end)).fetchall())
     last_run = conn.execute("SELECT run_id, command, business_date, finished_at, result, message FROM runs "
                             "ORDER BY started_at DESC, rowid DESC LIMIT 1").fetchone()
+    last_close = conn.execute("SELECT run_id, command, business_date, finished_at, result, message FROM runs "
+                              "WHERE command = 'close' ORDER BY started_at DESC, rowid DESC LIMIT 1").fetchone()
     return {
         "start": start, "end": end, "days_expected": len(days),
         "days_loaded": sum(day in loaded for day in days),
@@ -71,6 +73,9 @@ def store_status(conn: sqlite3.Connection, start: str, end: str) -> dict:
                      "sources": sorted({s for v in internal.values() for s in v.split(",")})},
         "last_run": dict(zip(("run_id", "command", "business_date", "finished_at", "result", "message"),
                              last_run)) if last_run else None,
+        # The latest month-end close, whatever the range asked for: it is one run a month.
+        "last_close": dict(zip(("run_id", "command", "business_date", "finished_at", "result", "message"),
+                               last_close)) if last_close else None,
     }
 
 
@@ -94,6 +99,10 @@ def format_status(s: dict) -> str:
     if s["last_run"]:
         r = s["last_run"]
         lines.append(f"  last run: {r['command']} {r['business_date'] or ''} {r['result']} at {r['finished_at']}"
+                     + (f" ({r['message']})" if r["message"] else ""))
+    if s.get("last_close"):
+        r = s["last_close"]
+        lines.append(f"  last close: {r['business_date'][:7]} {r['result']} at {r['finished_at']}"
                      + (f" ({r['message']})" if r["message"] else ""))
     return "\n".join(lines)
 

@@ -31,7 +31,7 @@ engine.internal_api (mock | http client) ──> python -m engine.internal_api p
 
 Python interface (`engine/internal_api/`): `get(endpoint, day) -> dict` with two implementations, `MockInternalApi` (default) and `HttpInternalApi` (base URL from `INTERNAL_API_URL`). The setting `INTERNAL_API=mock|http` picks one (`make_client`). `snapshot_rows(api, day)` turns the four responses into `internal_daily` rows (63 a day with the mock). `HttpInternalApi` is tested only against a local stand-in server that answers with the mock, since we have no real API.
 
-`reports/mock_api.py` (Orlando's first mock: by period, 4 functions) stays as it is. `reports/kpi.py` still uses it, and its shape differs from this contract, so a re-export would not fit. It goes when Dani's KPI file replaces that math (D2.11).
+`reports/mock_api.py` (Orlando's first mock: by period, 4 functions) and `reports/kpi.py`, the only code that used it, were deleted on 2026-10-04 (L6) once the weekly page read Dani's KPI file (D2.11).
 
 ## Stored metrics (`internal_daily`)
 One row per `(business_date, metric, dimension)`. **Flow** metrics are the day's amount; to get a period, sum them. **Snapshot** metrics are the state at the end of that day; for a period, take the last day (or the average for `employees`). A single-value metric uses `dimension = 'total'`. A metric never has both a `total` row and detail rows, so summing never double-counts.

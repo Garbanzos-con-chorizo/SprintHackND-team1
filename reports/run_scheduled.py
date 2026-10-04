@@ -5,9 +5,13 @@ For business date D (the day that just ended; the job runs on D+1 at 00:15 Easte
      date is D. Without one, the pulse already in the history (out/pulse/D.json) is re-rendered.
   2. Weekly dashboard if D+1 is a Monday (the Monday-Sunday week that ended on D).
   3. On the 1st (the month that ended on D): Dani's KPIs from the store (`recon.kpi`), the COO
-     scorecard page, and the month-end close: reconciliation from the month's raw inbox, the
-     Business Central files (`bc_export`) and the close page.
-  4. Emails to the active subscribers of each report built (reports/config/subscribers.csv).
+     scorecard page, and the month-end close. The close is three steps: the month-end sources nobody
+     has shown us are delivered by their SIMULATED APIs (`engine fetch --simulate --close-month`:
+     synthetic files, labelled as such), the one-command close runs on the month's sample inbox plus
+     those files (`python -m reports.close`: import files and a page, nothing posted), and the store
+     logs the run (`engine.store log-close`).
+  4. Emails to the active subscribers of each report built (reports/config/subscribers.csv): the
+     pulse, the weekly dashboard, the scorecard and the close. Written as drafts, never sent.
 Each night is also loaded into the store by run_nightly (V2.11), which the KPIs read. The first run
 seeds September: mock pulse history for the weekly page, and the real engine into the store.
 In production Windows Task Scheduler or cron starts this once a night; nothing here waits for a clock.
@@ -17,15 +21,18 @@ In production Windows Task Scheduler or cron starts this once a night; nothing h
 """
 import argparse
 import json
+import shutil
 import subprocess
 import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-from reports import close_report, email_gen, hub, mock_pulse, monthly, pulse, run_nightly, weekly
+from reports import email_gen, hub, mock_pulse, monthly, pulse, run_nightly, weekly
 
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = ROOT / "data" / "sample"
+OUT = ROOT / "out"
+REPORTS = ROOT / "reports"
 HISTORY = ROOT / "out" / "pulse"
 STORE = ROOT / "out" / "store" / "ecom.db"
 
@@ -47,12 +54,47 @@ def month_inbox(month):
     return None
 
 
-def sh(*args):
+def sh(*args, tail=6):
     """Run `python -m <args>` from the repo root, indent its output, return the exit code."""
     r = subprocess.run([sys.executable, "-m", *args], cwd=ROOT, capture_output=True, text=True)
-    for line in (r.stdout + r.stderr).strip().splitlines()[-6:]:
+    for line in (r.stdout + r.stderr).strip().splitlines()[-tail:]:
         print(f"      | {line}")
     return r.returncode
+
+
+def rel(path):
+    """A path as the log prints it: relative to the repo when inside it."""
+    path = Path(path)
+    return path.relative_to(ROOT).as_posix() if path.is_relative_to(ROOT) else path.as_posix()
+
+
+def run_close(month, inbox):
+    """The month-end close of `month` on the 1st (V3.4). Returns True when the close wrote its files.
+
+    Inboxes: the month's sample inbox; its `periodic/` folder when the sample has one (ShopGoodwill's
+    periodic report, which states each payout's period); and the month-end sources delivered by their
+    SIMULATED APIs (FedEx ledger, carriers' bank feed, Goodwill Books statement, Jewelry Report). The
+    simulated ShopGoodwill periodic report is not asked for: the sample months bring their own."""
+    sources = OUT / "close_sources" / month
+    print(f"    close: {month}: month-end sources from their simulated APIs (synthetic) into {rel(sources / 'inbox')}")
+    if sh("engine", "fetch", "--simulate", "--close-month", month, "--inbox", str(sources / "inbox"),
+          "--out", str(sources)):
+        print("    close: a simulated source failed (see above); the close runs on what arrived")
+    inboxes = [inbox] + [p for p in (inbox.parent / "periodic", sources / "inbox") if p.is_dir() and any(p.iterdir())]
+    print(f"    close: {month} from {', '.join(rel(p) for p in inboxes)}")
+    args = [a for p in inboxes for a in ("--inbox", str(p))]
+    code = sh("reports.close", *args, "--month", month, "--out", str(OUT / "close"),
+              "--archive", str(OUT / "archive"), "--dest", str(REPORTS / "close"), tail=10)
+    sh("engine.store", "log-close", "--month", month, "--exit-code", str(code), "--close-dir", str(OUT / "close"))
+    if code:
+        print(f"    close: not built (exit {code}, see above); nothing posted")
+        return False
+    # The status file and the run history beside the page's CSVs, so the portal can link them.
+    for name in (f"close_status_{month}.json", "runs.csv"):
+        if (OUT / "close" / month / name).exists():
+            shutil.copy(OUT / "close" / month / name, REPORTS / "close" / month / name)
+    print(f"    close page: {rel(REPORTS / 'close' / f'{month}.html')}")
+    return True
 
 
 def say(text):
@@ -103,18 +145,15 @@ def night(day):
             print(f"    monthly: skipped ({e})")
         inbox = month_inbox(month)
         if inbox:
-            print(f"    close: {month} from {inbox.relative_to(ROOT).as_posix()}")
-            payload = f"out/close/{month}/close_payload_{month}.json"
-            if sh("reports.reconcile", "--inbox", str(inbox), "--month", month) == 0 and                     sh("reports.bc_export", "--payload", payload) == 0:
-                print(f"    close page: {close_report.build(month).relative_to(ROOT).as_posix()}")
-            else:
-                print("    close: not built (see above); nothing posted")
+            if run_close(month, inbox):
+                built["close"] = month
         else:
             print(f"    close: no month inbox for {month}")
     else:
         print("    monthly: not due (not the 1st)")
 
-    written, problems = email_gen.distribute(run_day, built.get("daily"), built.get("weekly"), built.get("monthly"))
+    written, problems = email_gen.distribute(run_day, built.get("daily"), built.get("weekly"), built.get("monthly"),
+                                             close=built.get("close"))
     for row in written:
         print(f"    email: {row['Report_Type']:<8} -> {row['Email']}")
     for p in problems:
@@ -143,6 +182,13 @@ def main(argv=None):
         sh("engine.store", "init")
         sh("engine.store", "backfill", "--inbox", "data/sample/clean_month/inbox", "--from", "2026-09-01",
            "--to", "2026-09-30", "--out", "out/backfill")
+        # September's growth needs a month to compare with. There is no August sample, so the provider
+        # simulators write one (SIMULATED, with their own daily volumes) and the store loads it like any other.
+        say("Seeding the store: August from the provider simulators (synthetic; gives September its Revenue Growth)")
+        sh("engine", "fetch", "--simulate", "--from", "2026-08-01", "--to", "2026-08-31",
+           "--inbox", "out/aug_inbox", "--out", "out/aug_fetch")
+        sh("engine.store", "backfill", "--inbox", "out/aug_inbox", "--from", "2026-08-01", "--to", "2026-08-31",
+           "--out", "out/backfill_aug")
     for d in days:
         night(d)
 

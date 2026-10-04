@@ -423,21 +423,21 @@
         {
           "id": "listed_in_period",
           "name": "Listed in the period",
-          "value": 0.7813,
-          "sold": 368,
+          "value": 0.1019,
+          "sold": 48,
           "available": 471
         },
         {
           "id": "left_from_earlier",
           "name": "Left from earlier",
-          "value": 0.0,
-          "sold": 0,
+          "value": 0.1385,
+          "sold": 320,
           "available": 2310
         }
       ],
       "status": "partial",
       "reason": "missing_days",
-      "note": "eBay has no data on 2026-10-03, so this is partial. Assumes what was listed in the period sold first: 368 of the 368 units sold count against the 471 listed in the period, 0 against the 2,310 left from earlier.",
+      "note": "eBay has no data on 2026-10-03, so this is partial. By listing date: 48 of the 368 units sold had been listed in the period (471 listed), 320 came from the 2,310 left from earlier.",
       "basis": "units",
       "covers": null,
       "prior_value": 0.7692,
@@ -455,7 +455,7 @@
         "orders": 321,
         "units_listed": 471,
         "opening_stock": 2310,
-        "split_basis": "period_first"
+        "split_basis": "listing_dates"
       }
     },
     {

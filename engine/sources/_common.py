@@ -5,7 +5,7 @@ doesn't fit this shape subclasses Parser directly and implements parse() itself.
 """
 import re
 
-from ..clean import buyer_key, parse_business_date, parse_money
+from ..clean import buyer_key, parse_business_date, parse_moment, parse_money
 from ..parsers import ParseResult, Parser
 from ..table import Table, norm
 
@@ -29,7 +29,11 @@ class OrderReportParser(Parser):
     units_per_row: int | None = None
     row_type: tuple[str, ...] = ()       # a column saying what the row is (e.g. Order / Refund)
     refund_words: tuple[str, ...] = ("refund", "return", "reversal")
-    skip_types: tuple[str, ...] = ()     # row_type values to ignore silently (e.g. payout, transfer)
+    skip_types: tuple[str, ...] = ()     # row_type values to ignore silently (e.g. transfer between accounts)
+    # row_type values that are a payout to the bank, and the column with its amount (negative in the report:
+    # money leaving the marketplace). They go to payouts.csv (close-inputs.md), not to transactions.
+    payout_types: tuple[str, ...] = ()
+    payout_amount: tuple[str, ...] = ()
     currency: tuple[str, ...] = ()       # optional; anything but USD is rejected
     # Sources that list several marketplaces in one file (Upright, Cash Monkey): the column holding the
     # channel name and a {normalized channel name: marketplace} map. Unknown channels use `marketplace`.
@@ -68,6 +72,9 @@ class OrderReportParser(Parser):
             seen.add(identity)
 
             kind_text = table.get(row, *self.row_type).lower() if self.row_type else ""
+            if self.payout_types and any(w in kind_text for w in self.payout_types):
+                self._payout(table, row_no, row, result)
+                continue
             if any(w in kind_text for w in self.skip_types):
                 continue  # payouts, transfers: money movement, not sales (the close uses them, the pulse doesn't)
 
@@ -82,7 +89,10 @@ class OrderReportParser(Parser):
                     continue
             try:
                 date_text = table.get(row, *self.date) if any(norm(a) in table.norm_header for a in self.date) else ""
-                day = parse_business_date(date_text, assume_tz=self.date_assume_tz) if date_text or file_day is None else file_day
+                if date_text or file_day is None:
+                    day, occurred_at = parse_moment(date_text, assume_tz=self.date_assume_tz)
+                else:
+                    day, occurred_at = file_day, ""
             except ValueError as exc:
                 result.warn(table, row_no, "bad_date", str(exc))
                 continue
@@ -118,7 +128,7 @@ class OrderReportParser(Parser):
                 marketplace = self.channel_marketplaces.get(channel_name, self.marketplace)
             for typ, amount, event_fee, ship, hand, n in events:
                 key = (order_id, typ, day, marketplace)
-                if key in grouped:  # several lines of one order in one file: one row per order
+                if key in grouped:  # several lines of one order in one file: one row per order (first line's time)
                     g = grouped[key]
                     g["gross_cents"] += amount
                     g["fee_cents"] += event_fee
@@ -142,12 +152,34 @@ class OrderReportParser(Parser):
                     "shipping_cents": ship,
                     "handling_cents": hand,
                     "units": n,
+                    "occurred_at": occurred_at,
                 }
         for item in grouped.values():
             if item["units"] is None:
                 item["units"] = ""  # unknown: an empty cell, never 0
             result.add(item)
         return result
+
+    def _payout(self, table: Table, row_no: int, row: dict, result: ParseResult) -> None:
+        """One payout row: paid date as the report writes it (its own zone), amount positive = paid to Goodwill."""
+        try:
+            day, moment = parse_moment(table.get(row, *self.date), assume_tz=self.date_assume_tz)
+        except ValueError as exc:
+            result.warn(table, row_no, "bad_date", f"payout: {exc}")
+            return
+        try:
+            amount = -parse_money(table.get(row, *self.payout_amount))
+        except ValueError as exc:
+            result.warn(table, row_no, "bad_amount", f"payout: {exc}")
+            return
+        paid = moment[:10] or day
+        payout_id = f"{self.marketplace}:{paid}"
+        same_day = sum(1 for p in result.payouts if p["payout_id"].split("#")[0] == payout_id)
+        result.payouts.append({
+            "payout_id": f"{payout_id}#{same_day + 1}" if same_day else payout_id,  # a second payout that day
+            "marketplace": self.marketplace, "paid_date": paid, "amount_cents": amount,
+            "period_from": "", "period_to": "", "source_file": table.name, "source_row": row_no,
+        })
 
     @staticmethod
     def _money(table: Table, row: dict, aliases: tuple[str, ...]) -> int:

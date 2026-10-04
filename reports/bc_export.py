@@ -3,7 +3,8 @@
 Input is a close payload (JSON): month totals per source, the bank deposits matched to each
 source, and the open exceptions. Rules live in reports/config/bc_mapping.csv, one row per source:
 which path it posts through (Journal or Invoice, never both), its G/L accounts, customer and
-department. Staff change a rule by editing that file, not this code.
+department. Staff change a rule by editing that file, not this code. Who works each kind of exception,
+and what they do about it, is in reports/config/close_exceptions.csv (the role names are ours).
 
 Output (out/close/<YYYY-MM>/), CSV in the column order of the BC pages so rows can be pasted
 into the General Journal / Sales Invoice grid or loaded with Edit in Excel:
@@ -27,6 +28,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MAPPING = ROOT / "reports" / "config" / "bc_mapping.csv"
+OWNERS = ROOT / "reports" / "config" / "close_exceptions.csv"
 OUT = ROOT / "out" / "close"
 JOURNAL_COLUMNS = ["Posting Date", "Document Type", "Document No.", "Account Type", "Account No.", "Description",
                    "Amount", "Department Code"]
@@ -34,10 +36,12 @@ INVOICE_COLUMNS = ["Document No.", "Customer No.", "Posting Date", "Type", "No."
                    "Unit Price", "Amount", "Department Code"]
 CONTROL_COLUMNS = ["Source", "Path", "Revenue In", "Revenue Posted", "Difference", "Receivable Posted",
                    "Deposits", "Open Balance", "Explained", "Unexplained", "Status"]
-EXCEPTION_COLUMNS = ["Kind", "Source", "Amount", "Effect", "Detail"]
+EXCEPTION_COLUMNS = ["Kind", "Source", "Amount", "Effect", "Detail", "Owner", "Action"]
 # Effect of an exception: "open_balance" explains part of a source's open balance (money in transit,
 # activity not paid yet, a payout for activity missing from our files); "not_posted" = held out of BC;
 # "info" = nothing to post, someone should look.
+# Status of a source, worst first: MISMATCH (posted revenue differs from the input), UNEXPLAINED (money
+# nobody has accounted for), INCOMPLETE (accounted for, but a report is missing), OPEN, RECONCILED.
 
 
 def _mock_payload():
@@ -62,7 +66,7 @@ def _mock_payload():
             cents = owed - sum(x["amount_cents"] for x in deposits if x["source"] == src) if cents is None else cents
             deposits.append({"date": d, "source": src, "amount_cents": cents,
                              "reference": f"{src.upper()} PAYOUT {d[5:7]}{d[8:]}"})
-    return {"month": "2026-09", "posting_date": "2026-09-30", "mock": "built-in mock payload",
+    return {"month": "2026-09", "posting_date": "2026-09-30", "origin": "built-in mock payload",
             "sources": sources, "deposits": deposits, "exceptions": []}
 
 
@@ -84,13 +88,20 @@ def load_mapping(path=MAPPING):
     return rows
 
 
-def build(payload, mapping):
+def load_owners(path=OWNERS):
+    """Who works each kind of exception and what they do: {kind: (owner, action)}. The row `*` is the
+    default for a kind the file does not list, so no exception is ever left without an owner."""
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        return {r["Kind"].strip(): (r["Owner"].strip(), r["Action"].strip()) for r in csv.DictReader(f)}
+
+
+def build(payload, mapping, owners=None):
     """Journal lines, invoice lines, control rows and exceptions, all in cents. No I/O."""
     month = payload["month"]
     yymm = month[2:4] + month[5:7]
     posting = payload["posting_date"]
     period = f"{date.fromisoformat(month + '-01'):%b %Y}"
-    journal, invoice, exceptions = [], [], list(payload.get("exceptions", []))
+    journal, invoice, exceptions = [], [], [dict(e) for e in payload.get("exceptions", [])]
 
     def jl(doc, account_type, account, desc, cents, m, doc_type="", when=posting):
         journal.append({"Posting Date": when, "Document Type": doc_type,
@@ -172,11 +183,20 @@ def build(payload, mapping):
         explained = sum(e.get("amount_cents", 0) for e in exceptions
                         if e.get("effect") == "open_balance" and e.get("source") == src)
         unexplained = open_balance - explained
-        status = ("MISMATCH" if diff else "UNEXPLAINED" if unexplained else "OPEN" if open_balance else "RECONCILED")
+        # INCOMPLETE: every cent is accounted for, but a payout paid for days no report covers, so the
+        # revenue posted for this source is known to be short until that report is downloaded.
+        incomplete = any(e.get("kind") == "payout_data_gap" and e.get("source") == src for e in exceptions)
+        status = ("MISMATCH" if diff else "UNEXPLAINED" if unexplained else "INCOMPLETE" if incomplete
+                  else "OPEN" if open_balance else "RECONCILED")
         control.append({"Source": m["Label"], "Path": m["Path"], "Revenue In": rev_in, "Revenue Posted": rev_posted,
                         "Difference": diff, "Receivable Posted": receivable, "Deposits": deposits,
                         "Open Balance": open_balance, "Explained": explained, "Unexplained": unexplained,
                         "Status": status})
+    owners = load_owners() if owners is None else owners
+    for e in exceptions:
+        owner, action = owners.get(e["kind"]) or owners.get("*") or ("", "")
+        e.setdefault("owner", owner)
+        e.setdefault("action", action)
     return journal, invoice, control, exceptions
 
 
@@ -225,7 +245,7 @@ def write(folder, month, journal, invoice, control, exceptions, mapping):
             src = e.get("source") or ""
             w.writerow([e["kind"], mapping.get(src, {}).get("Label", src),
                         dollars(e["amount_cents"]) if e.get("amount_cents") is not None else "",
-                        e.get("effect", "info"), e["detail"]])
+                        e.get("effect", "info"), e["detail"], e.get("owner", ""), e.get("action", "")])
     return paths
 
 
@@ -269,7 +289,8 @@ def main(argv=None):
     folder = Path(args.out) / payload["month"]
     paths = write(folder, payload["month"], journal, invoice, control, exceptions, mapping)
     problems, n_lines, n_docs = verify_files(paths)
-    print(f"{payload.get('mock', 'payload ' + str(args.payload))}: close {payload['month']}")
+    origin = payload.get("origin") or payload.get("mock") or f"payload {args.payload}"  # "mock": before v0.4
+    print(f"{origin}: close {payload['month']}")
     for k, p in paths.items():
         print(f"  wrote {p.relative_to(ROOT).as_posix() if p.is_relative_to(ROOT) else p}")
     print(f"  journal: {n_lines} lines in {n_docs} documents, every document sums to 0.00"

@@ -1,4 +1,4 @@
-Source,Label,Code,Path,Customer_No,Bank_Account,Clearing_Account,Sales_Account,Refunds_Account,Shipping_Account,Handling_Account,Fees_Account,Department_Code,Bank_Text,Report_Prefix,Settles_Within_Days
-ebay,eBay,EBAY,Journal,,OPERATING,11310,40120,40190,40130,,61210,180,EBAY COMMERCE,ebay_transactions,3
-amazon,Amazon,AMZN,Journal,,OPERATING,11320,40125,40195,40135,,61220,180,AMAZON.COM SERVICES,amazon_daterange,16
-shopgoodwill,ShopGoodwill,SGW,Invoice,C-SHOPGOODWILL,OPERATING,,40110,40191,40131,40115,61200,180,SHOPGOODWILL.COM,paid_orders,9
+Source,Label,Code,Path,Customer_No,Bank_Account,Clearing_Account,Sales_Account,Refunds_Account,Shipping_Account,Handling_Account,Fees_Account,Department_Code,Bank_Text,Report_Prefix,Settles_Within_Days,Payout_Cutoff,Payout_Timezone,Cross_Check_Source
+ebay,eBay,EBAY,Journal,,OPERATING,11310,40120,40190,40130,,61210,180,EBAY COMMERCE,ebay_transactions,3,daily,America/New_York,cashmonkey
+amazon,Amazon,AMZN,Journal,,OPERATING,11320,40125,40195,40135,,61220,180,AMAZON.COM SERVICES,amazon_daterange,16,previous_day,America/Los_Angeles,cashmonkey
+shopgoodwill,ShopGoodwill,SGW,Invoice,C-SHOPGOODWILL,OPERATING,,40110,40191,40131,40115,61200,180,SHOPGOODWILL.COM,paid_orders,9,weekly:SUN,America/Los_Angeles,

@@ -3,7 +3,7 @@
 Hackathon project, 3 humans, each driving their own AI agent(s) in parallel. The partner is **Goodwill Michiana** (Reporting track): see `docs/PROBLEM.md`. Speed matters, but so does not breaking each other's work.
 
 ## Project snapshot (keep current — edit in place)
-- **Problem:** automate Goodwill's recurring reports: the **nightly pulse** (revenue and customers by marketplace; phase 1, done), the **monthly KPI dashboard** (phase 2, in progress) and the **month-end close to Business Central** (phase 3). Details: `docs/PROBLEM.md`, plan: `docs/PLAN_PHASE_2_3.md`, status: `docs/PHASES.md`.
+- **Problem:** automate Goodwill's recurring reports: the **nightly pulse** (revenue and customers by marketplace; phase 1, done), the **monthly KPI dashboard** (phase 2, done) and the **month-end close to Business Central** (phase 3, in progress). Details: `docs/PROBLEM.md`, plans: `docs/PLAN_PHASE_2_3.md` (phase 2) and `docs/PLAN_PHASE_3.md` (phase 3), status: `docs/PHASES.md`.
 - **Stack:** Python **3.13** (`.python-version`, and the Docker image); 3.12 also works, and the engine alone runs on 3.11 (`reports/` needs 3.12). Standard library plus `openpyxl`, `tzdata`, `pytest` (`engine/requirements.txt`). SQLite (standard library) for the nightly store. Pages are generated HTML from `reports/`, served by a thin FastAPI/Uvicorn server (`server.py`, deps in `requirements-server.txt`) and a `Dockerfile` (`docs/decisions/008-*`); no authentication, localhost only. **Files are the contract between lanes** (CSV and JSON in `out/`).
 - **Run / test / lint:**
   ```
@@ -14,6 +14,8 @@ Hackathon project, 3 humans, each driving their own AI agent(s) in parallel. The
   python -m engine run --date 2026-10-02                        # inbox/ -> out/ (clean rows, status, warnings)
   python -m recon.pulse --date 2026-10-02                       # out/ -> out/pulse/<date>.json
   python -m engine.tools.make_sample --scenario messy_day --check --pulse   # engine + pulse vs an independent answer key
+  python -m reports.close --inbox data/sample/tidy_month/inbox --month 2026-09    # the month-end close: BC import files, page, archive
+  python -m reports.close --inbox data/sample/messy_month/inbox --month 2026-09   # the same month with the mess: missing reports, an unmatched deposit
   pip install -r requirements-server.txt && python server.py    # serve reports/ at http://127.0.0.1:8000
   ```
   No linter or formatter is configured. Everything in the samples and simulators is **synthetic**.

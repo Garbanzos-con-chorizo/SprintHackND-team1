@@ -7,6 +7,8 @@ messy part (reading, detecting the source, cleaning) is shared, so a new adapter
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
+from ..coverage import summarize
+
 
 @dataclass
 class NormalizedBatch:
@@ -15,11 +17,31 @@ class NormalizedBatch:
     # One entry per file that was read and recognized: {"file", "source", "feeds": [marketplaces]}.
     # Used to tell a marketplace with no file (missing) from one whose file had nothing for the day (stale).
     files: list[dict] = field(default_factory=list)
+    # Close inputs (docs/contracts/close-inputs.md): payouts the marketplaces report, and bank lines.
+    payouts: list[dict] = field(default_factory=list)
+    bank: list[dict] = field(default_factory=list)
+    tables: dict[str, list[dict]] = field(default_factory=dict)  # ledger, statements, ...: CLOSE_TABLES
+
+    def _extend_tables(self, tables: dict[str, list[dict]]) -> None:
+        for name, items in tables.items():
+            self.tables.setdefault(name, []).extend(items)
 
     def extend(self, other: "NormalizedBatch") -> None:
         self.rows.extend(other.rows)
         self.warnings.extend(other.warnings)
         self.files.extend(other.files)
+        self.payouts.extend(other.payouts)
+        self.bank.extend(other.bank)
+        self._extend_tables(other.tables)
+
+    def add_result(self, file: dict, result) -> None:
+        """Take in what a parser returned for one file (a ParseResult)."""
+        self.files.append(summarize(file, result))
+        self.rows.extend(result.rows)
+        self.warnings.extend(result.warnings)
+        self.payouts.extend(result.payouts)
+        self.bank.extend(result.bank)
+        self._extend_tables(result.tables)
 
 
 class DataIngestAdapter(ABC):

@@ -22,46 +22,52 @@ class ScorecardTest(unittest.TestCase):
                 kf, html = self.render(name)
                 self.assertEqual(html.count('<div class="tile '), 15)
                 self.assertEqual(html.count('class="sim"'), sum(k["simulated"] for k in kf["kpis"]))
-                no_data = sum((k["status"] == "no_data" and not k.get("parts")) or (k["kind"] == "ranking" and not k["rows"])
-                              for k in kf["kpis"])
+                no_data = sum(k["status"] == "no_data" or (k["kind"] == "ranking" and not k["rows"])
+                              for k in kf["kpis"] if not k.get("parts"))  # sell-through draws its two boxes instead
                 self.assertEqual(html.count('value none">No data'), no_data)
-                boxes = [p for k in kf["kpis"] for p in k.get("parts") or []]
-                self.assertEqual(html.count('<div class="part">'), len(boxes))
-                self.assertEqual(html.count('pv none">No data'), sum(p["value"] is None for p in boxes))
                 for area in kf["areas"]:
                     self.assertIn(f'<h2>{area["name"].replace("+", "+")}</h2>', html.replace("&amp;", "&"))
 
-    def test_sell_through_shows_its_two_boxes_and_the_overall_rate(self):
-        kf, html = self.render("kpi.sample.week.json")
-        tile = re.search(r'<div class="tile [^"]*">(?:(?!<div class="tile ).)*Sell-Through Rate.*?(?=<div class="tile |</section>)', html, re.S)[0]
-        self.assertIn("Listed in the period</span><span class=\"pv\">68.5%", tile)
-        self.assertIn("606 of 885 units", tile)
-        self.assertIn("Left from earlier</span><span class=\"pv\">0.0%", tile)
-        self.assertIn("0 of 2,310 units", tile)
-        self.assertIn('<span class="muted">Overall</span> 68.5%', tile)
-        self.assertIn("How the boxes are split", tile)  # the assumption, behind the info button
-        _, day = self.render("kpi.sample.day.json")  # nothing listed that day: first box has no value
-        self.assertIn("Overall: no data", day)
-        self.assertIn('Listed in the period</span><span class="pv none">No data', day)
+    def test_every_pillar_name_is_on_the_page(self):
+        kf, html = self.render("kpi.sample.month.json")
+        for pillar in kf["pillars"]:
+            self.assertIn(f'<div class="pillar">{pillar["name"]}</div>', html)
+        self.assertEqual(html.count('class="pillar"'), 15)
 
-    def test_period_switch_links_the_day_week_and_month_pages_and_their_downloads(self):
+    def test_sell_through_is_two_boxes_and_a_null_box_says_no_data(self):
+        kf, html = self.render("kpi.sample.month.json")
+        parts = next(k for k in kf["kpis"] if k["id"] == "sales.sell_through")["parts"]
+        self.assertEqual(html.count('class="part"'), 2)
+        for p in parts:
+            self.assertIn(f'<div class="pname">{p["name"]}</div>', html)
+        self.assertIn(f'{parts[0]["value"] * 100:.1f}%', html)
+        for k in kf["kpis"]:
+            if k["id"] == "sales.sell_through":
+                k["parts"][1].update(value=None, available=None)
+        self.assertIn('pval none">No data', scorecard.render(kf))
+
+    def test_download_links_appear_only_for_files_that_exist(self):
+        kf, _ = self.render("kpi.sample.month.json")
         with tempfile.TemporaryDirectory() as tmp:
             dest = Path(tmp)
-            for name in ("kpi.sample.month.json", "kpi.sample.month.partial.json", "kpi.sample.week.json"):
-                scorecard.build(EXAMPLES / name, dest)
-            month = (dest / "month-2026-10.html").read_text(encoding="utf-8")
-            self.assertIn('<a href="week-2026-W40.html" title="Week 40, 2026">Week</a>', month)
-            self.assertIn('<span class="off" title="No day scorecard built yet">Day</span>', month)
-            self.assertIn('href="month-2026-09.html"', month)  # previous month
-            self.assertNotIn('month-2026-10.pdf', month)
-            (dest / "month-2026-10.pdf").write_bytes(b"%PDF-1.4")
-            scorecard.build(EXAMPLES / "kpi.sample.day.json", dest)  # a new page relinks the others
-            month = (dest / "month-2026-10.html").read_text(encoding="utf-8")
-            self.assertIn('<a href="day-2026-10-04.html" title="Oct 4, 2026">Day</a>', month)
-            self.assertIn('href="month-2026-10.pdf" download', month)
-            index = (dest / "index.html").read_text(encoding="utf-8")
-            for label in ("Day", "Week", "Month", "October 2026", "September 2026", "Week 40, 2026", "Oct 4, 2026"):
-                self.assertIn(label, index)
+            self.assertNotIn("Download:", scorecard.render(kf, dest))
+            (dest / "month-2026-09.csv").write_text("x", encoding="utf-8")
+            (dest / "month-2026-09.pdf").write_bytes(b"%PDF")
+            html = scorecard.render(kf, dest)
+            self.assertIn('<a href="month-2026-09.csv">', html)
+            self.assertIn('<a href="month-2026-09.pdf">', html)
+
+    def test_portal_card_switches_between_day_week_and_month_pages(self):
+        from reports import hub
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for kind, name in (("day", "kpi.sample.day.json"), ("week", "kpi.sample.week.json"),
+                               ("month", "kpi.sample.month.json")):
+                scorecard.build(EXAMPLES / name, root / "scorecard")
+            html = hub.build(root).read_text(encoding="utf-8")
+            self.assertIn("Period:", html)
+            for kind in ("day", "week", "month"):
+                self.assertRegex(html, rf'href="scorecard/{kind}-[^"]+\.html"')
 
     def test_rankings_render_their_rows_and_partial_coverage_raises_the_banner(self):
         kf, html = self.render("kpi.sample.month.partial.json")

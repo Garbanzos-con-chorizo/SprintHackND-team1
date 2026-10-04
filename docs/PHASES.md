@@ -23,17 +23,31 @@ Contract first: **0.1** (`transaction.md`, Victor) and **P0** (`pulse.md`, Dani)
 Cut order inside the phase: P-O3, then P-O4, then P-D3. Never cut the missing-data state (P-V4, P-O2) or the stated definitions.
 
 ## Phase 2: Monthly dashboard
-Starts after the phase 1 output files are stable. The dashboard reads the same `out/transactions.csv`, now covering the whole month.
+**Status, 2026-10-04: done** (plan: `docs/PLAN_PHASE_2_3.md`, decisions `007` and `008`). The original outline below this status (a thin O5 page over `out/transactions.csv`) was replaced by a larger plan: a SQLite store, Dani's KPI calculator and Goodwill's own 15-KPI scorecard. What exists, all on `main`:
+
+| Piece | Where | Owner |
+|---|---|---|
+| Nightly store (SQLite), `init`, `load`, `status`, `backfill` | `engine/store/` (`docs/contracts/store.md`) | Victor |
+| Mock internal API (labor, listings, cost, categories, stock), labelled simulated | `engine/internal_api/` (`internal-api.md`) | Victor |
+| 15 KPIs for a day, week or month, in five areas and five pillars | `recon/kpi/` (`kpi.md`) | Dani |
+| Scorecard page: pillar tags, sell-through as two boxes, partial and no-data states, simulated badges | `reports/scorecard.py` | Victor and Orlando |
+| Day, week-to-date and month-to-date pages every night, weekly and monthly pages, portal with a period switch | `reports/run_nightly.py`, `weekly.py`, `monthly.py`, `hub.py` | Victor and Orlando |
+| KPI table as CSV and a one-page PDF, linked from the pages and the emails | `engine/export/` | Victor |
+| A thin server for the pages and a Dockerfile | `server.py`, `Dockerfile` (`008`) | Victor |
+
+Simulated, not real: the internal data (cost, labor, listings, stock) comes from a mock; August (the month September is compared with) is simulated, so September's growth (about -33%) is an artefact of two synthetic sources (`ASSUMPTIONS.md` 2b.5). Left: the demo script for phases 2 and 3 and an updated `docs/pitch/kpi_catalog.md` (L7, `docs/members/victor.md`).
+
+Original outline, kept for the record:
 
 | Person | Tasks |
 |---|---|
-| **Victor** | none assigned in `TASKS.md`. **Gap:** nothing yet for monthly accumulation (month filter, month-over-month window, optional COGS/labor/inventory loaders). Needs the answers to questions 13-16 in `OFFICE_HOURS.md`. Propose before building. |
-| **Dani** | none assigned. **Gap:** monthly metric calculations (growth, profitability, productivity, inventory, engagement) have no owner. Proposed: Dani, reusing P-D1 and P-D2. |
-| **Orlando** | O5 monthly dashboard (thin; show only metrics we have data for) |
-
-Cut order: O5 is the first thing cut from the whole project.
+| **Victor** | none assigned in `TASKS.md`; the plan above gave him the store, the mock internal API and the exports |
+| **Dani** | none assigned in `TASKS.md`; the plan gave her the KPI calculator (`recon/kpi/`) |
+| **Orlando** | O5 monthly dashboard, which became the scorecard pages |
 
 ## Phase 3: Month-end close
+**Status, 2026-10-04 01:45 EDT:** one command, `python -m reports.close --inbox <folder> --month 2026-09`, runs the close on a synthetic tidy month and a synthetic messy month. It writes the General Journal (56 lines in 25 documents, each balanced), an AR invoice file, control totals and an exceptions list with an owner for each, archives the run, and renders the page. Every payout is compared with the files for the days it covers, so nothing is netted: the messy month names the two missing reports and their amounts ($743.10, $1,875.64) and holds out the $412.37 deposit; dropping in the two late reports closes the gaps. **Import files, not a live posting; three of Goodwill's nine month-end sources reach the close from sample files, the rest are not modeled until their simulated sources land.** Plan, tasks and what is left: `docs/PLAN_PHASE_3.md` (decision 009). Who has done what: `docs/members/dani.md`, `docs/members/victor.md`. The task table below is the original outline.
+
 Contracts first: **0.2** (`rules.md`, Victor) and **0.3** (`outputs.md`, Dani).
 
 | Person | Tasks |

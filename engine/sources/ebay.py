@@ -23,5 +23,6 @@ class Ebay(OrderReportParser):
     shipping = ("Shipping and handling", "Shipping")  # one combined column: all of it goes to shipping
     units = ("Quantity",)
     row_type = ("Type", "Transaction type")
-    skip_types = ("payout",)
+    payout_types = ("payout",)
+    payout_amount = ("Net amount", "Gross transaction amount")
     currency = ("Currency", "Transaction currency")

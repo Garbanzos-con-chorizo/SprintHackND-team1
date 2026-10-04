@@ -26,5 +26,6 @@ class Amazon(OrderReportParser):
     shipping = ("shipping credits", "shipping-price")
     units = ("quantity", "quantity-purchased")
     row_type = ("type", "transaction type")
-    skip_types = ("transfer",)
+    payout_types = ("transfer",)
+    payout_amount = ("total",)
     currency = ("currency",)

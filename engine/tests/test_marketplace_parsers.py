@@ -161,7 +161,7 @@ AMAZON_DATE_RANGE = (
 
 def test_ebay_transaction_report_layout(tmp_path):
     rows, warnings = run_inbox(tmp_path, {"ebay_transactions_2026-10-02.csv": EBAY_TXN_REPORT.replace("\r\n", "\n")})
-    assert warnings == []  # '--' is empty, Payout is skipped silently
+    assert warnings == []  # '--' is empty; the Payout row goes to payouts.csv, not to transactions
     got = {r["txn_id"]: (r["gross_cents"], r["fee_cents"], r["business_date"]) for r in rows}
     assert got == {
         "ebay:25-1:sale": ("3399", "560", "2026-10-01"),      # Item subtotal, not the shipping-inclusive gross
@@ -180,7 +180,7 @@ def test_ebay_report_with_bom_and_crlf_bytes(tmp_path):
 
 def test_amazon_date_range_pacific_time_items_and_transfer(tmp_path):
     rows, warnings = run_inbox(tmp_path, {"amazon_daterange_2026-10-02.csv": AMAZON_DATE_RANGE})
-    assert warnings == []  # Transfer row skipped silently
+    assert warnings == []  # the Transfer row goes to payouts.csv, not to transactions
     assert len(rows) == 1
     r = rows[0]
     assert r["business_date"] == "2026-10-02"        # 9:33 PM PDT Oct 1 is 12:33 AM EDT Oct 2
@@ -223,7 +223,9 @@ def test_overlapping_downloads_count_once_and_are_logged(tmp_path):
     })
     assert sorted(r["txn_id"] for r in rows) == ["ebay:25-1:refund", "ebay:25-1:sale", "ebay:25-2:sale"]
     dupes = [w for w in warnings if w["kind"] == "duplicate"]
-    assert len(dupes) == 2 and all("differ" not in w["reason"] for w in dupes)
+    # the sale, the refund and the payout repeated in the overlap (the payout goes to payouts.csv)
+    assert len(dupes) == 3 and all("differ" not in w["reason"] for w in dupes)
+    assert sum("same payout" in w["reason"] for w in dupes) == 1
     assert all(w["source_file"] == "ebay_transactions_2026-10-02.csv" or "(1)" in w["source_file"] for w in dupes)
 
 
