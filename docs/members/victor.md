@@ -2,12 +2,13 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 05:15 · **Branch:** victor/pdf-robust
+**Last updated:** 2026-10-04 06:00 · **Branch:** victor/listing-to-sale
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`
 **Decision 007:** agreed by all three, SQLite included (Orlando's amendment at 21:30, my response appended). Tripwire: if September isn't in the store by 10:00 Sunday, the KPIs read the files instead.
 
 ### Done
+- **Dani's page** (branch `victor/listing-to-sale`): `listing_to_sale_days` in the mock and `internal-api.md` v0.5, plus backfill now pulls the day before its range (the stock count). On September, `recon.kpi` shows `split_basis: listing_dates` and both sell-through boxes: 61.3% listed in the period, 15.3% from the 3,646 left from earlier. README updated in PR `victor/readme-update`.
 - **Fixed (Dani's 22:35 report)** (branch `victor/pdf-robust`): `export pdf` waits for a PDF written after the browser exits, retries in the old headless mode, and names the browser and each try when it fails (fake-browser tests for all three). Email attachments and the server use fixed content types, so a PC with Excel (`.csv` = `application/vnd.ms-excel`) behaves like any other.
 - **Decision 008** (branch `victor/server`): `server.py` (FastAPI static files over `reports/`, only generated file types, never `config/` or code; `/healthz`), `requirements-server.txt`, `Dockerfile` (`python:3.13-slim`; builds the demo pages at build time with `run_scheduled`, runs as non-root), `.dockerignore`. 4 tests in `engine/tests/test_server.py` (they skip without fastapi). Rehearsed without Docker: build steps 37 s, exit 0; all 16 portal links 200; the monthly `fetch()` table renders. **Docker verified:** `docker build` 42 s, image 253 MB; the container is healthy, all 16 portal links 200, config and code 404, runs as non-root. Run: `uv pip install -r requirements-server.txt`, then `python server.py` and open http://127.0.0.1:8000/.
 - **V2.7 + Orlando's request** (branch `victor/shipping-units`): `transactions.csv` v0.4 has `shipping_cents`, `handling_cents` and `units` from every parser (Upright, Cash Monkey, eBay, Amazon, ShopGoodwill). Refund rows carry negative shipping and 0 units; an export with no quantity column leaves units empty, never 0. Store schema v2 adds the two money columns, and `init` migrates an existing database in place. **On `messy_month` the shipping and handling totals per marketplace equal the answer key to the cent**, which removes the reason for the STOPGAP in `reports/reconcile.py` (Orlando's lane; request sent). With units in the store, Dani's KPIs switch by themselves: average selling price per unit $28.67 (was $29.21 per order), sell-through by units 79.1%. 6 tests in `engine/tests/test_shipping_units.py`.

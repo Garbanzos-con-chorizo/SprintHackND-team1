@@ -10,7 +10,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from .mock import MockInternalApi, RevenueLookup
+from .mock import MockInternalApi, RevenueLookup, UnitsLookup
 
 
 class InternalApiError(Exception):
@@ -36,12 +36,13 @@ class HttpInternalApi:
         return body
 
 
-def make_client(revenue_by_marketplace: RevenueLookup | None = None, env: dict | None = None):
+def make_client(revenue_by_marketplace: RevenueLookup | None = None, units_sold: UnitsLookup | None = None,
+                env: dict | None = None):
     """The client the INTERNAL_API setting asks for (default: mock)."""
     env = os.environ if env is None else env
     kind = env.get("INTERNAL_API", "mock")
     if kind == "mock":
-        return MockInternalApi(revenue_by_marketplace)
+        return MockInternalApi(revenue_by_marketplace, units_sold)
     if kind == "http":
         if not env.get("INTERNAL_API_URL"):
             raise InternalApiError("INTERNAL_API=http needs INTERNAL_API_URL")

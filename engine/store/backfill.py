@@ -6,6 +6,7 @@ the day is loaded, and the internal API snapshot for that day is pulled into the
 A day that fails is reported and skipped; the others still load.
 """
 import sqlite3
+from datetime import date, timedelta
 import subprocess
 import sys
 from pathlib import Path
@@ -23,6 +24,13 @@ def backfill(conn: sqlite3.Connection, inbox: Path, out: Path, start: str, end: 
     """Returns one result per day: {"date", "result": "ok" | "failed", "message", ...load summary}."""
     out = out.resolve()
     batch = ingest([EmailAttachmentAdapter(inbox)])
+    # The internal snapshot of the day before the range too: its stock count (active listings) is what
+    # sell-through's "left from earlier" box divides by (kpi.md). Internal data only; a failure here
+    # doesn't stop the backfill.
+    try:
+        pull_day(conn, (date.fromisoformat(start) - timedelta(days=1)).isoformat())
+    except PullError:
+        pass
     results = []
     for day in days_between(start, end):
         try:

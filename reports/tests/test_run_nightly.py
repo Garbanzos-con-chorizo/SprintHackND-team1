@@ -32,7 +32,7 @@ def test_a_real_night_fills_the_store_and_writes_the_three_kpi_files(db, capsys)
     assert "[7/7] Render" in out and "FAILED" not in out
     c = sqlite3.connect(db)
     assert c.execute("SELECT COUNT(*) FROM pulse_daily WHERE business_date = ?", (DAY,)).fetchone()[0] == 4
-    assert c.execute("SELECT COUNT(DISTINCT metric) FROM internal_daily WHERE business_date = ?", (DAY,)).fetchone()[0] == 10
+    assert c.execute("SELECT COUNT(DISTINCT metric) FROM internal_daily WHERE business_date = ?", (DAY,)).fetchone()[0] == 11
     assert c.execute("SELECT command, COUNT(*) FROM runs GROUP BY 1 ORDER BY 1").fetchall() == \
         [("kpi", 3), ("load", 1), ("pull", 1)]
     for name in (f"day-{DAY}", "week-2026-W40", "month-2026-10"):

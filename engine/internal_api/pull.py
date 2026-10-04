@@ -24,9 +24,19 @@ def store_revenue(conn: sqlite3.Connection):
         "SELECT marketplace, revenue_cents FROM pulse_daily WHERE business_date = ? AND status = 'ok'", (day,)))
 
 
+def store_units_sold(conn: sqlite3.Connection):
+    """Units sold on a day, as the store has them (sale rows; an order without a unit count counts once),
+    for the mock's units-by-days-since-listing. None when nothing is stored for the day."""
+    def units(day):
+        n, rows = conn.execute("SELECT SUM(COALESCE(units, 1)), COUNT(*) FROM transactions "
+                               "WHERE business_date = ? AND type = 'sale'", (day,)).fetchone()
+        return int(n) if rows else None
+    return units
+
+
 def pull_day(conn: sqlite3.Connection, day: str, api=None) -> dict:
     """Store the snapshot for `day`; returns a summary, raises PullError."""
-    api = api or make_client(store_revenue(conn))
+    api = api or make_client(store_revenue(conn), store_units_sold(conn))
     run_id = f"pull-{day}-{uuid.uuid4().hex[:8]}"
     started = now_local().isoformat()
     try:

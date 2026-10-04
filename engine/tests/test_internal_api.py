@@ -16,8 +16,11 @@ DAY = "2026-09-14"  # a Monday
 REVENUE = {"shopgoodwill": 87200, "ebay": 57676, "amazon": 30982}  # clean_month, 2026-09-14
 
 
-def api(revenue=REVENUE):
-    return MockInternalApi(lambda day: revenue)
+UNITS = 75  # units sold that day, as the store would give them
+
+
+def api(revenue=REVENUE, units=UNITS):
+    return MockInternalApi(lambda day: revenue, lambda day: units)
 
 
 def september():
@@ -37,7 +40,7 @@ def test_same_date_same_numbers_other_date_other_numbers():
     assert snapshot_rows(api(), DAY) != snapshot_rows(api(), "2026-09-15")
 
 
-def test_snapshot_has_the_ten_metrics_with_their_units_and_dimensions():
+def test_snapshot_has_the_eleven_metrics_with_their_units_and_dimensions():
     rows = snapshot_rows(api(), DAY)
     by_metric = {}
     for r in rows:
@@ -162,3 +165,22 @@ def test_make_client_from_settings():
         make_client(env={"INTERNAL_API": "http"})
     with pytest.raises(InternalApiError, match="mock or http"):
         make_client(env={"INTERNAL_API": "sap"})
+
+
+# --- listing_to_sale_days (Dani's page, kpi.md "Sell-through in two boxes") -------------------
+
+def test_listing_to_sale_spreads_the_days_units_over_ages():
+    for day in september():
+        ages = api().get("listings", day)["data"]["listing_to_sale_days"]
+        assert sum(ages.values()) == UNITS, day
+        assert all(a.isdigit() for a in ages)  # whole days as text, as Dani's calculator requires
+    pooled = [int(a) for d in september() for a, n in api().get("listings", d)["data"]["listing_to_sale_days"].items()
+              for _ in range(n)]
+    assert 4 <= statistics.median(pooled) <= 9           # auctions run about a week
+    assert sum(a == 0 for a in pooled) / len(pooled) < 0.1  # few sell on the day they're listed
+
+
+def test_no_sales_means_no_listing_to_sale_rows():
+    for units in (0, None):
+        rows = snapshot_rows(api(units=units), DAY)
+        assert not [r for r in rows if r["metric"] == "listing_to_sale_days"], units
