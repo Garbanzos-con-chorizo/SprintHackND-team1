@@ -1,6 +1,6 @@
 # Contract: close payload (input of the Business Central export)
 
-- **Owner:** Orlando (`reports/bc_export.py`) until the phase 3 split (decision 007, Orlando's response). **Producer:** reconciliation (D2-D5), whoever builds it. **Consumer:** `python -m reports.bc_export --payload <file>`.
+- **Owner:** Orlando (`reports/bc_export.py`) until the phase 3 split (decision 007, Orlando's response). **Producer:** `python -m reports.reconcile` (matching from the raw inbox); `reports/mock_recon.py` builds the same payload from an answer key, for tests. **Consumer:** `python -m reports.bc_export --payload <file>`.
 - **Status:** draft. Verified with the built-in mock (`python -m reports.bc_export`, 7 tests in `reports/tests/test_bc_export.py`).
 
 ## Shape
@@ -37,5 +37,6 @@
 - `control_totals_<month>.csv` per source: revenue in vs posted (must match), receivable posted, deposits, open balance. `Explained` = the `open_balance` exceptions for that source, `Unexplained` = open balance minus explained. `RECONCILED`: open balance 0. `OPEN`: open but fully explained. `UNEXPLAINED`: money nobody has accounted for. `MISMATCH`: posted revenue differs from the input.
 
 ## Changelog
+- draft v0.3: produced by `reports.reconcile` from the raw inbox. Optional extra fields, ignored by the export: `deposits[].matches` (payout ids), `payouts` (every payout read, with its deposit date or null), `stopgaps` (numbers not yet from the engine), `inbox`.
 - draft v0.2: exceptions carry source, amount and effect; control totals add Explained / Unexplained. `reports/mock_recon.py` builds a payload from the messy-month answer key.
 - draft v0.1: initial, with the mock payload.
