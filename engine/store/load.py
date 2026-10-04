@@ -109,7 +109,13 @@ def files_read(source_status: dict) -> list[str]:
 
 
 def log_run(conn, run_id, business_date, started, files, rows, warnings, result, message=""):
+    record_run(conn, "load", run_id, business_date, started, files, rows, warnings, result, message)
+
+
+def record_run(conn, command, run_id, business_date, started, files, rows, warnings, result, message=""):
+    """One row in `runs` for any command that writes to the store (load, pull, kpi)."""
     conn.execute(
         "INSERT INTO runs (run_id, command, business_date, started_at, finished_at, files_read, rows_written, "
-        "warnings_total, result, message) VALUES (?, 'load', ?, ?, ?, ?, ?, ?, ?, ?)",
-        (run_id, business_date, started, now_local().isoformat(), json.dumps(files), rows, warnings, result, message))
+        "warnings_total, result, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (run_id, command, business_date, started, now_local().isoformat(), json.dumps(files), rows, warnings,
+         result, message))

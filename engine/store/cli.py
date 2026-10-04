@@ -82,7 +82,7 @@ def backfill_cmd(conn, args) -> int:
     def show(r):
         if r["result"] == "ok":
             print(f"  {r['date']}  ok      {r['transactions']:>5} transactions  revenue {r['revenue_cents'] / 100:>12,.2f} USD"
-                  f"  ({', '.join(r['included']) or 'no marketplace with data'})")
+                  f"  internal {r['internal_rows']:>3} rows  ({', '.join(r['included']) or 'no marketplace with data'})")
         else:
             print(f"  {r['date']}  FAILED  {r['message']}")
 

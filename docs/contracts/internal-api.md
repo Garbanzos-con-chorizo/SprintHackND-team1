@@ -1,7 +1,7 @@
 # Contract: Goodwill internal API (mock today) and its daily snapshot
 
 - **Owner:** Victor (`engine/internal_api/`). **Consumers:** Dani (`recon/kpi/`, reads the snapshot from the store), Orlando (badges).
-- **Status:** draft v0.3: client and mock built (`engine/internal_api/`); `pull` into the store is next (V2.6). The metric list is the one Dani asked for in `docs/contracts/kpi.md` ("Inputs the KPIs need"), names and dimensions unchanged.
+- **Status:** draft v0.4: client, mock and `pull` built (`engine/internal_api/`). The metric list is the one Dani asked for in `docs/contracts/kpi.md` ("Inputs the KPIs need"), names and dimensions unchanged.
 - **Why it exists:** 11 of the 15 KPIs need company data we don't have (labor, employees, listings, inventory, costs, categories). Decision 006 point 9 and `docs/ASSUMPTIONS.md` 2b assume Goodwill exposes it through an internal API. We have never seen one, so we build a **mock with synthetic values** behind a client interface; a real API replaces the mock without changing anything downstream.
 
 ```
@@ -56,6 +56,7 @@ One row per `(business_date, metric, dimension)`. **Flow** metrics are the day's
 - Cost of goods for donated items is a seeded share of category sales. Goodwill may track processing cost per item instead; that changes only the mock, not this table or the KPI file.
 
 ## Changelog
+- draft v0.4 (2026-10-04, Victor): `python -m engine.internal_api pull (--date D | --from D1 --to D2)` built. It writes `internal_daily` per date (delete then insert, one transaction, a failed pull changes nothing), logs a `pull` run, and says when there's no pulse for the date (no category rows). `store backfill` pulls each day after loading it.
 - draft v0.3 (2026-10-04, Victor): built. Seeded sizes: about 53 labor hours a day at $17.25-18.25 an hour, 9 FTE plus or minus 1 (changes by ISO week), 124 listings a day (less at the weekend), donation-to-listing median about 6 days, 3,700 active listings, 1,800 unlisted, shipping net cost about $110 a day, cost of goods 20-45% of sales by category. On September (`clean_month`) that gives revenue per labor hour about $52 and net margin about 23%.
 - draft v0.2 (2026-10-03, Victor): metric names, dimensions and kinds switched to Dani's list in `kpi.md` (`employees`, `donation_to_listing_days`, `active_listings_by_age`, `shipping_net_cost_cents`, `category_sales_cents`, `category_cogs_cents`; single values use `dimension = 'total'`). Category sales are scaled to the pulse revenue.
 - draft v0.1 (2026-10-03, Victor): initial, from `docs/PLAN_PHASE_2_3.md` section 5. Replaces the four functions of `reports/mock_api.py`, which move into `engine/internal_api/`.
