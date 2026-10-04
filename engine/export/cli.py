@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from .kpi_csv import write_kpi_csv
-from .pdf import PdfError, write_pdf
+from .pdf import PdfError, scorecard_page, write_pdf
 
 KPI_DIR = Path("out") / "kpi"
 DEST = Path("reports") / "scorecard"  # next to the scorecard page of the same name, for its download links
@@ -32,6 +32,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             pdf, pages = write_pdf(kpi_path, args.dest)
             print(f"export: wrote {pdf} ({pages} page{'s' if pages != 1 else ''})")
+        scorecard_page(kpi_path, args.dest)  # draw the page again so it links the file just written (and the portal card)
     except (ValueError, KeyError) as e:
         print(f"export: {kpi_path} does not follow docs/contracts/kpi.md ({e})", file=sys.stderr)
         return 1
