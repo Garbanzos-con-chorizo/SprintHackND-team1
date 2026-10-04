@@ -8,6 +8,7 @@ Schema: docs/pitch/tools/README.md.
 import html
 import json
 import os
+import re
 from datetime import datetime, timezone
 
 THEMES = {
@@ -30,8 +31,18 @@ PAD = "padding:128px 128px 160px"
 NUM = "font-variant-numeric:tabular-nums"
 
 
+def typo(s):
+    """Typographic polish: curly apostrophes and quotes, en dash in number ranges, true minus."""
+    s = re.sub(r"(\w)'(\w)", r"\1’\2", str(s))
+    s = re.sub(r"(^|[\s(])'", r"\1‘", s).replace("'", "’")
+    if "<" not in s:
+        s = re.sub(r'(^|[\s(])"', r"\1“", s).replace('"', "”")
+    s = re.sub(r"(\d)-(\d)", r"\1–\2", s)
+    return re.sub(r"(^|\s)-(\$?\d)", r"\1−\2", s)
+
+
 def esc(s):
-    return html.escape(str(s), quote=False)
+    return typo(html.escape(str(s), quote=False))
 
 
 class Renderer:
@@ -51,6 +62,13 @@ class Renderer:
         return (f'<h2 style="{self.ff_head};font-size:{size}px;font-weight:700;line-height:1.1;'
                 f'letter-spacing:-1px;color:{color or self.t["ink"]};width:1500px">{esc(s)}</h2>')
 
+    def head(self, s):
+        return self.eyebrow(s.get("eyebrow")) + self.title(s["title"])
+
+    def body(self, inner):
+        """Body fills the space under the title and centers in it, so no half-empty slide."""
+        return f'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:32px">{inner}</div>'
+
     def footer(self, i, n, color=None):
         text = f'{i} / {n} · {self.deck.get("footer", "")}'.rstrip(" ·")
         return (f'<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;'
@@ -69,10 +87,10 @@ class Renderer:
         cols = "".join(
             f'<div style="flex:1;display:flex;flex-direction:column;gap:16px;border-top:4px solid {t["anchor"]};padding:24px 0 0 0">'
             f'<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:{t["anchor"]}">{esc(q["label"])}</p>'
-            f'<p style="{self.ff_head};font-size:30px;line-height:1.4;color:{t["ink"]}">“{q["text"]}”</p></div>'
+            f'<p style="{self.ff_head};font-size:30px;line-height:1.4;color:{t["ink"]}">“{typo(q["text"])}”</p></div>'
             for q in s["quotes"])
         attr = self.p(esc(s.get("attribution", "")), 24, t["muted"])
-        return self.eyebrow(s.get("eyebrow")) + self.title(s["title"]) + f'<div style="display:flex;gap:56px">{cols}</div>' + attr, \
+        return self.head(s) + self.body(f'<div style="display:flex;gap:56px">{cols}</div>' + attr), \
             "display:flex;flex-direction:column;gap:48px"
 
     def hero(self, s):
@@ -80,9 +98,8 @@ class Renderer:
         color = t["warn"] if s.get("tone") == "warn" else t["anchor"]
         num = (f'<p style="{self.ff_head};font-size:240px;font-weight:700;line-height:1;letter-spacing:-6px;{NUM};'
                f'color:{color}">{esc(s["number"])}</p>')
-        cap = self.p(s.get("caption", ""), 40, t["ink"], ";width:1400px")
-        return self.eyebrow(s.get("eyebrow")) + self.title(s["title"]) + num + cap, \
-            "display:flex;flex-direction:column;justify-content:space-between;gap:32px"
+        cap = self.p(typo(s.get("caption", "")), 40, t["ink"], ";width:1400px")
+        return self.head(s) + self.body(num + cap), "display:flex;flex-direction:column;gap:48px"
 
     def ledger(self, s):
         t = self.t
@@ -90,12 +107,13 @@ class Renderer:
         for r in s["rows"]:
             c = t["warn"] if r.get("warn") else t["ink"]
             rows.append(
-                f'<div style="display:flex;gap:32px;align-items:baseline;border-top:2px solid {t["line"]};padding:24px 0 24px 0">'
-                f'<p style="width:420px;font-size:28px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:{c}">{esc(r.get("status", ""))}</p>'
-                f'<p style="flex:1;font-size:32px;line-height:1.3;color:{t["ink"]}">{r["label"]}</p>'
+                f'<div style="display:flex;gap:32px;align-items:center;border-top:2px solid {t["line"]};padding:24px 0 24px 0">'
+                f'<div style="flex:1;display:flex;flex-direction:column;gap:8px">'
+                f'<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:{c}">{esc(r.get("status", ""))}</p>'
+                f'<p style="font-size:36px;line-height:1.3;color:{t["ink"]}">{typo(r["label"])}</p></div>'
                 f'<p style="width:420px;text-align:right;{self.ff_head};font-size:64px;font-weight:700;{NUM};color:{c}">{esc(r["amount"])}</p></div>')
         rows.append(f'<hr style="border-top:2px solid {t["line"]};width:1664px">')
-        return self.eyebrow(s.get("eyebrow")) + self.title(s["title"]) + f'<div style="display:flex;flex-direction:column">{"".join(rows)}</div>', \
+        return self.head(s) + self.body(f'<div style="display:flex;flex-direction:column">{"".join(rows)}</div>'), \
             "display:flex;flex-direction:column;gap:48px"
 
     def columns(self, s):
@@ -104,18 +122,18 @@ class Renderer:
             f'<div style="flex:1;display:flex;flex-direction:column;gap:16px;border-top:4px solid {t["ink"]};padding:24px 0 0 0">'
             f'<p style="font-size:24px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:{t["anchor"]}">{esc(c.get("label", ""))}</p>'
             f'<h3 style="{self.ff_head};font-size:44px;font-weight:700;color:{t["ink"]}">{esc(c["head"])}</h3>'
-            + self.p(c["text"]) + "</div>" for c in s["cols"])
-        return self.eyebrow(s.get("eyebrow")) + self.title(s["title"]) + f'<div style="display:flex;gap:56px">{cols}</div>', \
-            "display:flex;flex-direction:column;gap:56px"
+            + self.p(typo(c["text"]), 36) + "</div>" for c in s["cols"])
+        return self.head(s) + self.body(f'<div style="display:flex;gap:56px">{cols}</div>'), \
+            "display:flex;flex-direction:column;gap:48px"
 
     def table(self, s):
         t = self.t
         w = s.get("widths", [40, 60])
         head = "".join(f'<th style="width:{w[i]}%">{esc(h)}</th>' for i, h in enumerate(s["head"]))
-        body = "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in s["rows"])
+        body = "".join("<tr>" + "".join(f"<td>{typo(c)}</td>" for c in r) + "</tr>" for r in s["rows"])
         tbl = (f'<table style="font-size:28px;color:{t["ink"]};padding:16px 20px">'
                f'<tr style="background:{t["alt"]}">{head}</tr>{body}</table>')
-        return self.eyebrow(s.get("eyebrow")) + self.title(s["title"]) + tbl, "display:flex;flex-direction:column;gap:48px"
+        return self.head(s) + self.body(tbl), "display:flex;flex-direction:column;gap:48px"
 
     # -- slide ----------------------------------------------------------
     def slide(self, s, i, n):

@@ -1,7 +1,7 @@
 ---
 name: page
 description: Notify a teammate across sessions that work is ready for pickup. Use this when you've completed a task and want to hand it off — specify the teammate name and optionally the branch. Sends a PushNotification alert and updates their status file "Requests to me" section so they see it next session. Teammates on the Pulse project are victor, dani, orlando.
-compatibility: Requires PushNotification and status file write access to docs/members/
+compatibility: Requires PushNotification and status file write access to docs/team/members/
 ---
 
 # /page — Notify teammate of handoff
@@ -29,7 +29,7 @@ When your work is done and another team member needs to pick it up, page them to
 ## What happens
 
 1. **Identify yourself** from `git config user.name` (or ask if unclear)
-2. **Update their status file** — Append to `docs/members/<teammate>.md` under "Requests to me" (append-only):
+2. **Update their status file** — Append to `docs/team/members/<teammate>.md` under "Requests to me" (append-only):
    ```
    - [from <You>, <timestamp>] <branch>: <note>
    ```
@@ -67,7 +67,7 @@ You finish V2.6 (internal API pull), push the branch, then:
 ```
 
 Result:
-- `docs/members/dani.md` gets: `- [from Victor, 2026-10-03 14:45] victor/internal-api: V2.6 done, snapshot rows into internal_daily`
+- `docs/team/members/dani.md` gets: `- [from Victor, 2026-10-03 14:45] victor/internal-api: V2.6 done, snapshot rows into internal_daily`
 - Dani's computer gets a notification: "Victor paged you on victor/internal-api: V2.6 done, snapshot rows into internal_daily"
 - A background task chip appears in Dani's next Claude session (if one is running): "Pickup: victor/internal-api — From Victor: ready"
 - The change is committed and pushed so it's live when Dani pulls `main`

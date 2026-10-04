@@ -3,7 +3,7 @@
 **ID:** 001-pitch-deck · **Created:** 2026-10-04 · **Status:** Draft (awaiting Orlando's OK) · **Owner:** Orlando
 
 ## Problem (why)
-The judges score the opening slide, one continuous take, and honesty about what is simulated (`docs/pitch/presentation_guide.md`). The current deck (artifact 9rNv3bvkMWeohczA5p7X2y, v4) has the right story but the wrong design: identical card rows on 6 of 8 slides, label titles, up to 3 hero numbers per slide, no visual QA. The submission must be a Google Slides link with the video inside, by 15:00 (final 16:00).
+The judges score the opening slide, one continuous take, and honesty about what is simulated (`docs/pitch/presentation-guide.md`). The current deck (artifact 9rNv3bvkMWeohczA5p7X2y, v4) has the right story but the wrong design: identical card rows on 6 of 8 slides, label titles, up to 3 hero numbers per slide, no visual QA. The submission must be a Google Slides link with the video inside, by 15:00 (final 16:00).
 
 ## Stories (prioritized)
 ### US1 (P1): A judge gets the point of every slide in 3 seconds

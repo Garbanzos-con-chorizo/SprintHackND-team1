@@ -16,6 +16,18 @@ def visible_words(slide_html):
     return len(TEXT_RE.sub(" ", body).split())
 
 
+def wrap_lines(text, size, width=1500, char=0.48):
+    """Greedy estimate of how a title wraps (average bold glyph ~0.48, measured on IBM Plex Sans 700 x font size)."""
+    per_line, lines, cur = int(width / (size * char)), [], ""
+    for w in text.split():
+        if cur and len(cur) + 1 + len(w) > per_line:
+            lines.append(cur)
+            cur = w
+        else:
+            cur = f"{cur} {w}".strip()
+    return lines + [cur]
+
+
 def lint(content_path, out_dir):
     deck = json.load(open(content_path, encoding="utf-8"))
     issues = []
@@ -41,6 +53,13 @@ def lint(content_path, out_dir):
         title = s.get("title", "")
         if lay != "statement" and (len(title.split()) < 4 or title.endswith(":")):
             issues.append(("WARN", sid, "title reads like a label; write the claim as a sentence"))
+        lines = wrap_lines(title, 96 if lay == "statement" else 64)
+        if len(lines) > 1 and len(lines[-1].split()) == 1:
+            issues.append(("WARN", sid, f"title widow: '{lines[-1]}' alone on the last line; rephrase"))
+        if len(lines) > (3 if lay == "statement" else 2):
+            issues.append(("WARN", sid, f"title runs {len(lines)} lines; cut it"))
+        if re.search(r"[\w]'[\w]|\"", re.sub(r"<[^>]+>", "", h.split("<aside>")[0])):
+            issues.append(("WARN", sid, "straight quote/apostrophe on the slide; use typographic ones"))
         if re.search(r"\[[^\]]+\]", h.split("<aside>")[0]):
             issues.append(("WARN", sid, "placeholder [..] left on the slide"))
         if not s.get("notes"):

@@ -1,6 +1,6 @@
 # Demo script: Nightly Pulse (P-O5)
 
-Presenter: Orlando. Target: about 90 seconds, inside the 2-3 minute demo in `docs/PROBLEM.md#demo`. Three nights, one take each, **on the real pipeline**: Victor's engine parses the files, Dani's pulse calculates, our renderer publishes. Nothing is precomputed.
+Presenter: Orlando. Target: about 90 seconds, inside the 2-3 minute demo in `docs/partner/problem.md#demo`. Three nights, one take each, **on the real pipeline**: Victor's engine parses the files, Dani's pulse calculates, our renderer publishes. Nothing is precomputed.
 
 The inboxes hold Goodwill's two nightly reports in their real tools' layouts: **Upright "Paid orders"** (ShopGoodwill; Pacific time, one row per order) and **Cash Monkey "Orders Report"** (eBay and Amazon; UTC, one line per unit), as `.xlsx` like the emailed attachments.
 

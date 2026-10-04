@@ -1,6 +1,6 @@
 # Demo script: the month-end close (D3.11)
 
-Written 2026-10-04 01:45 EDT by Dani's agent, for whoever records (Orlando). Target: **about 65 seconds** inside the three-minute video (`docs/pitch/presentation_guide.md`, section 3). Three runs of **one command**, on the real pipeline: Victor's engine reads the files, Dani's rules match the money, the export writes the Business Central files. Every step below was run on `main` at 752e63f; the numbers are from those runs.
+Written 2026-10-04 01:45 EDT by Dani's agent, for whoever records (Orlando). Target: **about 65 seconds** inside the three-minute video (`docs/pitch/presentation-guide.md`, section 3). Three runs of **one command**, on the real pipeline: Victor's engine reads the files, Dani's rules match the money, the export writes the Business Central files. Every step below was run on `main` at 752e63f; the numbers are from those runs.
 
 **Everything is synthetic.** The files are generated (`data/generate.py`), the account numbers are placeholders, and nothing is posted to Business Central. The page says so in its first lines; say it once out loud too.
 
@@ -75,4 +75,4 @@ Pick one, not all:
 - Fallback tabs: keep `reports/close/2026-09.html` from the rehearsal open in a second window. Do not show it as if it were live.
 
 ## Questions you may get
-See `docs/pitch/presentation_guide.md`, section 7. The two most likely here: "does it post?" (no: import files, and the status file says so) and "how do you know it is right?" (every document sums to zero or nothing is written; totals and all 35 payouts equal an answer key computed from the generated orders, not by our code; what we cannot check is their workbook).
+See `docs/pitch/presentation-guide.md`, section 7. The two most likely here: "does it post?" (no: import files, and the status file says so) and "how do you know it is right?" (every document sums to zero or nothing is written; totals and all 35 payouts equal an answer key computed from the generated orders, not by our code; what we cannot check is their workbook).

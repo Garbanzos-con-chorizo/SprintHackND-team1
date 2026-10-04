@@ -5,7 +5,7 @@ description: Design, write and QA a pitch or demo deck (hackathon, partner, judg
 
 # Slides
 
-Distilled from: frontend-slides (Zara Zhang, MIT), guizang-ppt-skill Swiss style (ideas only, AGPL, no text copied), Anthropic's pptx skill (ideas only), Alley's assertion-evidence research, Duarte/Reynolds, Apple keynote practice, WCAG. Full notes and sources: `reference/research.md`.
+Distilled from: frontend-slides (Zara Zhang, MIT), guizang-ppt-skill Swiss style (ideas only, AGPL, no text copied), Anthropic's pptx skill (ideas only), Alley's assertion-evidence research, Duarte/Reynolds, Apple keynote practice, WCAG. Full notes and sources: `reference/research.md` (design) and `reference/copy-and-audience.md` (copy and audience psychology: Mayer, Sweller, Paivio, fluency, Heath). **Research before deciding**: if a choice isn't covered there, research it and add the finding with its source.
 
 ## Non-negotiables
 1. **Assertion titles.** Every content slide's title is a full-sentence claim the audience should leave with ("Every cent of September matches an independent answer key"), never a topic label ("Accuracy"). Evidence under it proves it.
@@ -17,12 +17,12 @@ Distilled from: frontend-slides (Zara Zhang, MIT), guizang-ppt-skill Swiss style
 7. **Honest.** Every number on a slide traces to a source run or file; synthetic data is labelled on the slide. An overclaim costs more than any design wins (CLAUDE.md rule 14).
 
 ## Workflow (follow the SDD skills: `spec` → `plan` → build → `audit`)
-1. **Content first.** Write the story as assertion titles only (one line per slide). Read it top to bottom: it must make the argument without any visuals. Hackathon arc: problem in the partner's words → what we built → the demo → why trust it → honesty (built vs simulated) → limits → the ask.
+1. **Spine and copy first** (`reference/copy-and-audience.md`). Write the story as assertion titles only (one line per slide). Read it top to bottom: it must make the argument without any visuals. Hackathon arc: problem in the partner's words → what we built → the demo → why trust it → honesty (built vs simulated) → limits → the ask.
 2. **Pick density.** Speaker-led (talks, recorded demo): 1 idea per slide. Reading-first (handouts): 4–8 points allowed. Default for demos: speaker-led.
 3. **Style by showing, not asking.** Build 3 previews of the *real* first slide (one safe, one bold, one wildcard), no "Option A" labels on them; the user picks by looking. Themes: `reference/themes.md`.
-4. **Write `content.json`** (schema: `docs/pitch/tools/README.md`) and build: `python docs/pitch/scripts/build_deck.py <content.json> --out <dir>`. It renders the Slides-artifact files and runs the linter.
-5. **Lint must pass** (`docs/pitch/tools/lint_deck.py`): font floor, word budget, one hero number, layout repetition, shadows, placeholders, title-is-a-sentence.
-6. **Visual QA.** Open every slide (Present mode or screenshots), check overflow, overlap, alignment, contrast, and that the 3-second point reads. Fix, rebuild, re-check.
+4. **Write `content.json`** (schema: `docs/pitch/tools/README.md`) and build with screenshots: `python docs/pitch/scripts/build_deck.py <content.json> --out <dir> --preview`. Typography (curly quotes, en/minus dashes) is applied automatically.
+5. **Lint: 0 errors and 0 warnings** (`lint_deck.py`): font floor, word budget, one hero number, layout repetition, shadows, placeholders, sentence titles, title widows and length, straight quotes.
+6. **Visual QA on the PNGs** (`<dir>/preview/`): read every screenshot. Check balance (no empty half), widows in body text, wraps inside labels, overlap, contrast, the 3-second point. Lint is an estimate; the screenshot is the truth. Fix, rebuild, re-check. Never publish unseen slides.
 7. **Speaker notes** on every slide: what to say (~30–45 s), the number to say aloud, what to point at.
 
 ## Layouts (all in `docs/pitch/tools/deckgen.py`)

@@ -1,6 +1,6 @@
 # How to present the nightly pulse and the engine to the judges
 
-Written 2026-10-03 for the Sunday 4:30 PM demo (Pod B, Room 154), a **recorded video embedded in Google Slides, then questions, hard cut at the time limit**. Submission closes **4:00 PM Sunday**. This covers phase 1 and the engine (Victor's part). Orlando's script for the three nights is `docs/pitch/demo_script_pulse.md`; this file explains **what to claim, what to prove, and what to say out loud** so the demo scores. Phase 2 and 3 lines are marked *fill in only when it runs on screen*.
+Written 2026-10-03 for the Sunday 4:30 PM demo (Pod B, Room 154), a **recorded video embedded in Google Slides, then questions, hard cut at the time limit**. Submission closes **4:00 PM Sunday**. This covers phase 1 and the engine (Victor's part). Orlando's script for the three nights is `docs/pitch/demo-script-pulse.md`; this file explains **what to claim, what to prove, and what to say out loud** so the demo scores. Phase 2 and 3 lines are marked *fill in only when it runs on screen*.
 
 ## The idea in 30 seconds (the judges decide how clear you are in the first 30)
 Open on **Goodwill's own words** (the rubric asks for it): *"From manual reporting to management visibility."* Then:

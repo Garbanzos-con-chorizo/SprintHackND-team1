@@ -1,6 +1,6 @@
 # Presentation guide: suggestions for Orlando
 
-Written 2026-10-04 00:50 EDT by Dani's agent, at Dani's request. **These are suggestions; the presentation is yours.** It covers the whole talk (all three phases) and the question of building it in HTML. It does not repeat `docs/pitch/engine_pitch.md` (Victor: the rubric line by line for phase 1, the real-versus-simulated table, likely questions) or the demo scripts; it points to them.
+Written 2026-10-04 00:50 EDT by Dani's agent, at Dani's request. **These are suggestions; the presentation is yours.** It covers the whole talk (all three phases) and the question of building it in HTML. It does not repeat `docs/pitch/engine-pitch.md` (Victor: the rubric line by line for phase 1, the real-versus-simulated table, likely questions) or the demo scripts; it points to them.
 
 Take every number from the 13:00 dry run, not from this file: `main` is still moving.
 
@@ -20,7 +20,7 @@ So an HTML presentation cannot be the thing we submit. It can still be the thing
 | B. HTML exported to images | Print each HTML slide to an image (headless Edge, the same trick `engine.export pdf` uses) and place the images in Google Slides around the video. | Fine if you want more slides outside the video. More steps. |
 | C. Submit a link to the HTML page | | Do not count on it. Ask Hector only if you have a spare minute; the default is Google Slides. |
 
-Whatever you choose, **the first Google slide is Goodwill's problem in Goodwill's words**, as text on the slide itself, not only inside the video. The three sentences are in `docs/goodwill-project-context.md`, section 1.2 (deck slide 19).
+Whatever you choose, **the first Google slide is Goodwill's problem in Goodwill's words**, as text on the slide itself, not only inside the video. The three sentences are in `docs/partner/project-context.md`, section 1.2 (deck slide 19).
 
 ## 2. What the judges score, and what to show for it
 
@@ -41,10 +41,10 @@ Aim for **three minutes or less**, with the important things early: we do not kn
 |---|---|---|
 | 0:00 | Slide: Goodwill's three sentences | "This is Goodwill's problem in their words: three reports built by hand." |
 | 0:15 | Slide: one line each for nightly, monthly, month-end, and one line "synthetic data; here is what is simulated" | "We automated all three. The data is synthetic and we will show exactly what is real." |
-| 0:30 | Terminal and page: the nightly pulse, a clean night, then the night a report never came | "No file is 'No data', never $0." (`docs/pitch/demo_script_pulse.md`) |
+| 0:30 | Terminal and page: the nightly pulse, a clean night, then the night a report never came | "No file is 'No data', never $0." (`docs/pitch/demo-script-pulse.md`) |
 | 1:00 | Page: the COO scorecard | "These are Goodwill's own 15 KPIs from their slide. The ones built on internal data we have not seen are badged as simulated." (Victor's L7 script) |
 | 1:25 | Terminal and page: the close on the tidy month | "One command. The journal balances, every cent of what each marketplace owes is explained, and these are the files Business Central takes." |
-| 1:50 | The same command on the messy month | "The same month as it really arrives. Two reports were never downloaded: it names the days and the amounts. One deposit matches nothing: it is held out. Nothing is hidden in a net." (`docs/pitch/demo_script_close.md`, when Dani's task D3.11 lands) |
+| 1:50 | The same command on the messy month | "The same month as it really arrives. Two reports were never downloaded: it names the days and the amounts. One deposit matches nothing: it is held out. Nothing is hidden in a net." (`docs/pitch/demo-script-close.md`, when Dani's task D3.11 lands) |
 | 2:20 | The General Journal CSV open in Excel; the nine-source table on the close page | "This opens in the tools they already pay for. Of their nine sources, these come from sample files and these from simulated APIs." |
 | 2:35 | Slide: real versus simulated | Read it. It protects two scores. |
 | 2:50 | Slide: the ask | "Send us one real month of files and last month's allocation workbook, and we will show you your own close." |
@@ -89,7 +89,7 @@ The organizers check our "built versus used" text against the repo. Saying somet
 - The rules are our reading. We have not seen the allocation workbook.
 - No mailbox and no scheduler: a folder stands in for email, a command for the scheduler; emails are drafts, not sent.
 
-For the form, start from the table and the sources list in `docs/pitch/engine_pitch.md` and add: SQLite (in Python), FastAPI and Uvicorn (the static server), headless Edge or Chrome (the PDF), the AI coding tools each of us used. List only what is in the repo, and check the list with Victor and Dani before submitting.
+For the form, start from the table and the sources list in `docs/pitch/engine-pitch.md` and add: SQLite (in Python), FastAPI and Uvicorn (the static server), headless Edge or Chrome (the PDF), the AI coding tools each of us used. List only what is in the repo, and check the list with Victor and Dani before submitting.
 
 ## 7. Questions to be ready for (phases 2 and 3; phase 1 is in `engine_pitch.md`)
 

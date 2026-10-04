@@ -16,6 +16,7 @@ Merged from GitHub spec-kit (MIT: spec template, `[NEEDS CLARIFICATION]`, priori
 - **Constraints and honesty**: list deadlines, the repo's lane rules, and what must be labelled simulated.
 
 ## Steps
+0. **Research first (mandatory).** Before writing requirements, research the problem: repo docs, the partner's material, and outside sources (papers, official docs, well-sourced articles, strong GitHub projects). Write `research.md` next to the spec: each finding with its source link and the decision it drives (`Finding → Source → Decision`). No decision without a source or an explicit "assumption" label (also logged in `docs/assumptions.md`).
 1. `python docs/pitch/scripts/new_spec.py <NNN-slug> --title "…"` creates `docs/pitch/specs/<NNN-slug>/spec.md` from `template.md`.
 2. Fill it from the request, the repo docs and research. Mark unknowns.
 3. Show the user a ≤ 10-line summary + open questions. **Gate:** user approves → run `plan`.

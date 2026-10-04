@@ -9,6 +9,12 @@ import os
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")
 TEMPLATE = os.path.join(ROOT, ".claude", "skills", "spec", "template.md")
+RESEARCH = """# Research: {title}
+
+| Finding | Source | Decision it drives |
+|---|---|---|
+|  |  |  |
+"""
 PLAN = """# Plan: {title}
 
 **Spec:** spec.md · **Status:** Draft
@@ -33,7 +39,7 @@ def main():
     d = os.path.normpath(os.path.join(ROOT, "docs", "pitch", "specs", a.slug))
     os.makedirs(d, exist_ok=True)
     vals = {"title": a.title, "slug": a.slug, "owner": a.owner, "date": datetime.date.today().isoformat()}
-    for name, text in (("spec.md", open(TEMPLATE, encoding="utf-8").read()), ("plan.md", PLAN)):
+    for name, text in (("research.md", RESEARCH), ("spec.md", open(TEMPLATE, encoding="utf-8").read()), ("plan.md", PLAN)):
         p = os.path.join(d, name)
         if os.path.exists(p):
             print(f"kept   {p}")
