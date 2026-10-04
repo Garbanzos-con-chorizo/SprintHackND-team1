@@ -19,7 +19,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - **C2, KPI contract (draft v0.1, new contract, announced here):** `docs/contracts/kpi.md` with two example files, `docs/contracts/examples/kpi.sample.month.json` (September, complete) and `kpi.sample.month.partial.json` (October to date, eBay missing one day). 15 KPIs in Goodwill's five scorecard areas, always all 15, with `status` (`ok` / `partial` / `no_data`), `note`, `prior_value`, `delta`, `source`, `simulated`.
   - **Orlando:** build the scorecard page against the two example files; the "Mock for parallel work" section lists the states they cover. Tell me what the page needs that is missing.
   - **Victor:** the section "Inputs the KPIs need" is my request for `store.md` and `internal-api.md` (tables, and the ten internal metrics with their dimensions).
-- Phase 2 plan and decision 007 are on `main` (PR #14); decision 007 is still `proposed`.
+- Phase 2 plan and decision 007 are on `main` (PR #14). Orlando's response (appended to 007): the 15 KPIs and the ownership are accepted, **SQLite is not** (flat files), and he started the phase 3 export in `reports/bc_export.py`. **Storage is therefore open**; the KPI contract is written to work with either, and its input list says what must be kept (a month of transactions is the gap in both options).
 - No calculator code yet: `recon/kpi/` starts with D2.1.
 
 ## For teammates: what the new context file changes

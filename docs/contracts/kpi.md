@@ -2,20 +2,20 @@
 
 - **Owner:** Dani (`recon/kpi/`). **Consumers:** Orlando (scorecard page, print layout), Victor (KPI CSV, PDF and email exports, `kpi_values` in the database).
 - **Status:** draft
-- **Inputs:** the database in `docs/contracts/store.md` (Victor, not written yet). What the KPIs need from it is listed under "Inputs the KPIs need" below, as a request.
+- **Inputs:** a period of stored nightly data: the daily pulse, the transactions and the internal API snapshots. **Where they are stored is not settled** (decision 007 proposes a SQLite database; Orlando's response to it proposes flat files). The KPI file below is the same either way; only "Inputs the KPIs need" and the `--db` option depend on it.
 
 ## What this contract does
 Turns a period of stored nightly data into Goodwill's own scorecard (deck slide 35): **15 KPIs, five areas, three each**. The page, the PDF and the CSV all render this one file, so they cannot disagree, and none of them does arithmetic or decides what missing data means.
 
 ```
-database (pulse_daily, transactions, internal_daily)
+stored nightly data (daily pulse, transactions, internal snapshots)
    └─> python -m recon.kpi --period month --month 2026-09  ─> out/kpi/month-2026-09.json   + latest-month.json
        python -m recon.kpi --period week  --week 2026-W38  ─> out/kpi/week-2026-W38.json   + latest-week.json
        python -m recon.kpi --period day   --date 2026-10-02 ─> out/kpi/day-2026-10-02.json + latest-day.json
 ```
-- Options: `--db PATH` (default `ECOM_DB`, else `out/store/ecom.db`), `--out-dir` (default `out/kpi`), `--through YYYY-MM-DD` (see Period).
+- Options: `--out-dir` (default `out/kpi`), `--through YYYY-MM-DD` (see Period), and where to read from: `--db PATH` with a database, or `--in-dir` (default `out`) with flat files.
 - Re-running a period overwrites its file. `latest-<type>.json` is a copy of the file with the greatest period of that type.
-- Exit code 0 whenever a file is written, including when KPIs are `partial` or `no_data`. Non-zero only if the database is absent or unreadable.
+- Exit code 0 whenever a file is written, including when KPIs are `partial` or `no_data`. Non-zero only if the stored data is absent or unreadable.
 
 ## File
 JSON, UTF-8. Money is integer USD cents. Examples: `examples/kpi.sample.month.json` (September, complete) and `examples/kpi.sample.month.partial.json` (October to date, one eBay day missing).
@@ -41,11 +41,11 @@ JSON, UTF-8. Money is integer USD cents. Examples: `examples/kpi.sample.month.js
 | `id` | string | `2026-10-02`, `2026-W38` (ISO week, Monday to Sunday), `2026-09`. |
 | `label` | string | Text for the page title, for example `"September 2026"` or `"October 2026 (to date)"`. |
 | `start`, `end` | date | First and last calendar day of the period. Business days are Eastern, as in the pulse. |
-| `through` | date | Last day actually covered. Equals `end` if the latest business date in the database is on or after `end`; otherwise it is that latest date (a period "to date"). `--through` overrides it. |
+| `through` | date | Last day actually covered. Equals `end` if the latest stored business date is on or after `end`; otherwise it is that latest date (a period "to date"). `--through` overrides it. |
 | `days` | integer | Days from `start` to `through`. |
 | `complete` | boolean | `through == end`. |
 
-`prior_period` is the period before, **over the same number of days**: the whole prior period when `complete`, otherwise its first `days` days (October 1 to 4 is compared with September 1 to 4). Fields: `id`, `label`, `start`, `through`, `days`, and `available` (`false` if the database has no pulse row in that window).
+`prior_period` is the period before, **over the same number of days**: the whole prior period when `complete`, otherwise its first `days` days (October 1 to 4 is compared with September 1 to 4). Fields: `id`, `label`, `start`, `through`, `days`, and `available` (`false` if no pulse is stored for that window).
 
 ### Coverage
 Counts over `start`..`through` for the expected marketplaces (`shopgoodwill`, `amazon`, `ebay`; `other` is not configured, as in the pulse).
@@ -169,12 +169,14 @@ Rounding: cents and counts are integers; `ratio` has four decimals; `number` and
   "inputs": { "gross_cents": 986909, "refunds_cents": -5448, "fees_cents": 66661, "orders": 321 } }
 ```
 
-## Inputs the KPIs need (request to `store.md` and `internal-api.md`, Victor)
-From the marketplace side, already defined by `transaction.md` and `pulse.md`:
-- `pulse_daily`: `business_date`, `marketplace`, `status`, `gross_cents`, `refunds_cents`, `revenue_cents`, `fees_cents`, `orders`.
-- `transactions`: `business_date`, `marketplace`, `type`, `order_id`, `customer_id`, and `units` when it exists.
+## Inputs the KPIs need (request to Victor: storage and `internal-api.md`)
+The same data is needed whichever storage the team picks. With the database of decision 007 these are the tables `pulse_daily`, `transactions` and `internal_daily`; with flat files they are `out/pulse/<date>.json`, the transactions of the period and `out/internal/<date>.json`.
 
-From the internal API, stored each night as (`business_date`, `metric`, `dimension`, `value`, `source`). Flows are the day's amount; snapshots are the state at the end of the day.
+From the marketplace side, already defined by `transaction.md` and `pulse.md`:
+- The daily pulse, every day of the period: per marketplace `status`, `gross_cents`, `refunds_cents`, `revenue_cents`, `fees_cents`, `orders`. Already kept as `out/pulse/<date>.json`.
+- **The transactions of the whole period**, not only the last run: `business_date`, `marketplace`, `type`, `order_id`, `customer_id`, and `units` when it exists. KPI 15 (repeat buyers) and the per-unit variants of KPIs 10 and 11 cannot be computed from the pulse. Today each run writes its own `transactions.csv`, so nothing holds a month of them yet; this is the one input that needs new storage in either option.
+
+From the internal API, one snapshot per night with these values (`business_date`, `metric`, `dimension`, `value`, `source`). Flows are the day's amount; snapshots are the state at the end of the day.
 | `metric` | `dimension` | Kind | Used by |
 |---|---|---|---|
 | `labor_hours` | `total` (activities optional) | flow | 5 |
