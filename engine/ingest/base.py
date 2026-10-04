@@ -15,11 +15,24 @@ class NormalizedBatch:
     # One entry per file that was read and recognized: {"file", "source", "feeds": [marketplaces]}.
     # Used to tell a marketplace with no file (missing) from one whose file had nothing for the day (stale).
     files: list[dict] = field(default_factory=list)
+    # Close inputs (docs/contracts/close-inputs.md): payouts the marketplaces report, and bank lines.
+    payouts: list[dict] = field(default_factory=list)
+    bank: list[dict] = field(default_factory=list)
 
     def extend(self, other: "NormalizedBatch") -> None:
         self.rows.extend(other.rows)
         self.warnings.extend(other.warnings)
         self.files.extend(other.files)
+        self.payouts.extend(other.payouts)
+        self.bank.extend(other.bank)
+
+    def add_result(self, file: dict, result) -> None:
+        """Take in what a parser returned for one file (a ParseResult)."""
+        self.files.append(file)
+        self.rows.extend(result.rows)
+        self.warnings.extend(result.warnings)
+        self.payouts.extend(result.payouts)
+        self.bank.extend(result.bank)
 
 
 class DataIngestAdapter(ABC):

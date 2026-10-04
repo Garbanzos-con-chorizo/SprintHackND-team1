@@ -23,3 +23,34 @@ def dedupe_rows(rows: list[dict]) -> tuple[list[dict], list[dict]]:
         warnings.append({"source_file": row["source_file"], "source_row": row["source_row"],
                          "kind": "duplicate", "reason": reason})
     return list(kept.values()), warnings
+
+
+def dedupe_payouts(payouts: list[dict]) -> tuple[list[dict], list[dict]]:
+    """The same payout in overlapping downloads (same payout_id) counts once; first copy wins."""
+    return _dedupe(payouts, lambda p: p["payout_id"], "payout", ("amount_cents",))
+
+
+def dedupe_bank(lines: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Overlapping bank exports: a line is the same line only when its running balance matches too.
+    Without a balance, two same-day lines of the same amount may be two real payments, so both stay."""
+    def key(b):
+        if b["balance_cents"] == "":
+            return b["bank_txn_id"]
+        return (b["account"], b["posting_date"], b["description"], b["amount_cents"], b["balance_cents"])
+    return _dedupe(lines, key, "bank line", ())
+
+
+def _dedupe(items: list[dict], key, what: str, compared: tuple[str, ...]) -> tuple[list[dict], list[dict]]:
+    kept: dict = {}
+    warnings: list[dict] = []
+    for item in items:
+        first = kept.setdefault(key(item), item)
+        if first is item:
+            continue
+        reason = f"same {what} as {first['source_file']} row {first['source_row']}"
+        differs = [c for c in compared if str(first[c]) != str(item[c])]
+        if differs:
+            reason += f", but {', '.join(differs)} differ; kept the first"
+        warnings.append({"source_file": item["source_file"], "source_row": item["source_row"],
+                         "kind": "duplicate", "reason": reason})
+    return list(kept.values()), warnings

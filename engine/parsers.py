@@ -34,6 +34,8 @@ from .table import Table, norm
 class ParseResult:
     rows: list[dict] = field(default_factory=list)       # contract rows (engine.contract.COLUMNS)
     warnings: list[dict] = field(default_factory=list)   # contract warnings
+    payouts: list[dict] = field(default_factory=list)    # engine.contract.PAYOUT_COLUMNS (close inputs)
+    bank: list[dict] = field(default_factory=list)       # engine.contract.BANK_COLUMNS (close inputs)
 
     def add(self, row: dict) -> None:
         self.rows.append(row)

@@ -18,7 +18,8 @@ def write_day(batch: NormalizedBatch, out: Path, business_date: str) -> None:
     """The three output files for one business date from an ingested inbox. Backfill ingests once
     and calls this per day, so a backfilled day is exactly what `engine run --date` would write."""
     source_status = build_source_status(business_date, now_local().isoformat(), batch.files, batch.rows)
-    write_outputs(out, rows=batch.rows, source_status=source_status, warnings=batch.warnings)
+    write_outputs(out, rows=batch.rows, source_status=source_status, warnings=batch.warnings,
+                  payouts=batch.payouts, bank=batch.bank)
 
 
 def main(argv: list[str] | None = None) -> int:

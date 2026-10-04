@@ -31,7 +31,7 @@ Without `--simulate`, `fetch` calls the real provider APIs, which are stubs that
 5. **De-duplicates** across files: the same transaction in two downloads counts once, and the log says which copy was dropped (and says so if the two copies disagree).
 6. **Never crashes and never hides a loss:** a bad row, an unreadable file or an unrecognized file becomes a line in `warnings.json`. A missing report becomes `missing` or `stale` in `source_status.json`, so the pulse shows "no data" instead of $0.
 
-The three outputs are the contract with Dani's side: `transactions.csv` (clean rows), `source_status.json` (per marketplace: `ok`, `stale`, `missing`), `warnings.json` (what was dropped and why).
+The three outputs are the contract with Dani's side: `transactions.csv` (clean rows), `source_status.json` (per marketplace: `ok`, `stale`, `missing`), `warnings.json` (what was dropped and why). For the month-end close the same run also writes `payouts.csv` (eBay `Payout` and Amazon `Transfer` rows, de-duplicated) and `bank.csv` (every bank line, credits positive): `docs/contracts/close-inputs.md`.
 
 ## Where things are
 | Path | What it is |
