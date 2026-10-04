@@ -22,3 +22,18 @@ def test_monthly_email_attaches_the_pdf_and_csv_first(tmp_path):
     msg = email_gen.message({"name": "COO", "email": "coo@example.org", "type": "Monthly"}, after,
                             __import__("datetime").datetime(2026, 10, 1, 6, 0).astimezone())
     assert [p.get_content_type() for p in msg.iter_attachments()][:2] == ["application/pdf", "text/csv"]
+
+
+def test_attachment_types_dont_depend_on_the_machine(tmp_path, monkeypatch):
+    """Dani's report: with Excel installed, mimetypes says .csv is application/vnd.ms-excel."""
+    import mimetypes
+    monkeypatch.setattr(mimetypes, "guess_type", lambda name, strict=True: ("application/vnd.ms-excel", None))
+    scorecard.build(EXAMPLE, tmp_path / "scorecard")
+    page = tmp_path / "scorecard" / "month-2026-09.html"
+    page.with_suffix(".pdf").write_bytes(b"%PDF-1.4")
+    page.with_suffix(".csv").write_text("Period type\n", encoding="utf-8")
+    report = email_gen.payload("Monthly", "2026-09", root=tmp_path)
+    msg = email_gen.message({"name": "COO", "email": "coo@example.org", "type": "Monthly"}, report,
+                            __import__("datetime").datetime(2026, 10, 1, 6, 0).astimezone())
+    assert [p.get_content_type() for p in msg.iter_attachments()] == \
+        ["application/pdf", "text/csv", "text/html", "application/json"]

@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,20 +61,55 @@ def scorecard_page(kpi_path: Path, dest: Path) -> Path:
     return page
 
 
-def print_pdf(page: Path, target: Path, browser: str, timeout: float = 90) -> Path:
-    """Print `page` to `target` with a headless Chromium-family browser; returns the PDF path."""
+# Tried in order: the current headless mode, then the old one (older Edge, some locked-down PCs).
+HEADLESS_MODES = ["--headless=new", "--headless"]
+
+
+def print_pdf(page: Path, target: Path, browser: str | list[str], timeout: float = 90, settle: float = 10) -> Path:
+    """Print `page` to `target` with a headless Chromium-family browser; returns the PDF path.
+
+    `browser` is the executable, or a command prefix (a list). On Windows the browser can exit while a
+    child process is still writing, so the file is awaited for up to `settle` seconds; if none comes,
+    the old headless mode gets one more try. The error names the browser and what each try did."""
     target = Path(target).resolve()
-    target.unlink(missing_ok=True)
-    with tempfile.TemporaryDirectory() as profile:  # own profile: works while the user's browser is open
-        cmd = [browser, "--headless=new", "--disable-gpu", "--no-first-run", "--no-pdf-header-footer",
-               f"--user-data-dir={profile}", f"--print-to-pdf={target}", Path(page).resolve().as_uri()]
-        try:
-            done = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-        except subprocess.TimeoutExpired as e:
-            raise PdfError(f"the browser did not finish printing in {timeout:.0f} s") from e
-    if not target.exists() or target.stat().st_size == 0:
-        raise PdfError(f"the browser wrote no PDF (exit {done.returncode}): {done.stderr.strip()[-300:]}")
-    return target
+    prefix = [browser] if isinstance(browser, (str, Path)) else list(browser)
+    tries = []
+    for mode in HEADLESS_MODES:
+        target.unlink(missing_ok=True)
+        # own profile: works while the user's browser is open; cleanup can't fail on a lingering child
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as profile:
+            cmd = prefix + [mode, "--disable-gpu", "--no-first-run", "--no-pdf-header-footer",
+                            f"--user-data-dir={profile}", f"--print-to-pdf={target}", Path(page).resolve().as_uri()]
+            try:
+                done = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            except subprocess.TimeoutExpired:
+                tries.append(f"{mode}: no answer in {timeout:.0f} s")
+                continue
+            if wait_for_pdf(target, settle):
+                return target
+        detail = (done.stderr or done.stdout).strip().splitlines()
+        tries.append(f"{mode}: exit {done.returncode}, no file" + (f" ({detail[-1][:160]})" if detail else ""))
+    name = Path(prefix[-1]).name
+    raise PdfError(f"{name} wrote no PDF ({'; '.join(tries)}). Inside a sandboxed session, run it from a normal "
+                   "terminal; otherwise open the page and use Print, Save as PDF.")
+
+
+def wait_for_pdf(path: Path, seconds: float) -> bool:
+    """True once `path` is a complete PDF that has stopped growing, within `seconds`."""
+    deadline, last = time.monotonic() + seconds, -1
+    while True:
+        size = path.stat().st_size if path.exists() else -1
+        if size > 0 and size == last and complete_pdf(path):
+            return True
+        if time.monotonic() >= deadline:
+            return size > 0 and complete_pdf(path)
+        last = size
+        time.sleep(0.2)
+
+
+def complete_pdf(path: Path) -> bool:
+    data = path.read_bytes()
+    return data.startswith(b"%PDF") and b"%%EOF" in data[-1024:]
 
 
 def page_count(pdf: Path) -> int:

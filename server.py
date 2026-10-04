@@ -10,6 +10,7 @@ can't from file://. No authentication (decision 006): it listens on 127.0.0.1 un
 
 Fallback with no dependency: python -m http.server 8000 -d reports
 """
+import mimetypes
 import os
 from pathlib import Path
 
@@ -21,6 +22,10 @@ REPORTS = Path(os.environ.get("REPORTS_DIR") or Path(__file__).resolve().parent 
 # reports/ also holds the generators' Python code and config/subscribers.csv (people's email addresses),
 # so only what the generators write is served: pages, their data and the downloads.
 SERVED = {".html", ".css", ".js", ".json", ".csv", ".pdf", ".png", ".svg", ".ico"}
+# Same content types on every machine (the Windows registry may say .csv is application/vnd.ms-excel).
+for _suffix, _type in {".csv": "text/csv", ".pdf": "application/pdf", ".json": "application/json",
+                       ".js": "text/javascript", ".svg": "image/svg+xml"}.items():
+    mimetypes.add_type(_type, _suffix)
 NEVER = {"config", "tests", "__pycache__"}
 
 
