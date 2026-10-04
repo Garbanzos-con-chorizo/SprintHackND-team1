@@ -3,6 +3,7 @@ import argparse
 from datetime import date, timedelta
 from pathlib import Path
 
+from .coverage import build_source_coverage
 from .ingest import EmailAttachmentAdapter, NormalizedBatch, ingest
 from .parsers import Parser
 from .status import build_source_status
@@ -19,7 +20,8 @@ def write_day(batch: NormalizedBatch, out: Path, business_date: str) -> None:
     and calls this per day, so a backfilled day is exactly what `engine run --date` would write."""
     source_status = build_source_status(business_date, now_local().isoformat(), batch.files, batch.rows)
     write_outputs(out, rows=batch.rows, source_status=source_status, warnings=batch.warnings,
-                  payouts=batch.payouts, bank=batch.bank)
+                  payouts=batch.payouts, bank=batch.bank,
+                  source_coverage=build_source_coverage(business_date, batch.files))
 
 
 def main(argv: list[str] | None = None) -> int:
