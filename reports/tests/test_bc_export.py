@@ -65,6 +65,27 @@ class BcExportTest(unittest.TestCase):
         self.assertEqual((amazon["Status"], amazon["Open Balance"], amazon["Unexplained"]),
                          ("OPEN", last["amount_cents"], 0))
 
+    def test_a_payout_for_days_no_report_covers_makes_the_source_incomplete(self):
+        # Amazon's last settlement is in transit and paid 500.00 more than our files hold for its days.
+        payload = copy.deepcopy(self.payload)
+        last = [d for d in payload["deposits"] if d["source"] == "amazon"][-1]
+        payload["deposits"].remove(last)
+        payload["exceptions"] += [
+            {"kind": "in_transit", "source": "amazon", "amount_cents": last["amount_cents"] + 50000,
+             "effect": "open_balance", "detail": "settlement paid, not in the bank yet"},
+            {"kind": "payout_data_gap", "source": "amazon", "amount_cents": -50000, "effect": "open_balance",
+             "detail": "paid for two days no report covers"}]
+        journal, _, control, _ = self.run_build(payload)
+        self.assertEqual(bc.unbalanced(journal), {})
+        status = {r["Source"]: (r["Status"], r["Unexplained"]) for r in control}
+        self.assertEqual(status["Amazon"], ("INCOMPLETE", 0))
+        self.assertEqual(status["eBay"], ("RECONCILED", 0))
+
+        # Unexplained money outranks it: the same gap with nothing in transit is UNEXPLAINED.
+        payload["exceptions"].pop(0)
+        _, _, control, _ = self.run_build(payload)
+        self.assertEqual(next(r["Status"] for r in control if r["Source"] == "Amazon"), "UNEXPLAINED")
+
     def test_unmapped_source_and_its_deposit_become_exceptions(self):
         payload = copy.deepcopy(self.payload)
         payload["sources"]["cashmonkey"] = {"sales_cents": 1000, "refunds_cents": 0, "shipping_cents": 0,

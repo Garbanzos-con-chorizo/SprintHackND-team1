@@ -1,15 +1,22 @@
-"""Reconciliation from the raw messy-month inbox, checked against the answer key deposit by deposit."""
+"""Reconciliation from the raw messy-month inbox, checked against the answer key deposit by deposit
+and payout by payout, plus the payout-window rule on hand-made rows."""
+import csv
 import json
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
+from unittest import mock
+from zoneinfo import ZoneInfo
+
+import openpyxl
 
 from reports import bc_export as bc
 from reports import reconcile
 
 SAMPLE = reconcile.ROOT / "data" / "sample" / "messy_month"
 PREFIX = {"EBAY": "ebay", "AMZN": "amazon", "SGW": "shopgoodwill"}
+D = date.fromisoformat
 
 
 class MessyMonthReconcileTest(unittest.TestCase):
@@ -20,6 +27,9 @@ class MessyMonthReconcileTest(unittest.TestCase):
         cls.payload = reconcile.build(SAMPLE / "inbox", "2026-09", bc.load_mapping(), Path(cls.tmp.name) / "engine",
                                       {"close": cls.key})
         cls.paid = {p["id"]: p["paid_date"] for p in cls.key["payouts"]}
+        with open(Path(cls.tmp.name) / "engine" / "transactions.csv", newline="", encoding="utf-8") as f:
+            rows = [r for r in csv.DictReader(f) if r["marketplace"] in ("amazon", "shopgoodwill")]
+        cls.engine_has_order_times = bool(rows) and all(r.get("occurred_at") for r in rows)
 
     @classmethod
     def tearDownClass(cls):
@@ -68,11 +78,211 @@ class MessyMonthReconcileTest(unittest.TestCase):
         self.assertIn("bad_amount", kinds)
         self.assertIn("bad_date", kinds)
 
-    def test_close_balances_and_amazon_gap_is_not_hidden(self):
+    def test_ebay_payouts_equal_the_answer_key_payout_by_payout(self):
+        # eBay pays by Eastern days, the engine's own day, so this is exact with or without order times.
+        mine = {p["activity_to"]: p for p in self.payload["payouts"] if p["source"] == "ebay"}
+        compared = 0
+        for k in self.key["payouts"]:
+            if k["source"] == "ebay" and k["activity_to"] in mine:
+                p = mine[k["activity_to"]]
+                self.assertEqual((p["files_net_cents"], p["gap_cents"]), (k["net_in_files_cents"], k["data_gap_cents"]), k["id"])
+                compared += 1
+        self.assertEqual(compared, 29)
+
+    def test_close_balances_and_says_which_sources_it_could_not_check_payout_by_payout(self):
         journal, _, control, _ = bc.build(self.payload, bc.load_mapping())
         self.assertEqual(bc.unbalanced(journal), {})
         status = {r["Source"]: r["Status"] for r in control}
-        self.assertEqual(status, {"eBay": "OPEN", "ShopGoodwill": "OPEN", "Amazon": "UNEXPLAINED"})
+        no_times = {e["source"] for e in self.payload["exceptions"] if e["kind"] == "no_order_times"}
+        if self.engine_has_order_times:
+            self.assertEqual(no_times, set())
+            self.assertEqual(status, {"eBay": "OPEN", "ShopGoodwill": "INCOMPLETE", "Amazon": "INCOMPLETE"})
+            self.assertEqual([r["Unexplained"] for r in control], [0, 0, 0])
+        else:
+            # Until the engine writes occurred_at (transaction.md v0.5), the two sources that pay by Pacific
+            # days keep the older check of the open balance as one figure, and the output says so.
+            self.assertEqual(no_times, {"amazon", "shopgoodwill"})
+            self.assertEqual(status, {"eBay": "OPEN", "ShopGoodwill": "OPEN", "Amazon": "UNEXPLAINED"})
+
+
+def order_times(inbox):
+    """The moment of every Amazon and ShopGoodwill order and refund, read from the raw reports here in the
+    test, apart from the engine: {(marketplace, order id, type): ISO 8601 with its offset}."""
+    pacific, offsets, times = ZoneInfo("America/Los_Angeles"), {"PDT": "-07:00", "PST": "-08:00"}, {}
+    for f in sorted(inbox.glob("paid_orders_*.xlsx")):
+        rows = list(openpyxl.load_workbook(f, read_only=True).active.iter_rows(values_only=True))
+        order_id, when = rows[0].index("Channel Order ID"), rows[0].index("Payment Date")
+        for r in rows[1:]:
+            times[("shopgoodwill", str(r[order_id]), "sale")] = r[when].replace(tzinfo=pacific).isoformat()
+    for f in sorted(inbox.glob("amazon_daterange_*.csv")):
+        for r in reconcile.report_rows(f, "date/time"):
+            if r["type"] in ("Order", "Refund"):
+                text, zone = r["date/time"].rsplit(" ", 1)
+                stamp = datetime.strptime(text, "%b %d, %Y %I:%M:%S %p").isoformat() + offsets[zone]
+                times.setdefault(("amazon", r["order id"], "sale" if r["type"] == "Order" else "refund"), stamp)
+    return times
+
+
+class MessyMonthWithOrderTimesTest(unittest.TestCase):
+    """The same month once every row carries the order's time (`occurred_at`): every payout window equals
+    the answer key, and nothing is netted. The times are added here from the raw files, so this holds
+    whether or not the engine writes the column yet."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.key = json.loads((SAMPLE / "expected.json").read_text(encoding="utf-8"))["close"]
+        times, run_engine = order_times(SAMPLE / "inbox"), reconcile.run_engine
+
+        def with_times(inbox, out, month_end):
+            rows, warnings = run_engine(inbox, out, month_end)
+            for r in rows:
+                r["occurred_at"] = times.get((r["marketplace"], r["order_id"], r["type"]), "")
+            return rows, warnings
+
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(reconcile, "run_engine", with_times):
+            cls.payload = reconcile.build(SAMPLE / "inbox", "2026-09", bc.load_mapping(), Path(tmp) / "engine")
+        cls.amounts = {(e["kind"], e["source"]): e["amount_cents"] for e in cls.payload["exceptions"]
+                       if e["kind"] in ("payout_data_gap", "not_yet_paid_out")}
+
+    def test_every_payout_window_equals_the_answer_key(self):
+        mine = {(p["source"], p["activity_to"]): p for p in self.payload["payouts"]}
+        compared = 0
+        for k in self.key["payouts"]:
+            p = mine.get((k["source"], k["activity_to"]))
+            if p is None:  # eBay's payout for Sep 30 is paid on Oct 1: not in September's files
+                self.assertEqual((k["source"], k["paid_date"]), ("ebay", "2026-10-01"))
+                continue
+            self.assertEqual((p["activity_from"], p["files_net_cents"], p["gap_cents"]),
+                             (k["activity_from"], k["net_in_files_cents"], k["data_gap_cents"]), k["id"])
+            compared += 1
+        self.assertEqual(compared, 35)
+
+    def test_shopgoodwill_deposits_become_payouts_with_the_weekly_windows_of_the_answer_key(self):
+        # ShopGoodwill has no payout report in the files, so each of its deposits is a payout whose window
+        # comes from the cycle in bc_mapping.csv (weekly, through Sunday).
+        got = sorted((p["activity_from"], p["activity_to"], p["amount_cents"])
+                     for p in self.payload["payouts"] if p["source"] == "shopgoodwill")
+        expected = sorted((p["activity_from"], p["activity_to"], p["amount_cents"])
+                          for p in self.key["payouts"] if p["source"] == "shopgoodwill")
+        self.assertEqual(got, expected)
+        self.assertTrue(all(p["inferred"] for p in self.payload["payouts"] if p["source"] == "shopgoodwill"))
+
+    def test_the_226_78_is_two_amounts_and_shopgoodwill_hides_nothing(self):
+        totals = self.key["marketplace_totals_from_files"]
+        gap = {p["source"]: p["data_gap_cents"] for p in self.key["payouts"] if p["data_gap_cents"]}
+        self.assertEqual(gap, {"amazon": 74310, "shopgoodwill": 187564})
+        for src in ("amazon", "shopgoodwill"):
+            self.assertEqual(self.amounts[("payout_data_gap", src)], -gap[src])
+            self.assertEqual(self.amounts[("not_yet_paid_out", src)], totals[src]["unpaid_activity_cents"])
+        self.assertEqual(self.amounts[("not_yet_paid_out", "amazon")] + self.amounts[("payout_data_gap", "amazon")], -22678)
+        details = {e["source"]: e["detail"] for e in self.payload["exceptions"] if e["kind"] == "payout_data_gap"}
+        self.assertIn("2026-09-21 to 2026-09-22", details["amazon"])
+        self.assertIn("2026-09-07", details["shopgoodwill"])
+
+    def test_every_cent_is_explained_and_the_two_sources_read_incomplete(self):
+        journal, _, control, _ = bc.build(self.payload, bc.load_mapping())
+        self.assertEqual(bc.unbalanced(journal), {})
+        self.assertEqual({r["Source"]: r["Status"] for r in control},
+                         {"eBay": "OPEN", "ShopGoodwill": "INCOMPLETE", "Amazon": "INCOMPLETE"})
+        self.assertEqual([r["Unexplained"] for r in control], [0, 0, 0])
+        kinds = {e["kind"] for e in self.payload["exceptions"]}
+        self.assertFalse(kinds & {"payout_mismatch", "no_order_times", "residual_unexplained"})
+
+
+class PayoutWindowTest(unittest.TestCase):
+    """The rule itself, on hand-made rows."""
+
+    MAPPING = {"Label": "Amazon", "Payout_Cutoff": "previous_day", "Payout_Timezone": "America/Los_Angeles"}
+    FIRST, LAST = D("2026-09-01"), D("2026-09-30")
+
+    @staticmethod
+    def row(business_date, net, occurred_at=""):
+        return {"business_date": business_date, "gross_cents": str(net), "shipping_cents": "0", "handling_cents": "0",
+                "fee_cents": "0", "occurred_at": occurred_at}
+
+    @staticmethod
+    def payout(paid, amount, **extra):
+        return {"id": f"P-{paid[5:7]}{paid[8:]}", "source": "amazon", "paid": D(paid), "amount_cents": amount, **extra}
+
+    def explain(self, rows, payouts, covered=(), mapping=None):
+        found = reconcile.explain_payouts("amazon", mapping or self.MAPPING, rows, payouts, set(covered),
+                                          self.FIRST, self.LAST)
+        return {e["kind"]: e for e in found}
+
+    def test_windows_by_rule(self):
+        def windows(rule, *paid, **extra):
+            ps = reconcile.set_windows([self.payout(p, 1, **extra) for p in paid], rule, self.FIRST)
+            return [(p["activity_from"].isoformat(), p["activity_to"].isoformat()) for p in ps]
+
+        self.assertEqual(windows("daily", "2026-09-02", "2026-09-03"),
+                         [("2026-09-01", "2026-09-01"), ("2026-09-02", "2026-09-02")])
+        self.assertEqual(windows("previous_day", "2026-09-15", "2026-09-29"),
+                         [("2026-09-01", "2026-09-14"), ("2026-09-15", "2026-09-28")])
+        # Tuesday Sep 8 and Wednesday Sep 16 (a bank holiday pushed it): each covers through the Sunday before.
+        self.assertEqual(windows("weekly:SUN", "2026-09-08", "2026-09-16"),
+                         [("2026-09-01", "2026-09-06"), ("2026-09-07", "2026-09-13")])
+        self.assertEqual(windows("daily", "2026-09-20", period_from=D("2026-09-07"), period_to=D("2026-09-13")),
+                         [("2026-09-07", "2026-09-13")])
+        with self.assertRaises(SystemExit):
+            windows("fortnightly", "2026-09-15")
+
+    def test_a_payout_that_equals_its_window_says_nothing(self):
+        got = self.explain([self.row("2026-09-03", 1000, "2026-09-03T12:00:00-07:00")], [self.payout("2026-09-15", 1000)])
+        self.assertEqual(got, {})
+
+    def test_an_order_just_after_eastern_midnight_belongs_to_the_pacific_day_before(self):
+        # 01:30 Eastern on the 15th is 22:30 Pacific on the 14th: inside the settlement that closes on the 14th.
+        late = self.row("2026-09-15", 2326, "2026-09-15T01:30:00-04:00")
+        self.assertEqual(self.explain([late], [self.payout("2026-09-15", 2326)]), {})
+        self.assertEqual(reconcile.payout_day(late, "America/Los_Angeles"), (D("2026-09-14"), True))
+        # Without the order time all we have is the Eastern day: exact for a marketplace that pays by
+        # Eastern days, not for one that pays by Pacific days (the close then skips its payout windows).
+        untimed = self.row("2026-09-15", 2326)
+        self.assertEqual(reconcile.payout_day(untimed, "America/New_York"), (D("2026-09-15"), True))
+        self.assertEqual(reconcile.payout_day(untimed, "America/Los_Angeles"), (D("2026-09-15"), False))
+        # A time without an offset says nothing about the zone, so it is not trusted either.
+        naive = self.row("2026-09-15", 2326, "2026-09-15T01:30:00")
+        self.assertEqual(reconcile.payout_day(naive, "America/Los_Angeles"), (D("2026-09-15"), False))
+
+    def test_paid_more_than_the_files_hold_with_days_no_report_covers_is_a_data_gap(self):
+        rows = [self.row("2026-09-16", 5000, "2026-09-16T10:00:00-07:00")]
+        covered = [d for d in (D(f"2026-09-{n:02d}") for n in range(1, 31)) if d.day not in (21, 22)]
+        payouts = [self.payout("2026-09-15", 0), self.payout("2026-09-29", 5743)]
+        got = self.explain(rows, payouts, covered)
+        self.assertEqual(set(got), {"payout_data_gap"})
+        self.assertEqual((got["payout_data_gap"]["amount_cents"], got["payout_data_gap"]["effect"]), (-743, "open_balance"))
+        self.assertIn("2026-09-21 to 2026-09-22", got["payout_data_gap"]["detail"])
+        self.assertEqual(payouts[1]["days_missing"], ["2026-09-21", "2026-09-22"])
+
+    def test_a_difference_with_no_missing_day_is_a_mismatch_never_a_data_gap(self):
+        rows = [self.row("2026-09-16", 5000, "2026-09-16T10:00:00-07:00")]
+        covered = [D(f"2026-09-{n:02d}") for n in range(1, 31)]
+        got = self.explain(rows, [self.payout("2026-09-15", 0), self.payout("2026-09-29", 5743)], covered)
+        self.assertEqual(set(got), {"payout_mismatch"})
+        self.assertEqual((got["payout_mismatch"]["amount_cents"], got["payout_mismatch"]["effect"]), (743, "info"))
+        # Paid less than the files hold is never "missing data", even when a report is missing.
+        got = self.explain(rows, [self.payout("2026-09-15", 0), self.payout("2026-09-29", 4000)], covered[:20])
+        self.assertEqual(set(got), {"payout_mismatch"})
+
+    def test_activity_after_the_last_cutoff_is_not_yet_paid_out_to_the_cent(self):
+        rows = [self.row("2026-09-10", 1000, "2026-09-10T09:00:00-07:00"),
+                self.row("2026-09-29", 300, "2026-09-29T09:00:00-07:00"),
+                self.row("2026-09-30", 216, "2026-09-30T09:00:00-07:00")]
+        got = self.explain(rows, [self.payout("2026-09-15", 1000)])
+        self.assertEqual(set(got), {"not_yet_paid_out"})
+        self.assertEqual(got["not_yet_paid_out"]["amount_cents"], 516)
+        self.assertIn("2026-09-29 to 2026-09-30", got["not_yet_paid_out"]["detail"])
+
+    def test_a_payout_for_last_months_activity_is_not_matched_against_this_month(self):
+        mapping = {**self.MAPPING, "Payout_Cutoff": "daily"}
+        got = self.explain([], [self.payout("2026-09-01", 4200)], mapping=mapping)
+        self.assertEqual(set(got), {"prior_month_payout"})
+        self.assertEqual((got["prior_month_payout"]["amount_cents"], got["prior_month_payout"]["effect"]),
+                         (-4200, "open_balance"))
+
+    def test_day_ranges(self):
+        days = [D("2026-09-30"), D("2026-09-21"), D("2026-09-22"), D("2026-09-21")]
+        self.assertEqual(reconcile.day_ranges(days), "2026-09-21 to 2026-09-22, 2026-09-30")
 
 
 if __name__ == "__main__":
