@@ -2,7 +2,7 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 · **Branch:** victor/v3-7-9-bank-books
+**Last updated:** 2026-10-04 · **Branch:** victor/v3-8-sgw-periodic
 
 ## Phase 3: decision 009, plan in `docs/PLAN_PHASE_3.md` (my tasks V3.1 to V3.10)
 ### Done
@@ -12,8 +12,9 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - V3.1 (#54) and V3.2 (#56) are merged.
 - **V3.5** (branch `victor/v3-5-fedex-ledger`): `python -m engine fetch --simulate --close-month 2026-09 --inbox DIR --out DIR2` delivers the month-end sources as simulated APIs: provider classes with `cadence = "month_end"` in `engine/scrapers/`, records and answer keys in `close_simulation.py`. The first one is `bc_ledger`: a Business Central G/L entries export (layout ours) with FedEx charges on 40356 / 180 / V00122, three BNKDEPOSIT refunds, and five rows of another vendor, department or account. The engine writes every row to `ledger.csv`. **Charges $3,282.10 minus refunds $136.94 = $3,145.16 = `fedex.net_cents` in `expected_close_sources.json`**, by filter and sum on `ledger.csv`. `close-inputs.md` v0.3. 8 tests in `engine/tests/test_close_sources.py`.
 - **V3.7 + V3.9** (branch `victor/v3-7-9-bank-books`): two more simulated sources in `fetch --simulate --close-month`. `bank_0101` writes the month of the carriers' bank account (layout: our bank export plus an `Account` column): carrier debits, two debits that are no carrier's, a service charge, and the Goodwill Books payment as its only credit. The existing bank parser reads it, so `bank.csv` holds both accounts. `goodwillbooks` writes the prior month's payment statement, and a new parser writes it to `statements.csv`. **September: OSM $1,493.39, PB $1,026.45, EasyPost $444.27 equal `carriers.<name>.cents`; the statement's net $3,136.81 equals `goodwillbooks.net_cents` and the credit in `bank.csv`.** Until Dani's D3.13, her close lists that credit as an `unmatched_deposit`. `close-inputs.md` v0.4. 4 more tests in `engine/tests/test_close_sources.py`.
+- **V3.8** (branch `victor/v3-8-sgw-periodic`): a parser turns each period of ShopGoodwill's periodic report (Dani's sample layout) into a payout row with `period_from` and `period_to`. **On both sample months, inbox plus `periodic/`, the 4 ShopGoodwill rows of `payouts.csv` equal the `SGW-*` payouts of the answer key**, and Dani's close gives the same result with the folder added as without it. The report never counts as coverage of ShopGoodwill's days. A simulator covers other months (weekly through Sunday, from the simulated Upright orders); it is on request only (`--source shopgoodwill_periodic`), because it would disagree with the sample months. `close-inputs.md` v0.5. 4 more tests.
 ### Next
-- V3.8, V3.10, then V3.4.
+- V3.10, then V3.4.
 - Decision 009: my response line is still open (C3.4), and so are my claim rows.
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`

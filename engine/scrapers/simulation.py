@@ -67,10 +67,8 @@ def _write_xlsx(path: Path, header: list[str], rows: list[list]) -> Path:
     return path
 
 
-def simulate_upright(business_date: str, dest_dir: Path) -> list[Path]:
-    """Upright "Paid orders": one row per order, `Payment Date` as a plain Pacific timestamp (the report
-    form's default zone), saved the way the deck's title bar shows: paid_orders_<MM-DD-YYYY>_<MM-DD-YYYY>."""
-    day = date.fromisoformat(business_date)
+def upright_rows(business_date: str) -> list[list]:
+    """The rows of the simulated Upright "Paid orders" report for one Eastern day (columns: UPRIGHT_HEADER)."""
     orders, rng = day_orders(business_date)
     rows = []
     for o in (x for x in orders if x.marketplace == "shopgoodwill"):
@@ -82,6 +80,14 @@ def simulate_upright(business_date: str, dest_dir: Path) -> list[Path]:
                      o.placed.astimezone(PACIFIC).replace(tzinfo=None), rng.choice(["ApplePay", "CreditCard", "PayPal"]),
                      round(subtotal + shipping + handling + tax, 2), subtotal, shipping, 0, handling, tax, 0, "USD", 0])
     rows.sort(key=lambda r: r[6])
+    return rows
+
+
+def simulate_upright(business_date: str, dest_dir: Path) -> list[Path]:
+    """Upright "Paid orders": one row per order, `Payment Date` as a plain Pacific timestamp (the report
+    form's default zone), saved the way the deck's title bar shows: paid_orders_<MM-DD-YYYY>_<MM-DD-YYYY>."""
+    day = date.fromisoformat(business_date)
+    rows = upright_rows(business_date)
     stamp = f"{day.month:02d}-{day.day:02d}-{day.year}"
     return [_write_xlsx(dest_dir / f"paid_orders_{stamp}_{stamp}.xlsx", UPRIGHT_HEADER, rows)]
 

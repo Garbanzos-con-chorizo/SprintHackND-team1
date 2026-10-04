@@ -188,3 +188,83 @@ def test_a_statement_has_no_day_by_day_coverage(close_month):
     coverage = json.loads((out / "source_coverage.json").read_text(encoding="utf-8"))["sources"]
     assert coverage["goodwillbooks_statement"]["days_missing"] is None
     assert coverage["bank"]["days_missing"] == [] and coverage["bc_ledger"]["days_missing"] == []
+
+
+# ---------------------------------------------------------------- V3.8: ShopGoodwill periodic report
+
+SAMPLES = Path(__file__).resolve().parents[2] / "data" / "sample"
+
+
+@pytest.mark.parametrize("month_name", ["messy_month", "tidy_month"])
+def test_the_sample_periodic_report_becomes_payouts_with_their_periods(month_name, tmp_path):
+    """engine run on the month's inbox plus its periodic/ folder: 4 ShopGoodwill payouts whose periods and
+    amounts equal the SGW-* payouts of the answer key."""
+    import shutil
+
+    month = SAMPLES / month_name
+    if not (month / "periodic").exists():
+        pytest.skip("sample data not present")
+    shutil.copytree(month / "inbox", tmp_path / "inbox")
+    for path in (month / "periodic").iterdir():
+        shutil.copy(path, tmp_path / "inbox" / path.name)
+    run(tmp_path / "inbox", tmp_path / "out", "2026-09-30")
+    payouts = [p for p in read(tmp_path / "out" / "payouts.csv") if p["marketplace"] == "shopgoodwill"]
+    key = [p for p in json.loads((month / "expected.json").read_text(encoding="utf-8"))["close"]["payouts"]
+           if p["id"].startswith("SGW-")]
+    assert len(payouts) == len(key) == 4
+    assert ([(p["period_from"], p["period_to"], p["paid_date"], int(p["amount_cents"])) for p in payouts]
+            == [(k["activity_from"], k["activity_to"], k["paid_date"], k["amount_cents"]) for k in key])
+    assert [p["payout_id"] for p in payouts] == [f"shopgoodwill:{k['paid_date']}" for k in key]
+    # It is not a sales report: ShopGoodwill's missing day stays missing, and the report has its own entry.
+    coverage = json.loads((tmp_path / "out" / "source_coverage.json").read_text(encoding="utf-8"))["sources"]
+    assert coverage["shopgoodwill"]["days_missing"] == (["2026-09-07"] if month_name == "messy_month" else [])
+    assert coverage["shopgoodwill_periodic"]["days_missing"] is None
+    assert [f["rows"] for f in coverage["shopgoodwill_periodic"]["files"]] == [4]
+    warnings = json.loads((tmp_path / "out" / "warnings.json").read_text(encoding="utf-8"))
+    assert not [w for w in warnings if "periodic" in w["source_file"]]
+    # eBay's and Amazon's own payout rows are still there, without a period.
+    others = [p for p in read(tmp_path / "out" / "payouts.csv") if p["marketplace"] != "shopgoodwill"]
+    assert others and all(p["period_from"] == "" for p in others)
+
+
+def test_the_simulated_periodic_report_is_on_request_and_agrees_with_the_simulated_upright_files(tmp_path, close_month):
+    inbox, _, key, log = close_month
+    assert "shopgoodwill_periodic" not in log["sources"] and "shopgoodwill_periodic" not in key
+    assert not (inbox / f"shopgoodwill_periodic_{MONTH}.csv").exists()
+
+    month, days = "2026-08", [f"2026-08-{d:02d}" for d in range(1, 32)] + ["2026-09-01"]
+    for day in days:  # the nightly simulators fill the inbox, one Eastern day at a time
+        assert fetch(tmp_path / "inbox", tmp_path / "nightly", day, only="upright", simulate=True) == 0
+    assert fetch_close(tmp_path / "inbox", tmp_path / "key", month, only="shopgoodwill_periodic", simulate=True) == 0
+    periods = json.loads((tmp_path / "key" / "expected_close_sources.json").read_text(encoding="utf-8"))["shopgoodwill_periodic"]
+    run(tmp_path / "inbox", tmp_path / "out", "2026-08-31")
+    payouts = [p for p in read(tmp_path / "out" / "payouts.csv") if p["marketplace"] == "shopgoodwill"]
+    assert [(p["period_from"], p["period_to"], p["paid_date"], int(p["amount_cents"])) for p in payouts] == [
+        (k["period_from"], k["period_to"], k["paid_date"], k["amount_cents"]) for k in periods]
+    assert [(k["period_from"], k["period_to"]) for k in periods] == [
+        ("2026-08-01", "2026-08-02"), ("2026-08-03", "2026-08-09"), ("2026-08-10", "2026-08-16"),
+        ("2026-08-17", "2026-08-23"), ("2026-08-24", "2026-08-30")]
+    # Each payout is what the engine's own rows hold for those Pacific days.
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    pacific = ZoneInfo("America/Los_Angeles")
+    rows = [r for r in read(tmp_path / "out" / "transactions.csv") if r["marketplace"] == "shopgoodwill"]
+    for p in payouts:
+        held = sum(int(r["gross_cents"]) + int(r["shipping_cents"]) + int(r["handling_cents"]) - int(r["fee_cents"])
+                   for r in rows
+                   if p["period_from"] <= datetime.fromisoformat(r["occurred_at"]).astimezone(pacific).date().isoformat() <= p["period_to"])
+        assert held == int(p["amount_cents"]) > 0, p["payout_id"]
+
+
+def test_a_bad_periodic_row_is_a_warning(tmp_path):
+    (tmp_path / "inbox").mkdir()
+    (tmp_path / "inbox" / "shopgoodwill_periodic_2026-09.csv").write_text(
+        "Period Start,Period End,Paid Date,Payout Amount,Reference\n"
+        "09/01/2026,09/06/2026,09/07/2026,10888.78,SGW-0906\n"
+        "09/13/2026,09/07/2026,09/14/2026,15318.93,SGW-0913\n"
+        "09/14/2026,09/20/2026,09/21/2026,,SGW-0920\n", encoding="utf-8")
+    run(tmp_path / "inbox", tmp_path / "out", "2026-09-30")
+    assert [p["amount_cents"] for p in read(tmp_path / "out" / "payouts.csv")] == ["1088878"]
+    warnings = json.loads((tmp_path / "out" / "warnings.json").read_text(encoding="utf-8"))
+    assert [(w["source_row"], w["kind"]) for w in warnings] == [(2, "bad_date"), (3, "bad_amount")]
