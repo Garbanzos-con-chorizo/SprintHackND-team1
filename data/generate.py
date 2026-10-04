@@ -666,6 +666,30 @@ def close_key(name, exported, payouts, deposits, exceptions, not_modeled):
     return key
 
 
+def late_reports(name, events, payouts, deposits, exported, exceptions, not_modeled):
+    """The two reports nobody downloaded, found later (D3.9): the Upright file for Sep 7 and the Amazon
+    Date Range report for Sep 21-22, written to late/ beside inbox/, so the first close still misses
+    them. `expected_after_late.json` is the answer key of the month once they are in the inbox too.
+    Own random stream, and nothing here touches the files or the key of the first close."""
+    rng = random.Random(SEED + 4)
+    late = OUT / name / "late"
+    late.mkdir()
+    day = date(2026, 9, 7)
+    orders = [e for e in events if e.source == "shopgoodwill" and isinstance(e, Order)
+              and e.placed.astimezone(PT).date() == day]
+    write_upright(late / f"paid_orders_{day:%m-%d-%Y}_{day:%m-%d-%Y}.xlsx", orders)
+    a, b = date(2026, 9, 21), date(2026, 9, 22)
+    evs = window(events, "amazon", a, b, PT)
+    transfers = [(p["paid"], p["amount"]) for p in payouts if p["source"] == "amazon" and a <= p["paid"] <= b]
+    write_amazon(late / f"amazon_daterange_{a:%Y-%m-%d}_{b:%Y-%m-%d}.csv", evs, a, b, rng, transfers=transfers)
+    after = dict(exported, shopgoodwill=exported["shopgoodwill"] + orders, amazon=exported["amazon"] + evs)
+    after = {k: sorted({id(e): e for e in v}.values(), key=when) for k, v in after.items()}
+    key = close_key(f"{name}_after_late", after, payouts, deposits,
+                    exceptions=[e for e in exceptions if e["kind"] != "missing_file"], not_modeled=not_modeled)
+    key["mess"] = f"{name} once the two late reports are in the inbox: no report is missing any more"
+    (OUT / name / "expected_after_late.json").write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
+
+
 def messy_month(events):
     rng = random.Random(SEED + 2)  # own stream: leaves every other scenario byte-identical
     # Two refunds issued in September for August orders: the original sale is not in this month.
@@ -729,6 +753,7 @@ def messy_month(events):
                     "chargebacks; the August payouts that settle in early September are not in the bank file")
     key["mess"] = "Phase 3 test month: see close.exceptions"
     (OUT / name / "expected.json").write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
+    late_reports(name, events, payouts, deposits, exported, key["close"]["exceptions"], key["close"]["not_modeled"])
     return key
 
 

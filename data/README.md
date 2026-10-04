@@ -108,3 +108,12 @@ The name is `tidy_month` because `clean_month` is taken (older formats, no bank 
 Two things to know before comparing the Cash Monkey file with the marketplace reports:
 - **No refunds.** `write_cashmonkey` writes orders only (refunds are a separate download in the tool), so the three September refunds, and the two August refunds of the messy month, are not in it. Compare sales, not revenue net of refunds.
 - **One Amazon order more.** eBay sales are equal to the tidy month's eBay reports ($20,052.32, 768 orders). Amazon is one order above the tidy month's Amazon reports ($10,321.60 against $10,289.61): order `112-6987455-5957234`, sold at 00:03 Eastern on Sep 1, is Aug 31 in Pacific time, so no September Date Range report holds it. Against the messy month the difference also includes the Amazon sales of Sep 21-22 (Pacific), which that inbox never downloaded.
+
+### Late reports of the messy month (`late/`, task D3.9)
+The two reports the messy inbox never downloaded, found later. They sit beside `inbox/`, so the first close still misses them; add the folder as a second inbox to see the close once they arrive (`python -m reports.close --inbox data/sample/messy_month/inbox --inbox data/sample/messy_month/late --month 2026-09`).
+
+| File | What it is |
+|---|---|
+| `late/paid_orders_09-07-2026_09-07-2026.xlsx` | Upright "Paid orders" for September 7 (Pacific): the day payout `SGW-0913` paid for and no file held. |
+| `late/amazon_daterange_2026-09-21_2026-09-22.csv` | Amazon Date Range report for September 21-22 (Pacific): the two days settlement `AMZN-0928` paid for and no file held. |
+| `expected_after_late.json` | The answer key of the month once both are in the inbox, from the same generated events: no payout has a data gap, and the two `missing_file` exceptions are gone. The rest of the mess stays (the duplicate file, the overlapping download, the two broken rows, the two refunds of August orders, the unmatched deposit). `expected.json` is not touched. |
