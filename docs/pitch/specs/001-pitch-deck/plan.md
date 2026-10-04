@@ -1,6 +1,6 @@
 # Plan: Pitch deck v2 and recorded demo
 
-**Spec:** spec.md · **Status:** Phase 0 done, Phase 1 next
+**Spec:** spec.md · **Status:** Phases 0-1 done, Phase 2 next
 
 ## Approach
 Content lives in one JSON file; `deckgen` renders it with Swiss layouts (hairlines, one anchor color, varied layouts) and `lint_deck` enforces the slides skill. Published to the existing Slides artifact so the link stays the same. Chosen over hand-written HTML: rebuilds cost one command instead of re-typing slides (token efficient) and the rules are checked, not remembered.
@@ -14,8 +14,8 @@ Content lives in one JSON file; `deckgen` renders it with Swiss layouts (hairlin
 - **Audit:** `python -m pytest docs/pitch/tools -q`
 
 ## Phase 1: Content as claims (US1)
-- [ ] T101 `docs/pitch/deck/content.json`: 8 slides, sentence titles, one hero number each, varied layouts, notes
-- [ ] T102 Build + lint to 0 errors
+- [x] T101 `docs/pitch/deck/content.json`: 8 slides, sentence titles, one hero number each, varied layouts, notes
+- [x] T102 Build + lint to 0 errors
 - **Exit criteria:** AC-001, AC-002, AC-003, AC-004, SC-001
 - **Audit:** `python docs/pitch/scripts/build_deck.py docs/pitch/deck/content.json --out <scratch>`
 

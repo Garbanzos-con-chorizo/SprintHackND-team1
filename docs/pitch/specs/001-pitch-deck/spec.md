@@ -24,7 +24,7 @@ The judges score the opening slide, one continuous take, and honesty about what 
 ## Requirements
 - R-001 The deck SHALL be built from `docs/pitch/deck/content.json` by `build_deck.py` (no hand-written HTML).
 - R-002 At most 8 slides (guide), 3 minutes or less of talk.
-- R-003 Team name on every slide as registered. [NEEDS CLARIFICATION: exact registered team name?]
+- R-003 Team name on every slide as registered. Name: **Chorizo Power** (Orlando, 2026-10-04).
 
 ## Success criteria
 - SC-001 `build_deck.py` exits 0 (0 lint errors).
@@ -40,5 +40,5 @@ The judges score the opening slide, one continuous take, and honesty about what 
 Changing product pages; editing the video.
 
 ## Open questions
-1. Registered team name (R-003).
+1. ~~Registered team name~~ resolved: Chorizo Power.
 2. Month-end source count to state on slide 6 (known at 13:00).
