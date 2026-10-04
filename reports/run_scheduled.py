@@ -143,6 +143,13 @@ def main(argv=None):
         sh("engine.store", "init")
         sh("engine.store", "backfill", "--inbox", "data/sample/clean_month/inbox", "--from", "2026-09-01",
            "--to", "2026-09-30", "--out", "out/backfill")
+        # September's growth needs a month to compare with. There is no August sample, so the provider
+        # simulators write one (SIMULATED, with their own daily volumes) and the store loads it like any other.
+        say("Seeding the store: August from the provider simulators (synthetic; gives September its Revenue Growth)")
+        sh("engine", "fetch", "--simulate", "--from", "2026-08-01", "--to", "2026-08-31",
+           "--inbox", "out/aug_inbox", "--out", "out/aug_fetch")
+        sh("engine.store", "backfill", "--inbox", "out/aug_inbox", "--from", "2026-08-01", "--to", "2026-08-31",
+           "--out", "out/backfill_aug")
     for d in days:
         night(d)
 
