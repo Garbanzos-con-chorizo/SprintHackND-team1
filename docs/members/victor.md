@@ -31,15 +31,25 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
   - **C4** `docs/contracts/internal-api.md`: 4 endpoints and the 10 metrics Dani's `kpi.md` asks for (names unchanged), 14 categories; category sales scaled to the pulse revenue.
   - Pitch notes for the store (rubric points, demo moments, what not to claim): `docs/contracts/store.md`, "For the pitch".
 
-### Next, in order (sizes S < 30 min, M 30-90 min)
-| ID | Task | Size | Target |
-|---|---|---|---|
-| V2.12 | August sample for growth | M | cut first |
-Then phase 3, with Orlando's `reports/bc_export.py` already on `main`.
+### Next: what is left of phase 2 (sizes S < 30 min, M 30-90 min)
+Dani handed these over (her list: `docs/members/dani.md`, "Phase 2: what is left", checked on the generated pages) and Orlando is on the presentation, so **Victor takes all of them**, including the ones in `reports/` and `data/` that are normally Orlando's lane (permission from Victor's human, 2026-10-04; Orlando has a note in his inbox). L1 is the one item Dani's list does not have; it comes from the deck check (`docs/PHASE1_ALIGNMENT.md`).
+
+| ID | Task | Where | Size | Done when |
+|---|---|---|---|---|
+| L1 | **Pillar names on the scorecard page.** The KPI file and the CSV already carry slide 32's `pillar` (Growth, Profitability, Productivity, Inventory, Engagement), but the page doesn't: "Profitability" and "Engagement" appear nowhere on it. Group or label the 15 KPIs by `pillar` | `reports/scorecard.py` | S | all five pillar names are on the September page |
+| L2 | **Sell-through as two boxes** (`parts` on `sales.sell_through`: listed in the period, left from earlier; show "No data" for a null value; keep printing `note`) | `reports/scorecard.py` | S | the page shows "Listed in the period 61.3%" and the second box |
+| L3 | **Download links** for the KPI CSV and the PDF on the scorecard page and the portal card | `reports/scorecard.py`, `reports/hub.py` | S | both links work on the page and on the portal |
+| L4 | **Revenue Growth has no data for September** (nothing stored for August; plan V2.12). Make an August sample and backfill it, or demo the weekly page. Prefer not to edit Orlando's `data/generate.py`: `engine/scrapers/simulation.py` is mine and already builds a day per date | `data/` or `engine/`, backfill | M | the September scorecard shows a growth figure, or the demo script names the page that does |
+| L5 | **Day, week and month-to-date scorecards** are written every night but never rendered; add the period switch on the portal (plan O2.3) | `reports/run_nightly.py`, `reports/hub.py` | M | after a night, `reports/scorecard/` has that day, the week to date and the month to date, linked from the portal |
+| L6 | **The weekly page computes its own numbers** (old five groups, old mock) and disagrees with the scorecard. Render the week from `out/kpi/week-<id>.json` with `reports.scorecard`, then delete `reports/kpi.py` and `reports/mock_api.py` | `reports/weekly.py` | M | the week page equals the KPI file; the two old modules are gone and all tests pass |
+| L7 | **A demo script for phases 2 and 3** and an updated `docs/pitch/kpi_catalog.md` (still lists the old groups). Orlando is on the presentation: check with him first so we don't write two | `docs/pitch/` | S-M | a script that walks store status, the scorecard, the CSV and PDF, and what is simulated |
+| L8 | `docs/PHASES.md` still says phase 2 has nobody assigned | `docs/PHASES.md` | S | it points to the plan and says phase 2 is done |
+
+**Order:** L1, L2 and L3 together (all in `scorecard.py`), then L4 (the demo's biggest visible gap), L5, L6, L8, and L7 last. Then phase 3, with `reports/bc_export.py` already on `main`.
 
 ### Blocked / needs from others
 - None on Dani: `kpi.md` + sample KPI files are on `main` (#15); V2.8 codes against them.
-- Orlando: print layout (O2.4), for V2.9. And read my SQLite response in 007.
+- Nothing. Orlando is on the presentation and Dani is done with `recon/`; the files in their lanes that the list above touches are mine for now. Pull `main` before editing `reports/scorecard.py`, `hub.py`, `run_nightly.py`, `weekly.py` or `data/`.
 
 ## Done (phase 1)
 - Phase split of all tasks: `docs/PHASES.md`
