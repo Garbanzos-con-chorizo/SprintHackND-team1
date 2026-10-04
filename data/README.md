@@ -80,3 +80,19 @@ September again (the same orders as `clean_month`), downloaded the messy way, pl
 | `bank_activity_2026-09.csv` | Operating account: Debit/Credit columns, running balance. eBay deposits that land on a weekend or Labor Day are combined into one deposit (several payouts). One deposit nobody can explain (Sep 17, $412.37). Payroll and a service charge as noise. Payouts after Sep 25 are still in transit on Sep 30. |
 
 Payout model (a simplification, stated so nobody mistakes it for fact): eBay pays daily for the Eastern day, Amazon settles every 14 days, ShopGoodwill pays weekly on Monday; money reaches the bank 2-4 days later on business days. Net = merchandise + shipping (+ handling for ShopGoodwill) - marketplace fees; tax is remitted by the marketplace.
+
+## Tidy month (`tidy_month`, task D3.6, for phase 3)
+The same September events as `messy_month`, with every report downloaded once: the clean example for the month-end close. Same file formats and names, same payout model, so the same parsers and `reports/config/bc_mapping.csv` read it. **Synthetic like everything else here**: the layouts are the same guesses as above, and the bank file is invented.
+
+| File(s) | What's in it |
+|---|---|
+| `paid_orders_MM-DD-YYYY_MM-DD-YYYY.xlsx` (Upright, one per Pacific day) | All 30 days, each once. |
+| `ebay_transactions_<from>_<to>.csv` (weekly) | Sep 1-7, 8-14, 15-21, 22-30: no overlap, no broken row. Payout rows carry the real daily payout. |
+| `amazon_daterange_<from>_<to>.csv` | Sep 1-20 and Sep 21-30 (Pacific): no gap. Transfer rows carry the real settlements. |
+| `bank_activity_2026-09.csv` | The same account without the deposit nobody can explain. Payroll and the service charge stay. |
+
+What `messy_month` has and this month does not: the two refunds of August orders (so the eBay and Amazon amounts differ between the two months), the skipped days, the file saved twice, the overlapping re-download, the two broken rows, the unexplained deposit.
+
+`expected.json` has the same shape as the messy month's (`days`, and `close` with `month`, `marketplace_totals_from_files`, `payouts`, `bank_deposits`, `exceptions`, `not_modeled`), computed from the generated events, never by running the engine. Every payout has `data_gap_cents` 0. `close.exceptions` holds only what a tidy month really has: activity earned in September and not paid out yet (`unpaid_at_month_end`), and payouts that reach the bank in October (`in_transit`). `reports/tests/test_close_tidy_month.py` runs the close on it: three sources `OPEN`, nothing unexplained.
+
+The name is `tidy_month` because `clean_month` is taken (older formats, no bank file), and because `reports.run_scheduled.month_inbox` takes the first sample in name order whose key has `close.month`: a name after `messy_month` keeps the scheduled close on the messy month.
