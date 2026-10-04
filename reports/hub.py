@@ -1,5 +1,5 @@
 """Portal for the reporting suite: reports/index.html links to the latest nightly pulse, weekly
-dashboard and monthly COO scorecard, with their CSVs and archives. Static HTML, opens from disk.
+dashboard, monthly COO scorecard and month-end close, with their files. Static HTML, opens from disk.
 
 Each card shows the headline sentence of the latest page (its summary line), red when that page
 flags missing data, so staff see the state of things before clicking.
@@ -27,6 +27,13 @@ HUB_CSS = """
 .hub-card h2 a { color:var(--ink); }
 .hub-card .headline { margin:0 0 10px; font-weight:600; }
 .hub-card .links, .hub-card .built { font-size:13px; color:var(--muted); margin:4px 0 0; }
+@media print {
+  @page { size:letter portrait; margin:0.5in; }
+  .hub-grid { grid-template-columns:repeat(2,1fr); gap:8px; }
+  .hub-card { padding:8px 10px; break-inside:avoid; }
+  .hub-card h2 { font-size:12pt; }
+  .hub-card .links { display:none; }
+}
 """
 
 
@@ -57,11 +64,17 @@ SUITE = [
      "extras": lambda s: [(f"{s}.csv", "KPI CSV")],
      "archive": ("index.html", "All weeks"),
      "build": "python -m reports.weekly --week 2026-W38"},
-    {"title": "Monthly COO scorecard", "what": "The month's totals and the five KPI groups.",
-     "folder": "monthly", "pattern": r"\d{4}-\d{2}-scorecard", "period": _month,
-     "extras": lambda s: [(f"{s[:7]}-kpis.csv", "KPI CSV"), (f"{s[:7]}.csv", "Daily CSV")],
+    {"title": "COO scorecard (monthly)", "what": "Goodwill's 15 KPIs in five areas, from the KPI file.",
+     "folder": "scorecard", "pattern": r"month-\d{4}-\d{2}", "period": lambda s: _month(s[6:]),
+     "extras": lambda s: [(f"{s}.json", "KPI file"), (f"../monthly/{s[6:]}.csv", "Daily CSV")],
+     "archive": ("index.html", "All scorecards"),
+     "build": "python -m recon.kpi --month 2026-09, then python -m reports.monthly --month 2026-09"},
+    {"title": "Month-end close", "what": "Business Central import files, reconciliation and exceptions.",
+     "folder": "close", "pattern": r"\d{4}-\d{2}", "period": _month,
+     "extras": lambda s: [(f"{s}/general_journal_{s}.csv", "General Journal"), (f"{s}/ar_invoice_{s}.csv", "AR invoice"),
+                          (f"{s}/control_totals_{s}.csv", "Control totals"), (f"{s}/exceptions_{s}.csv", "Exceptions")],
      "archive": None,
-     "build": "python -m reports.monthly --month 2026-09"},
+     "build": "python -m reports.reconcile ..., reports.bc_export, reports.close_report --month 2026-09"},
 ]
 
 

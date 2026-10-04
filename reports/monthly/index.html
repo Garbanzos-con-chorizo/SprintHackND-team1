@@ -166,7 +166,7 @@ async function load(month) {
     renderKpis(data);
     renderTable(data);
     document.getElementById("notes").textContent = data.notes.join(" ");
-    document.getElementById("scorecard").href = `${month}-scorecard.html`;
+    document.getElementById("scorecard").href = `../scorecard/month-${month}.html`;
     history.replaceState(null, "", `?month=${month}`);
   } catch (err) {
     showError(`Could not load ${month}.json (${err.message}). Run: python -m reports.monthly --month ${month}`);

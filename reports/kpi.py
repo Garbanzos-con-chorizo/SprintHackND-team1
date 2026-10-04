@@ -29,6 +29,27 @@ KPI_CSS = """
 .badge.simulated { color:var(--ink); background:var(--nodata); border:1px dashed var(--ink); }
 .simnote { background:var(--nodata); border:1px dashed var(--ink); border-radius:var(--radius); padding:10px 14px; margin:16px 0 0; font-size:14px; }
 .card table { min-width:520px; }
+@media print {
+  @page { size:letter portrait; margin:0.4in; }
+  body { font-size:8.5pt; }
+  .summary { font-size:9pt; padding:4px 8px; margin-top:8px; }
+  .simnote { font-size:7pt; padding:3px 6px; margin-top:4px; }
+  .section { margin-top:5px; }
+  .section h2 { font-size:8pt; margin-bottom:3px; }
+  .cards { grid-template-columns:repeat(4,1fr); gap:4px; }
+  .card.kpi { padding:6px 8px; break-inside:avoid; }
+  .kpi .value { font-size:13pt; }
+  .card table { min-width:0; }
+  .card th, .card td { padding:1px 6px; font-size:7pt; }
+  .badge { font-size:6pt; padding:0 4px; margin-top:2px; }
+  section.foot { font-size:7pt; margin-top:6px; }
+  section.foot h2 { margin:4px 0 2px; }
+  section.foot dl { gap:0 8px; }
+  header { padding:8px 12px; }
+  header h1 { font-size:14pt; }
+  .kpi .label { font-size:7pt; }
+  .card.kpi { padding:4px 8px; }
+}
 """
 
 SIMNOTE = """<p class="simnote"><strong>Simulated internal data:</strong> KPIs marked SIMULATED use labor hours, listings,

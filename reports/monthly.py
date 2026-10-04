@@ -1,7 +1,8 @@
-"""Monthly COO scorecard and the month rollup (phase 2, O5).
+"""Month rollup, and the month's COO scorecard from Dani's KPI file (phase 2, O2.1 / O2.5).
 
 Reads out/pulse/<YYYY-MM>-DD.json and writes:
-  reports/monthly/<YYYY-MM>-scorecard.html  the five KPI groups (decision 006), same as the weekly page
+  reports/scorecard/month-<YYYY-MM>.html     the 15 KPIs, rendered from out/kpi/month-<YYYY-MM>.json
+                                            (python -m recon.kpi) by reports.scorecard; no arithmetic here
   reports/monthly/<YYYY-MM>-kpis.csv        those KPIs, with their source (files or simulated)
   reports/monthly/<YYYY-MM>.csv   one row per day and marketplace, dollars, for Excel / Power BI
   reports/monthly/<YYYY-MM>.json  daily series plus month totals, for reports/monthly/index.html
@@ -13,11 +14,10 @@ import argparse
 import calendar
 import json
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 
-from reports import hub, kpi
-from reports.pulse import CSS, PAGE
+from reports import hub, scorecard
 from reports.schema import MARKETPLACES, day_record, write_csv
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -64,30 +64,6 @@ def write_manifest(dest):
     (dest / "months.json").write_text(json.dumps({"months": months}, indent=2) + "\n", encoding="utf-8")
 
 
-def scorecard(month, pulses, src):
-    """The month's KPI rows, totals and HTML. Prior month is compared only if every day has a pulse."""
-    year, mon = map(int, month.split("-"))
-    start = date(year, mon, 1)
-    end = date(year, mon, calendar.monthrange(year, mon)[1])
-    prior_end = start - timedelta(days=1)
-    prior_start = prior_end.replace(day=1)
-    prior = kpi.load_days(Path(src), prior_start, prior_end)
-    rows, t = kpi.compute(start, end, pulses, prior, prior_end.day, "month")
-    n = end.day
-    text, complete = kpi.summary(rows, t, n, "month")
-    body = kpi.PAGE_BODY.substitute(
-        title=f"Monthly COO scorecard: {start:%B %Y}",
-        range=f"{start:%b} 1 to {end:%b} {end.day}, {year}",
-        coverage=f"{len(pulses)} of {n} daily pulses",
-        mock=" · <strong>mock data</strong>" if any(p.get("mock") for p in pulses) else "",
-        summary=kpi.escape(text), summary_class="" if complete else " alert", simnote=kpi.SIMNOTE,
-        sections=kpi.sections_html(rows, t),
-        definitions=kpi.definitions("Calendar month, Eastern time."),
-        nav=f'<a href="index.html?month={month}">Daily table for {start:%B}</a>',
-    )
-    return rows, PAGE.substitute(title=f"Monthly COO scorecard {month}", css=CSS + kpi.KPI_CSS, body=body)
-
-
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--month", required=True, help="YYYY-MM")
@@ -105,13 +81,11 @@ def main(argv=None):
     write_csv(dest / f"{args.month}.csv", agg["days"])
     (dest / f"{args.month}.json").write_text(json.dumps(agg, indent=2) + "\n", encoding="utf-8")
     write_manifest(dest)
-    rows, html = scorecard(args.month, pulses, args.src)
-    (dest / f"{args.month}-scorecard.html").write_text(html, encoding="utf-8")
-    kpi.write_csv(dest / f"{args.month}-kpis.csv", "Month", args.month, rows)
-    sim = sum(k["source"] == "simulated" for k in rows)
-    print(f"wrote {dest / args.month}.csv and .json: {len(agg['days'])} days, "
-          f"{len(agg['days_missing'])} missing")
-    print(f"wrote {dest / args.month}-scorecard.html and -kpis.csv: {len(rows)} KPIs ({sim} simulated)")
+    kpi_file = ROOT / "out" / "kpi" / f"month-{args.month}.json"
+    if kpi_file.exists():
+        print(f"wrote {scorecard.build(kpi_file)}")
+    else:
+        print(f"no KPI file for {args.month}: run python -m recon.kpi --month {args.month}, then this again")
     print(f"wrote {hub.build(dest.parent)}")
 
 

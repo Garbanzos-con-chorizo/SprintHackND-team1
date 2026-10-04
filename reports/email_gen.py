@@ -9,6 +9,7 @@ sending automatically needs an SMTP account from Goodwill IT. Bad rows are liste
 """
 import argparse
 import csv
+import json
 import mimetypes
 import re
 from datetime import date, datetime
@@ -81,6 +82,35 @@ def _kpi_body(title, period, text, kpi_csv, attachments_note):
 </table>"""
 
 
+def _scorecard_body(title, period, text, kpi_file):
+    """The 15 KPIs as an inline-styled table; simulated ones say so, no-data ones say so."""
+    from reports.scorecard import fmt
+    kf = json.loads(Path(kpi_file).read_text(encoding="utf-8"))
+    sim_label = (kf.get("internal_data") or {}).get("label") or "Simulated internal data"
+    td = f'style="{EMAIL_FONT}font-size:13px;color:{E["ink"]};padding:5px 10px;border-bottom:1px solid {E["line"]};"'
+    tdr = td.replace("padding", "text-align:right;padding")
+    rows = []
+    for k in kf["kpis"]:
+        if k["kind"] == "ranking":
+            shown = ", ".join(r["label"] for r in (k["rows"] or [])[:3]) or "No data"
+        else:
+            shown = fmt(k["value"], k["unit"]) or "No data"
+            if k.get("per") and k["value"] is not None:
+                shown += f" per {k['per']}"
+        flag = f' <span style="color:{E["muted"]};font-size:11px;">({sim_label.lower()})</span>' if k["simulated"] else ""
+        rows.append(f'<tr><td {td}>{escape(k["name"])}{flag}</td><td {tdr}>{escape(shown)}</td></tr>')
+    return f"""<table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:100%;">
+<tr><td style="{EMAIL_FONT}background:{E['primary']};color:#ffffff;padding:16px 20px;">
+  <div style="font-size:20px;font-weight:bold;">{escape(title)}</div>
+  <div style="font-size:12px;">{escape(period)}</div></td></tr>
+<tr><td style="{EMAIL_FONT}font-size:16px;font-weight:bold;color:{E['ink']};border-left:5px solid {E['primary']};padding:12px 14px;">{escape(text)}</td></tr>
+<tr><td style="padding-top:8px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+{chr(10).join(rows)}
+</table></td></tr>
+<tr><td style="{EMAIL_FONT}font-size:12px;color:{E['muted']};padding:12px 2px;">The full scorecard page and its KPI file are attached.</td></tr>
+</table>"""
+
+
 def payload(kind, key, root=REPORTS):
     """Subject, HTML body and attachments for one report, or None if that report wasn't built."""
     if kind == "Daily":
@@ -91,12 +121,16 @@ def payload(kind, key, root=REPORTS):
         body = re.search(r"<body[^>]*>(.*)</body>", mail.read_text(encoding="utf-8"), re.S)[1]
         return {"subject": f"Nightly pulse - {long_date(key)} - {text.split(';')[0]}",
                 "text": text, "html": body, "attachments": [root / "pulse" / f"{key}.csv"]}
-    if kind == "Weekly":
-        page, kcsv = root / "weekly" / f"{key}.html", root / "weekly" / f"{key}.csv"
-        title, period = "Weekly dashboard", key
-    else:
-        page, kcsv = root / "monthly" / f"{key}-scorecard.html", root / "monthly" / f"{key}-kpis.csv"
-        title, period = "Monthly COO scorecard", f"{date.fromisoformat(key + '-01'):%B %Y}"
+    if kind == "Monthly":
+        page, kfile = root / "scorecard" / f"month-{key}.html", root / "scorecard" / f"month-{key}.json"
+        if not (page.exists() and kfile.exists()):
+            return None
+        text, _ = headline(page)
+        title, period = "COO scorecard", f"{date.fromisoformat(key + '-01'):%B %Y}"
+        return {"subject": f"{title} - {period} - {text.split(';')[0]}", "text": text,
+                "html": _scorecard_body(title, period, text, kfile), "attachments": [page, kfile]}
+    page, kcsv = root / "weekly" / f"{key}.html", root / "weekly" / f"{key}.csv"
+    title, period = "Weekly dashboard", key
     if not (page.exists() and kcsv.exists()):
         return None
     text, _ = headline(page)

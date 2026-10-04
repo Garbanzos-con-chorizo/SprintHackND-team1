@@ -4,8 +4,12 @@ For business date D (the day that just ended; the job runs on D+1 at 00:15 Easte
   1. Nightly pulse for D: the real pipeline (engine + recon.pulse) on the sample inbox whose business
      date is D. Without one, the pulse already in the history (out/pulse/D.json) is re-rendered.
   2. Weekly dashboard if D+1 is a Monday (the Monday-Sunday week that ended on D).
-  3. Monthly COO scorecard if D+1 is the 1st (the month that ended on D).
+  3. On the 1st (the month that ended on D): Dani's KPIs from the store (`recon.kpi`), the COO
+     scorecard page, and the month-end close: reconciliation from the month's raw inbox, the
+     Business Central files (`bc_export`) and the close page.
   4. Emails to the active subscribers of each report built (reports/config/subscribers.csv).
+Each night is also loaded into the store (`engine.store load`), which the KPIs read. The first run
+seeds September: mock pulse history for the weekly page, and the real engine into the store.
 In production Windows Task Scheduler or cron starts this once a night; nothing here waits for a clock.
 
     python -m reports.run_scheduled --date 2026-10-04
@@ -13,14 +17,17 @@ In production Windows Task Scheduler or cron starts this once a night; nothing h
 """
 import argparse
 import json
+import subprocess
+import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-from reports import email_gen, hub, mock_pulse, monthly, pulse, run_nightly, weekly
+from reports import close_report, email_gen, hub, mock_pulse, monthly, pulse, run_nightly, weekly
 
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = ROOT / "data" / "sample"
 HISTORY = ROOT / "out" / "pulse"
+STORE = ROOT / "out" / "store" / "ecom.db"
 
 
 def scenario_for(day):
@@ -30,6 +37,22 @@ def scenario_for(day):
         if json.loads(key.read_text(encoding="utf-8")).get("business_date") == day.isoformat():
             found.append(key.parent.name)
     return sorted(found, key=lambda n: (not n.startswith("gw_"), n))[0] if found else None
+
+
+def month_inbox(month):
+    """The sample inbox holding a whole month for the close (its answer key has close.month)."""
+    for key in sorted(SAMPLES.glob("*/expected.json")):
+        if (json.loads(key.read_text(encoding="utf-8")).get("close") or {}).get("month") == month:
+            return key.parent / "inbox"
+    return None
+
+
+def sh(*args):
+    """Run `python -m <args>` from the repo root, indent its output, return the exit code."""
+    r = subprocess.run([sys.executable, "-m", *args], cwd=ROOT, capture_output=True, text=True)
+    for line in (r.stdout + r.stderr).strip().splitlines()[-6:]:
+        print(f"      | {line}")
+    return r.returncode
 
 
 def say(text):
@@ -45,6 +68,8 @@ def night(day):
     if sc:
         run_nightly.main(["--scenario", sc])
         built["daily"] = day.isoformat()
+        print("    store: loading the night")
+        sh("engine.store", "load", "--in-dir", f"out/{sc}", "--date", day.isoformat())
     elif (HISTORY / f"{day}.json").exists():
         p = json.loads((HISTORY / f"{day}.json").read_text(encoding="utf-8"))
         pulse.render(p, ROOT / "reports" / "pulse")
@@ -65,11 +90,25 @@ def night(day):
         print(f"    weekly: not due ({run_day:%A})")
 
     if run_day.day == 1:
+        month = f"{day:%Y-%m}"
+        print(f"    kpi: {month} from the store")
+        sh("recon.kpi", "--month", month)
         try:
-            monthly.main(["--month", f"{day:%Y-%m}"])
-            built["monthly"] = f"{day:%Y-%m}"
+            monthly.main(["--month", month])
+            if (ROOT / "reports" / "scorecard" / f"month-{month}.html").exists():
+                built["monthly"] = month
         except SystemExit as e:
             print(f"    monthly: skipped ({e})")
+        inbox = month_inbox(month)
+        if inbox:
+            print(f"    close: {month} from {inbox.relative_to(ROOT).as_posix()}")
+            payload = f"out/close/{month}/close_payload_{month}.json"
+            if sh("reports.reconcile", "--inbox", str(inbox), "--month", month) == 0 and                     sh("reports.bc_export", "--payload", payload) == 0:
+                print(f"    close page: {close_report.build(month).relative_to(ROOT).as_posix()}")
+            else:
+                print("    close: not built (see above); nothing posted")
+        else:
+            print(f"    close: no month inbox for {month}")
     else:
         print("    monthly: not due (not the 1st)")
 
@@ -97,6 +136,11 @@ def main(argv=None):
     if not any(HISTORY.glob("2026-09-*.json")):
         say("Seeding history: September pulses from the clean_month sample (mock)")
         mock_pulse.main(["--scenario", "clean_month", "--out", str(HISTORY)])
+    if not STORE.exists():
+        say("Seeding the store: September from the clean_month sample (real engine + pulse)")
+        sh("engine.store", "init")
+        sh("engine.store", "backfill", "--inbox", "data/sample/clean_month/inbox", "--from", "2026-09-01",
+           "--to", "2026-09-30", "--out", "out/backfill")
     for d in days:
         night(d)
 
