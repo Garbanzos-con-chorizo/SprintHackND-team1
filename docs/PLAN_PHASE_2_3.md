@@ -55,19 +55,22 @@ This replaces the five groups in decision 006 / `docs/pitch/kpi_catalog.md` (Fin
 
 ## 3. Who does what (new split)
 
-| Person | Owns in phases 2 and 3 | Code lives in |
+**Phase 2**
+| Person | Owns | Code lives in |
 |---|---|---|
 | **Dani** | The KPIs: the contract, the 15 calculations, period logic, tests. | `recon/kpi/` |
-| **Orlando** | Frontend: scorecard page, period switch, print layout for the PDF, download links, close review page. | `reports/` |
-| **Victor** | The rest: database and loader, internal API (mock and client), nightly orchestration, PDF / CSV / email export, and phase 3 (bank parser, mapping rules, matching, journal, BC files). | `engine/store/`, `engine/internal_api/`, `engine/export/`, `engine/close/` |
+| **Orlando** | Frontend: scorecard page, period switch, print layout for the PDF, download links. | `reports/` |
+| **Victor** | The database and the rest of the plumbing: store and loader, internal API (mock and client), nightly orchestration, PDF / CSV / email export. | `engine/store/`, `engine/internal_api/`, `engine/export/` |
+
+**Phase 3 (Business Central integration) is a separate task with no owner yet.** It will be split between the three of us once phase 2 reaches checkpoint 1. Section 8 lists its steps in three work packages so the split is quick, but nobody is assigned and nobody should start it alone.
 
 Changes against the current docs, all of which need the owners' yes:
 - **KPI math moves from `reports/kpi.py` (Orlando) to `recon/kpi/` (Dani).** `reports/` keeps only rendering.
 - **The mock internal API moves from `reports/mock_api.py` (Orlando) to `engine/internal_api/` (Victor).**
-- **The Business Central export (D2 to D8) moves from Dani to Victor**, and so does the `outputs.md` contract (task 0.3). Orlando's schema proposal and messy-month notes in `docs/members/dani.md` are Victor's starting point.
+- **The Business Central export (D2 to D8) is no longer Dani's alone**: it becomes the shared phase 3 task, split in three later. Orlando's schema proposal and messy-month notes in `docs/members/dani.md` are its starting point.
 - **`reports/run_nightly.py` becomes Victor's** (it is the pipeline runner, not a page).
 
-**Load check.** Victor's column is roughly twice the others, and Orlando still owns the demo script, slides, video and submission (O6 to O9, I4, I5). Two hand-offs are prepared in case checkpoint 1 slips: Dani takes the matching and exceptions (V3.4, V3.5; they are pure calculation with an answer key) once the KPIs pass their tests, and Orlando takes the PDF command (V2.9) since the print layout is his anyway.
+**Load check.** In phase 2 Victor still has the longest list (database, internal API, exports), and Orlando still owns the demo script, slides, video and submission (O6 to O9, I4, I5). If checkpoint 1 slips, Orlando takes the PDF command (V2.9), since the print layout is his anyway. Phase 3 only gets the time phase 2 leaves, so the phase 3 split should favour whoever finishes phase 2 first.
 
 ## 4. Programs and entry points
 
@@ -86,7 +89,7 @@ Every step is a function with a thin command on top, so the scheduler, a web app
 | `python -m recon.kpi --period day\|week\|month (--date D \| --week 2026-W38 \| --month 2026-09)` | Dani | new | Reads the database, writes `out/kpi/<period>.json` and `latest-<period type>.json`. |
 | `python -m reports.scorecard --period ... ` | Orlando | adapt `reports.monthly`, `reports.weekly` | Renders the KPI file to HTML. No arithmetic. |
 | `python -m engine.export kpi-csv\|pdf\|email --period ...` | Victor | new | KPI CSV, one-page PDF, `.eml` with the PDF attached (generated, not sent). |
-| `python -m engine.close --month M` | Victor | new, phase 3 | Matching, exceptions, journal, the three BC CSV files. Exits non-zero and writes no journal if a document does not balance. |
+| `close --month M` (module decided at the split; `TASKS.md` had it in `recon/`) | phase 3, to be split | new | Matching, exceptions, journal, the three BC CSV files. Exits non-zero and writes no journal if a document does not balance. |
 | `python -m reports.run_nightly` | Victor | extend | Nightly chain: fetch -> run -> pulse -> store load -> internal pull -> kpi (day, week to date, month to date) -> render -> export. `--close-month M` adds the close. |
 
 If the web app of decision 006 is built, its routes are wrappers over the same functions: `GET /api/kpis?period=`, `GET /export/kpis.csv`, `GET /export/scorecard.pdf`, `GET /export/bc/<file>.csv`, `POST /api/run`.
@@ -209,21 +212,26 @@ Contract changes this needs in `transaction.md` (Victor, small PR, non-breaking)
 | O2.7 | Revenue trend over the month (daily bars from the monthly view) | M | cut early |
 | O2.8 | Demo script for phases 2 and 3; check every simulated number is badged | S | |
 
-### Phase 3: Business Central (Victor; Dani and Orlando as noted)
-| ID | Task | Owner | Size | Needs |
-|---|---|---|---|---|
-| V3.1 | `docs/contracts/outputs.md` from Orlando's proposal: the three CSV layouts, sign rule, exception record | Victor | S | |
-| V3.2 | `docs/contracts/rules.md` + the mapping file: source -> accounts, department, journal or invoice path. Config, not code. Account numbers are placeholders except FedEx 40356 / Dept 180 from the deck | Victor | M | V3.1 |
-| V3.3 | Keep payout and transfer rows (new `payout` type) and parse `bank_activity_*.csv` | Victor | M | |
-| V3.4 | Match payouts to bank deposits: amount and date window, many-to-one, in transit | Victor (hand-off: Dani) | L | V3.3 |
-| V3.5 | Exceptions: missing file, unmatched deposit, prior-month refund, unbalanced document; each with a reason | Victor (hand-off: Dani) | M | V3.4 |
-| V3.6 | Journal builder: one balanced document per source per month and one per deposit | Victor | L | V3.2 |
-| V3.7 | Balance check: refuse to write a document that does not sum to 0.00 | Victor | S | V3.6 |
-| V3.8 | Write `general_journal_<month>.csv`, `ar_invoice_<month>.csv`, `control_totals_<month>.csv` | Victor | M | V3.7 |
-| V3.9 | Tests against `messy_month/expected.json` -> `close` | Victor | M | V3.8 |
-| D3.1 | Review `outputs.md`; hand over the notes in `docs/members/dani.md`; add a "payout vs revenue" line to the Financial area only if time allows | Dani | S | V3.1 |
-| O3.1 | Close page: exceptions, journal preview, control totals, download links | Orlando | M | V3.8 |
-| V3.10 | Written, not built: how the file gets into BC (Edit in Excel, configuration package, or the journal lines API) for the "next steps" slide | Victor | S | |
+### Phase 3: Business Central integration (separate task, **owners not assigned**)
+To be split in three when phase 2 reaches checkpoint 1. The steps are grouped into three packages of similar size that meet only at contracts, so each can go to one person. Who takes which is decided then.
+
+| ID | Task | Size | Needs |
+|---|---|---|---|
+| P3.0 | **Shared, first:** `docs/contracts/outputs.md` from Orlando's proposal (the three CSV layouts, sign rule, exception record), and the split itself | S | checkpoint 1 |
+| | **Package A: inputs and rules** | | |
+| A1 | Keep payout and transfer rows in the engine output (new `payout` type) | M | P3.0 |
+| A2 | Parse `bank_activity_*.csv` | M | |
+| A3 | `docs/contracts/rules.md` + the mapping file: source -> accounts, department, journal or invoice path. Config, not code. Account numbers are placeholders except FedEx 40356 / Dept 180 from the deck | M | P3.0 |
+| | **Package B: reconciliation** | | |
+| B1 | Match payouts to bank deposits: amount and date window, many-to-one, in transit | L | A1, A2 (rows from `expected.json` as a mock until then) |
+| B2 | Exceptions: missing file, unmatched deposit, prior-month refund, unbalanced document; each with a reason | M | B1 |
+| B3 | Tests for matching and exceptions against `messy_month/expected.json` -> `close` | M | B2 |
+| | **Package C: Business Central output** | | |
+| C1 | Journal builder: one balanced document per source per month and one per deposit | L | A3 |
+| C2 | Balance check: refuse to write a document that does not sum to 0.00 | S | C1 |
+| C3 | Write `general_journal_<month>.csv`, `ar_invoice_<month>.csv`, `control_totals_<month>.csv`; tests on the month totals | M | C2 |
+| C4 | Close page: exceptions, journal preview, control totals, download links | M | C3, B2 |
+| C5 | Written, not built: how the file gets into BC (Edit in Excel, configuration package, or the journal lines API) for the "next steps" slide | S | |
 
 ## 9. Order of work, checkpoints, cuts
 
@@ -233,7 +241,7 @@ C1 -> C2, C3, C4 (parallel) -> build against mocks:
         Dani    D2.1 -> D2.2 -> D2.3 -> D2.4 .. D2.8 (on the fixture database)
         Orlando O2.1 -> O2.2 -> O2.4 (on the sample KPI file)
    -> CHECKPOINT 1: September in the database -> recon.kpi -> scorecard page shows real numbers
-   -> exports (V2.8-V2.10, O2.6), tests (D2.10), then phase 3 (V3.x), O3.1
+   -> split phase 3 in three (P3.0); exports (V2.8-V2.10, O2.6) and tests (D2.10) finish alongside packages A, B, C
    -> CHECKPOINT 2: messy month -> BC files balanced; decide cuts
    -> record the demo, freeze at 15:00
 ```
@@ -245,6 +253,7 @@ Suggested clock for Sunday: contracts done by 08:30, checkpoint 1 at 11:00, chec
 
 ## 10. Risks
 - **Most of the scorecard is simulated.** Only 4 of the 15 KPIs come purely from the files (1, 2, 10, 15). The other 11 depend, fully or in part, on the mock internal API. The demo must say so; the value we show is the plumbing and the definitions, not Goodwill's numbers.
-- **Victor is the bottleneck** (database first, then phase 3). The fixture database and the sample KPI file exist so Dani and Orlando never wait on him.
+- **The database is on everyone's path.** The fixture database and the sample KPI file exist so Dani and Orlando never wait on Victor's loader.
+- **Phase 3 has no owner until checkpoint 1.** If checkpoint 1 slips past 11:00, phase 3 shrinks to package C on the month totals (a balanced General Journal without bank matching) before anything else is cut from it.
 - **Two KPI lists in the repo** until decision 007 is accepted and `kpi_catalog.md` is updated by Orlando.
 - **Growth needs two periods.** Without August it reads "no prior period", which is correct and should stay that way rather than be faked.

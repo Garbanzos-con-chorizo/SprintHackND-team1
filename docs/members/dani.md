@@ -16,7 +16,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - Added `docs/goodwill-project-context.md` (deck, rubric and problem-sheet extraction) for the whole team, linked from `docs/PROBLEM.md`
 
 ## In progress
-- **Phases 2 and 3 plan (proposed, not yet accepted by Victor and Orlando):** `docs/PLAN_PHASE_2_3.md` and `docs/decisions/007-phase-2-3-owners-database-scorecard.md`. New split: I own the 15 scorecard KPIs (`recon/kpi/`), Orlando the frontend, Victor the database, internal API, exports and the Business Central close (D2 to D8 leave my list if he accepts). Internal API assumption added to `docs/ASSUMPTIONS.md` section 2b (claimed in `docs/CLAIMS.md`). Requests left in both teammates' files. No code yet for phase 2.
+- **Phases 2 and 3 plan (proposed, not yet accepted by Victor and Orlando):** `docs/PLAN_PHASE_2_3.md` and `docs/decisions/007-phase-2-3-owners-database-scorecard.md`. Phase 2 split: I own the 15 scorecard KPIs (`recon/kpi/`), Orlando the frontend, Victor the database, internal API and exports. Phase 3 (Business Central, including D2 to D8) is a separate task with no owner yet; it is split between the three of us at the first phase 2 checkpoint. Internal API assumption added to `docs/ASSUMPTIONS.md` section 2b (claimed in `docs/CLAIMS.md`). Requests left in both teammates' files. No code yet for phase 2.
 
 ## For teammates: what the new context file changes
 - **Orlando (P-O2):** Goodwill's own nightly table (slide 31) labels the rows SHOPGOODWILL, AMAZON, EBAY, OTHER E-COMMERCE CHANNELS and TOTAL E-COMMERCE, with columns DAILY REVENUE and DAILY CUSTOMERS. Use their labels.
