@@ -16,7 +16,7 @@ import re
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-from reports import kpi
+from reports import hub, kpi
 from reports.pulse import CSS, PAGE
 from reports.schema import MARKETPLACES, day_record, write_csv
 
@@ -112,6 +112,7 @@ def main(argv=None):
     print(f"wrote {dest / args.month}.csv and .json: {len(agg['days'])} days, "
           f"{len(agg['days_missing'])} missing")
     print(f"wrote {dest / args.month}-scorecard.html and -kpis.csv: {len(rows)} KPIs ({sim} simulated)")
+    print(f"wrote {hub.build(dest.parent)}")
 
 
 if __name__ == "__main__":

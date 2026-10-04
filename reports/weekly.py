@@ -13,7 +13,7 @@ import re
 from datetime import date, timedelta
 from pathlib import Path
 
-from reports import kpi
+from reports import hub, kpi
 from reports.pulse import CSS, PAGE
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -77,6 +77,7 @@ def main(argv=None):
     (dest / "index.html").write_text(render_index(dest), encoding="utf-8")
     sim = sum(k["source"] == "simulated" for k in rows)
     print(f"wrote {dest / name}.html and .csv: {len(pulses)}/7 days, {len(rows)} KPIs ({sim} simulated)")
+    print(f"wrote {hub.build(dest.parent)}")
 
 
 if __name__ == "__main__":

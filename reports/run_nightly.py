@@ -21,7 +21,7 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 
-from reports import mock_pulse, pulse as renderer
+from reports import hub, mock_pulse, pulse as renderer
 
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = ROOT / "data" / "sample"
@@ -112,6 +112,7 @@ def main(argv=None):
     paths = renderer.render(p, ROOT / "reports" / "pulse")
     for path in paths:
         print(f"            {path.relative_to(ROOT).as_posix()}")
+    print(f"            {hub.build().relative_to(ROOT).as_posix()} (portal)")
 
     print(f"\n   {renderer.summary_line(p)}\n")
     log(f"Done in {time.perf_counter() - started:.1f}s")
