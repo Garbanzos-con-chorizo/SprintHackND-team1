@@ -54,7 +54,9 @@ A refused run leaves no status file of its own, so after exit 1 the status file,
 | `close_status_<month>.json` | after step 06 | Below. Overwritten by each run that exits 0 or 2. |
 | `runs.csv` | after step 06 | One line per run that exits 0 or 2, appended; header on the first write. |
 
-The page is `<dest>/<month>.html`, with a copy of the four CSVs in `<dest>/<month>/` for its download links, as `reports.close_report` has always written it. It is rendered last, after the status file and `runs.csv` exist.
+The page is `<dest>/<month>.html`, with a copy of the four CSVs in `<dest>/<month>/` for its download links, as `reports.close_report` has always written it.
+
+**Since D3.5 there is a fifth CSV, `shipping_costs_<month>.csv`** (`Carrier`, `Figure From`, `Charges`, `Refunds`, `Net`, `Lines`, `Journal Document`), written on every run, header only when no carrier's lookup reached it. It sits with the other four in `<out>/<month>/`, in the archive run folder and its manifest, and next to the page. Wherever this file says "the four CSVs", read five. It is rendered last, after the status file and `runs.csv` exist.
 
 ## The archive
 ```

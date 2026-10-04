@@ -1,0 +1,5 @@
+Carrier,Label,Figure_From,Bank_Account,Bank_Text,GL_Account,Department_Code,Vendor_No,Refund_Document,Expense_Account,Offset_Account
+osm,OSM,bank,0101,OSM WORLDWIDE,,180,,,60510,10009
+pb,PB,bank,0101,PITNEY BOWES,,180,,,60510,10009
+easypost,EasyPost,bank,0101,EASYPOST,,180,,,60510,10009
+fedex,FedEx,ledger,,,40356,180,V00122,BNKDEPOSIT,,

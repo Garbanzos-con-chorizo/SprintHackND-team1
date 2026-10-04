@@ -82,7 +82,7 @@ After the take:
 The organizers check our "built versus used" text against the repo. Saying something is simulated costs nothing. These go on the real-versus-simulated slide and into the form:
 
 - All data is synthetic. No real Goodwill file has been read.
-- The provider APIs are assumed (Amanda, for Upright; Dani's decision for the month-end sources) and simulated. Up to six of the nine month-end sources come from simulated APIs with layouts we made up; any that did not land by 13:00 is "not modeled". Say the count that is true at the dry run.
+- The provider APIs are assumed (Amanda, for Upright; Dani's decision for the month-end sources) and simulated. All nine month-end sources now reach the close: five from sample files we generated (Upright, eBay, Amazon, ShopGoodwill's periodic report, Cash Monkey's month file) and four from simulated APIs (the Jewelry report, the carriers' bank feed, FedEx's ledger entries, the Goodwill Books statement), every layout ours. The page's nine-source table says which is which for the run on screen: read the count from it.
 - 11 of the 15 KPIs rest on a simulated internal API and are badged on the page, the PDF and the CSV.
 - The close writes import files in Business Central's column order. Nothing is posted; the files have never been loaded into a Business Central.
 - Account, customer and document numbers are placeholders, except Dept 180 and the codes on their slide 38.
@@ -98,7 +98,7 @@ For the form, start from the table and the sources list in `docs/pitch/engine_pi
 | Does this post to Business Central? | No. It writes the General Journal and the AR invoice as files in the page's column order, for paste or Edit in Excel. Posting needs their environment; the status file says "not posted". |
 | How do you know the journal is right? | Every document sums to zero or nothing is written; the files are read back and checked again; totals are compared with an answer key computed from the generated orders, not by our code. What we cannot check is their workbook: we have not seen it. |
 | What happens when a report is missing? | The close still runs. It names the days no report covers and the amount the marketplace paid that our files cannot explain, and marks the source incomplete. |
-| Which of the nine sources do you really read? | Three from sample files (Upright in the layout on their slide; eBay and Amazon in layouts we made up), plus a bank file. The others from simulated APIs, or not at all. The page says which is which. |
+| Which of the nine sources do you really read? | All nine reach the close, none of them real. Five from sample files we generated (only Upright's layout comes from their slide), four from simulated APIs. The page says which is which, and what each one is used for. |
 | How much of the scorecard is real? | Four KPIs come from the sales files alone. Eleven need internal data we simulate, and each is badged. What is real is the definitions and the plumbing. |
 | Could Goodwill start tomorrow? | The nightly report, yes, once one real file of each kind confirms the column names. The close needs their chart of accounts and their workbook's rules first. |
 | What would you build next? | Read one real month; replace the placeholder accounts; compare our journal with their workbook line by line; then post through Business Central's API. |

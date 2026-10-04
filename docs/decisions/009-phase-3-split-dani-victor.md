@@ -1,7 +1,7 @@
 # 009 — Phase 3 split between Dani and Victor; temporary ownership of Orlando's close files
 
 - **Date / author:** 2026-10-04 00:15 EDT, Dani
-- **Status:** proposed (needs Victor's response below; Orlando may change it whenever he is back)
+- **Status:** accepted (Victor, 2026-10-04, response below; Orlando may change it whenever he is back)
 - **Changes:** `007-phase-2-3-owners-database-scorecard.md`, point 1 ("phase 3 has no owner yet") and the three packages A, B, C of `docs/PLAN_PHASE_2_3.md`, section 8.
 - **Full plan:** `docs/PLAN_PHASE_3.md` (what `main` does today, the gap against deck slides 38 to 42, tasks, contracts, clock, cuts).
 

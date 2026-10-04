@@ -11,6 +11,9 @@ cross_check_difference,E-commerce,Find the report that is missing: the journal p
 missing_report,E-commerce,Download the report for those days and run the close again
 prior_month_refund,Accounting,Review last month's revenue for that order
 no_order_times,IT,The engine has to provide the order time (occurred_at)
+statement_not_in_bank,Accounting,Find the payment in the bank before posting the statement
+statement_mismatch,Accounting,Ask the marketplace for a corrected statement
+missing_supplier,E-commerce,Add the item to the supplier lookup
 residual_unexplained,Accounting,Resolve before posting
 duplicate_rows,E-commerce,None: counted once
 bad_amount,E-commerce,Fix the row in the report or download it again
