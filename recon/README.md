@@ -2,6 +2,8 @@
 
 Summary of everything built so far for Dani's part of phase 1, as of 2026-10-03 16:45 EDT. For live status see `docs/members/dani.md`.
 
+Phase 2, the scorecard KPIs, is in `recon/kpi/README.md`.
+
 ## What this part does
 
 The nightly pulse answers one question each night: how much did we sell, and to how many customers, on each marketplace and in total. Three people share it:

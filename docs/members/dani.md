@@ -1,8 +1,8 @@
-# Status — Dani (reconciliation and pulse calculation, `recon/`)
+# Status — Dani (pulse and scorecard KPIs, `recon/`)
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 20:55 EDT · **Branch:** d/kpi-contract
+**Last updated:** 2026-10-03 21:20 EDT · **Branch:** d/kpi-calc (stacked on d/kpi-contract-v02)
 
 ## Done
 - P0 pulse contract (draft): `docs/contracts/pulse.md`, mocks `docs/contracts/examples/pulse.sample.json` (clean day) and `pulse.sample.missing.json` (eBay missing). Merged in PR #9.
@@ -15,12 +15,18 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 
 - Added `docs/goodwill-project-context.md` (deck, rubric and problem-sheet extraction) for the whole team, linked from `docs/PROBLEM.md`
 
+## Done (phase 2)
+- **C2** KPI contract `docs/contracts/kpi.md`: v0.1 merged (#15). **v0.2 (contract change, announced here):** the examples are now the calculator's own output, two more examples (`kpi.sample.week.json`, `kpi.sample.day.json`, asked by Orlando), inputs point to `store.md` and `internal-api.md`, each KPI carries slide 32's `pillar` (Victor's alignment note), the KPIs are also recorded in `kpi_values`, and several rules are spelled out (changelog in the file).
+- **D2.1 to D2.9** `recon/kpi/`: the 15 KPIs for a day, an ISO week or a month, with status (`ok` / `partial` / `no_data`), note, prior value and change. `python -m recon.kpi --month 2026-09` (or `--week`, `--date`, or `--period month` alone for the period of the latest stored day) writes `out/kpi/<type>-<id>.json`, `latest-<type>.json` and `kpi_values`. Summary: `recon/kpi/README.md`.
+- **D2.10** tests: 101 new (132 in `recon`). All 15 KPIs against hand-computed values; the command reproduces the four contract examples exactly; September revenue equals the `clean_month` answer key to the cent (7,075,396). The test databases are built from Victor's `engine/store/schema.sql`.
+- Decision 007: resolution appended (SQLite agreed by all three).
+
 ## In progress
-- **C2, KPI contract (draft v0.1, new contract, announced here):** `docs/contracts/kpi.md` with two example files, `docs/contracts/examples/kpi.sample.month.json` (September, complete) and `kpi.sample.month.partial.json` (October to date, eBay missing one day). 15 KPIs in Goodwill's five scorecard areas, always all 15, with `status` (`ok` / `partial` / `no_data`), `note`, `prior_value`, `delta`, `source`, `simulated`.
-  - **Orlando:** build the scorecard page against the two example files; the "Mock for parallel work" section lists the states they cover. Tell me what the page needs that is missing.
-  - **Victor:** the section "Inputs the KPIs need" is my request for `store.md` and `internal-api.md` (tables, and the ten internal metrics with their dimensions).
-- Decision 007: the team agreed on **SQLite** (resolution appended to 007). The KPI contract names the three tables the calculator reads (`pulse_daily`, `transactions`, `internal_daily`) until Victor's `store.md` exists.
-- No calculator code yet: `recon/kpi/` starts with D2.1.
+- Two PRs: `d/kpi-contract-v02` (contract v0.2 and the four examples, docs only) and `d/kpi-calc` (the calculator and its tests, stacked on it).
+
+## Not verified yet (be careful what you claim)
+- **`recon.kpi` has not run on a store loaded by the real pipeline.** My tests fill the store the way Victor's loader does, but engine -> pulse -> `store load` -> `recon.kpi` was not run end to end on this machine (the engine's dependencies are not installed here). That is checkpoint 1.
+- 11 of the 15 KPIs rest on simulated internal data; ASP and sell-through are per order until the transactions carry `units`.
 
 ## For teammates: what the new context file changes
 - **Orlando (P-O2):** Goodwill's own nightly table (slide 31) labels the rows SHOPGOODWILL, AMAZON, EBAY, OTHER E-COMMERCE CHANNELS and TOTAL E-COMMERCE, with columns DAILY REVENUE and DAILY CUSTOMERS. Use their labels.
@@ -29,21 +35,20 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - **Victor:** nothing here contradicts `docs/contracts/source-formats.md`; it agrees that staff count rows (orders) as customers. The pulse takes `customer_basis` from the engine's rows, so no pulse change is needed either way.
 
 ## Blocked / needs from others
-- Orlando: read `pulse.md` and say if the renderer needs anything else (task 0.6); P-O1 sample days for my tests (P-D5). Until then I use hand-made fixtures.
-- Victor: I accept decision 002 (Python). The pulse uses the standard library only, tests with `unittest`, so it adds no dependency.
-- Not run against real engine output yet; that is integration (I1). The engine landed on main in PR #8.
+- Nothing blocks me. For checkpoint 1 I need September in the store (Victor: V2.4 backfill, V2.6 internal pull).
+- Orlando: tell me when the page reads `out/kpi/*.json`, then we delete the math in `reports/kpi.py` (D2.11).
 
-## Next (phase 2, in order; task ids from `docs/PLAN_PHASE_2_3.md`)
-1. ~~C2: KPI contract and sample files~~ drafted, waiting for Orlando's and Victor's comments
-2. D2.1 to D2.3: `recon/kpi/` scaffold, periods, a fixture database built from Victor's `schema.sql` (hand-made until it exists)
-3. D2.4 to D2.9: the 15 KPIs and `python -m recon.kpi`
-4. D2.10: tests, including September revenue against `data/sample/clean_month/expected.json`
-- Phase 1 leftovers (I1, P-D5) are done in practice: Victor and Orlando ran the pulse on the real engine output and all 8 sample scenarios match their answer keys.
+## Next (task ids from `docs/PLAN_PHASE_2_3.md`)
+1. Checkpoint 1: `python -m recon.kpi --month 2026-09` on the loaded store must read 7,075,396; fix whatever differs.
+2. If the store is late (Victor's 10:00 tripwire in 007): one function in `recon/kpi/store.py` that builds the same `WindowData` from `out/pulse/*.json`. Not built.
+3. D2.11 with Orlando.
+4. Phase 3: Orlando already has the export and the reconciliation on `main` (`reports/bc_export.py`, `reports/reconcile.py`); ask at checkpoint 1 what is left to split.
 
 ## How to run / test my part
-- Tests: `python -m unittest discover -s recon -t .` from the repo root (31 pass).
-- `python -m recon.pulse --in-dir recon/tests/fixtures/clean_day --out-dir <some folder>` writes the pulse files for the fixture. Without `--out-dir` it writes to `<in-dir>/pulse`, so pass one when pointing at a fixture.
-- On my machine Python 3.13 is only on the `py` launcher, so `py -m ...`.
+- Tests: `python -m unittest discover -s recon -t .` from the repo root (132 pass). On my machine Python 3.13 is only on the `py` launcher, so `py -m ...`.
+- Pulse: `python -m recon.pulse --in-dir recon/tests/fixtures/clean_day --out-dir <some folder>`.
+- KPIs without the real store: `python -m recon.tests.kpi_samples --db out/store/ecom.db` (synthetic September and October 1 to 4; refuses to overwrite an existing database), then `python -m recon.kpi --period month`, `--week 2026-W40`, `--date 2026-10-03`.
+- Regenerate the contract examples after a deliberate change: `python -m recon.tests.kpi_samples`.
 
 ## Requests to me (append only: `- [from X, time] request`)
 - [from Orlando, 2026-10-03 18:45] **Business Central export module (D6-D8): proposed CSV schemas, yours to accept or change in `docs/contracts/outputs.md` (task 0.3).** Format: CSV, UTF-8, header row, columns in the same order as the BC page so staff can paste rows into the General Journal / Sales Invoice grid or use "Edit in Excel" (no new tools, per the partner constraint). Amounts in dollars with 2 decimals; BC sign convention: positive = debit, negative = credit; every Document No. sums to 0.00. Test data: `data/sample/messy_month/` (September; `expected.json` -> `close` has month totals, every payout, every bank deposit with the payouts it matches, and the planted exceptions). **All account numbers, customer numbers and the department code below are placeholders** except the pattern from the deck (FedEx: G/L 40356, Dept 180): the real mapping lives in the E-Commerce Allocation workbook's Journal Entry and Invoices tabs, which we have not seen.
