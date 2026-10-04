@@ -5,6 +5,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 **Last updated:** 2026-10-03 · **Branch:** o/phase1-data (merged to main)
 
 ## Done
+- Phase 3 export started (decision 007 response): `python -m reports.bc_export [--payload close.json]` writes `out/close/<month>/` General Journal, AR invoice, control totals and exceptions CSVs from a close payload (`docs/contracts/close-payload.md`); account rules in `reports/config/bc_mapping.csv`. Refuses unbalanced documents, re-checks the written files. Mock September close: 30 lines / 12 documents all 0.00, three sources RECONCILED. Tests: `python -m pytest reports/tests` (7).
 - Delivery: `reports/config/subscribers.csv` (sample roles, example.org), `python -m reports.email_gen` writes one `.eml` per active subscriber to `out/outbox/<run date>/` (opens in Outlook as unsent; no SMTP), `python -m reports.run_scheduled --from D1 --to D2` simulates the nightly job (pulse nightly, weekly on Mondays, monthly on the 1st, then emails). `run_nightly` files each pulse in `out/pulse/`.
 - UI sweep: white background, 2px corners, greys tinted from the brand black, SIMULATED badge in black; no emojis or placeholder text.
 - Demo on the real pipeline: `run_nightly` runs engine + recon.pulse by default (`--simulated` = stage fallback), each scenario in `out/<scenario>/`. Demo script uses Goodwill's formats (`gw_*`): real output matches the answer keys.

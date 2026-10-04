@@ -1,0 +1,4 @@
+Source,Label,Code,Path,Customer_No,Bank_Account,Clearing_Account,Sales_Account,Refunds_Account,Shipping_Account,Handling_Account,Fees_Account,Department_Code
+ebay,eBay,EBAY,Journal,,OPERATING,11310,40120,40190,40130,,61210,180
+amazon,Amazon,AMZN,Journal,,OPERATING,11320,40125,40195,40135,,61220,180
+shopgoodwill,ShopGoodwill,SGW,Invoice,C-SHOPGOODWILL,OPERATING,,40110,40191,40131,40115,61200,180
