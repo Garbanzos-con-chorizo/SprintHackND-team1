@@ -1,6 +1,6 @@
 # Plan: phase 2 (database, KPIs, dashboard, exports) and phase 3 (Business Central)
 
-Written 2026-10-03 20:30 EDT by Dani's agent. **Status: proposed**, see `docs/decisions/007-phase-2-3-owners-database-scorecard.md`. It replaces the phase 2 and phase 3 rows of `docs/PHASES.md` once Victor and Orlando accept it. Sizes: **S** < 30 min, **M** 30-90 min, **L** 90+ min.
+Written 2026-10-03 20:30 EDT by Dani's agent. **Status: accepted** (`docs/decisions/007-phase-2-3-owners-database-scorecard.md`). **What is done and what is left of phase 2: section 11; everything left is Victor's.** It replaces the phase 2 and phase 3 rows of `docs/PHASES.md` once Victor and Orlando accept it. Sizes: **S** < 30 min, **M** 30-90 min, **L** 90+ min.
 
 Checked against `main` at 78f876f (Orlando's static portal and the "static first" update to decision 006).
 
@@ -259,3 +259,22 @@ Suggested clock for Sunday: contracts done by 08:30, checkpoint 1 at 11:00, chec
 - **Phase 3 has no owner until checkpoint 1.** If checkpoint 1 slips past 11:00, phase 3 shrinks to package C on the month totals (a balanced General Journal without bank matching) before anything else is cut from it.
 - **Two KPI lists in the repo** until decision 007 is accepted and `kpi_catalog.md` is updated by Orlando.
 - **Growth needs two periods.** Without August it reads "no prior period", which is correct and should stay that way rather than be faked.
+
+## 11. Phase 2: what is done, and the tasks that are left (all Victor's)
+Checked 2026-10-03 23:40 on a clean checkout of `main`, on the generated pages rather than on status files.
+
+**Done and verified:** contracts C1 to C5; the store, the internal API mock and snapshot, the exports and the nightly run (V2.1 to V2.11, plus `listing_to_sale_days`); the 15 KPIs and their tests (D2.1 to D2.10); the monthly scorecard page and its print layout (O2.1, O2.2, O2.4). `python -m pytest engine recon reports -q`: 347 passed. `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04`: exit 0, with the September scorecard, its CSV, a one-page PDF and the email drafts. September revenue 7,075,396 = the answer key.
+
+**Left. All seven are assigned to Victor** (Dani, 2026-10-03 23:55; decision 007, last amendment). R1 to R4 and R6 were Orlando's in section 8, and R5 touches his `data/`; the files are claimed for Victor in `docs/CLAIMS.md`.
+
+| ID | Task | Was | Files | Done when |
+|---|---|---|---|---|
+| R1 | Draw sell-through as two boxes. The KPI file has them: `parts` on `sales.sell_through`, always two (`listed_in_period`, `left_from_earlier`), each with `name`, `value` (null means "No data"), `sold`, `available`. Keep printing `note`. Spec: `docs/contracts/kpi.md`, "Sell-through in two boxes" | new (Dani's page to Orlando, 22:35) | `reports/scorecard.py` | The September page shows "Listed in the period 61.3%" and "Left from earlier 15.3%"; all four `kpi.sample.*.json` render, including the day example whose first box has no value |
+| R2 | Make the weekly page render `out/kpi/week-<id>.json` through `reports.scorecard`, then delete `reports/kpi.py` and `reports/mock_api.py`. Today the weekly page computes 34 KPIs of its own, in the old groups of decision 006, from the old mock and a mock pulse history | O2.5, D2.11 | `reports/weekly.py`, `reports/hub.py`, `reports/run_scheduled.py`, `reports/kpi.py`, `reports/mock_api.py` | No file imports `reports.kpi` or `mock_api`; the weekly card opens a 15-KPI page with the same numbers as `out/kpi/week-<id>.json` |
+| R3 | Render the day, week-to-date and month-to-date scorecards after the nightly KPI step, and give the portal a way to switch between them. The KPI files are already written every night | O2.3 | `reports/run_nightly.py` (render step), `reports/hub.py` | After one night, `reports/scorecard/` holds that day, the week to date and the month to date, and the portal links all three |
+| R4 | Link the KPI CSV and the PDF from the scorecard page and from its portal card. Both files are already written next to the page | O2.6 | `reports/scorecard.py`, `reports/hub.py` | The page and the card link `<type>-<id>.csv` and `<type>-<id>.pdf` when those files exist |
+| R5 | Give September a prior month, so Revenue Growth % has a value: an August sample from `data/generate.py`, backfilled before September. If there is no time, keep "No data" (it is correct) and show growth on the October page in the demo | V2.12 | `data/generate.py`, `data/sample/` | The September scorecard shows a growth figure, or the demo script says which page shows growth |
+| R6 | Demo script for phases 2 and 3 (store status, the scorecard, CSV and PDF, the close, what is simulated), and bring `docs/pitch/kpi_catalog.md` in line with the 15 KPIs of `kpi.md` | O2.8 | `docs/pitch/` | A script someone else can follow for the recording; the catalog lists the 15 KPIs and their sources |
+| R7 | Update the phase 2 section of `docs/PHASES.md`, which still says nobody is assigned | new | `docs/PHASES.md` | It names what is done and points here |
+
+Order: R1, R2, R4, R3, then R6, R7; R5 last (it was first on the cut list). The slides, the video and the submission stay with Orlando (O6 to O9, I4, I5).

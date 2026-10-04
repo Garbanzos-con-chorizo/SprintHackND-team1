@@ -2,10 +2,10 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 23:45 EDT · **Branch:** d/phase2-handoff (everything of mine is on `main`)
+**Last updated:** 2026-10-03 23:55 EDT · **Branch:** d/assign-phase2-rest (everything of mine is on `main`)
 
 ## Handoff (2026-10-03 23:45): my side of phase 2 is finished; Victor finishes the rest
-Dani's decision: Victor takes what is left of phase 2. The list is in "Phase 2: what is left" below and in Victor's requests.
+Dani's decision: Victor takes what is left of phase 2. The seven tasks are R1 to R7 in `docs/PLAN_PHASE_2_3.md`, section 11, all assigned to him (decision 007, last amendment), with the files claimed for him in `docs/CLAIMS.md`. The table below is the same list.
 
 - **Branch:** nothing open. All of `recon/` is on `main`; `recon.kpi` needs no further work for phase 2.
 - **What works** (run from a clean checkout tonight, `main` at 9233f9e plus this branch):
@@ -80,7 +80,7 @@ Found on the way:
 - Nothing blocks me, and nothing in `recon/` is waiting.
 
 ## Next
-- Phase 2: see "Phase 2: what is left" at the top. Victor continues (Dani's decision); items 1 to 4 are in Orlando's files.
+- Phase 2: R1 to R7 (`docs/PLAN_PHASE_2_3.md`, section 11) are Victor's. Nothing of it is mine.
 - For `recon/` itself, only if Goodwill answers an open definition (`docs/contracts/kpi.md`, "Open questions"): each is one constant at the top of `recon/kpi/kpis.py`.
 - Phase 3: Orlando has the export and the reconciliation on `main` (`reports/bc_export.py`, `reports/reconcile.py`); ask what is left to split.
 
