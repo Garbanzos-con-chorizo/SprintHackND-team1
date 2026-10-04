@@ -38,7 +38,10 @@ BANK_COLUMNS = ["bank_txn_id", "account", "posting_date", "description", "amount
 # ledger.csv (V3.5): every row of a Business Central G/L entries export, debit positive.
 LEDGER_COLUMNS = ["entry_no", "posting_date", "document_type", "document_no", "gl_account", "department",
                   "vendor_no", "description", "amount_cents", "source_file", "source_row"]
-CLOSE_TABLES = {"ledger": LEDGER_COLUMNS}
+# statements.csv (V3.9): one row per payment statement (Goodwill Books: the prior month's sales, fees, net paid).
+STATEMENT_COLUMNS = ["source", "period_from", "period_to", "sales_cents", "fees_cents", "net_cents", "paid_date",
+                     "reference", "source_file", "source_row"]
+CLOSE_TABLES = {"ledger": LEDGER_COLUMNS, "statements": STATEMENT_COLUMNS}
 
 # Marketplaces the pulse expects data for each day (keys of source_status.json). `other` is not
 # listed: it appears only on a day it has rows, otherwise the pulse treats it as not configured.
