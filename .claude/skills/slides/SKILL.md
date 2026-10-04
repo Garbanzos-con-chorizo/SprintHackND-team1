@@ -28,15 +28,18 @@ Distilled from: frontend-slides (Zara Zhang, MIT), guizang-ppt-skill Swiss style
 6. **Visual QA on the PNGs** (`<dir>/preview/`): read every screenshot. Check balance (no empty half), widows in body text, wraps inside labels, overlap, contrast, the 3-second point. Lint is an estimate; the screenshot is the truth. Fix, rebuild, re-check. Never publish unseen slides.
 7. **Speaker notes** on every slide: what to say (~30–45 s), the number to say aloud, what to point at.
 
-## Layouts (all in `docs/pitch/tools/deckgen.py`)
+## Design system and layouts (`docs/pitch/tools/deckgen.py`; why: `reference/github-skills-deep-dive.md`)
+Serif = voice (titles), sans = substance, mono = metadata (chrome bar, labels). Surfaces: `light` paper, `dark` navy, `accent` blue; alternate light reading slides with dark/accent breath slides. One accent, only on rules, square markers and one `*italic*` phrase per title. Flat + hairline. Every slide gets a visual structure (diagram, timeline, split), never plain bullets on white.
+
 | Layout | Use for |
 |---|---|
-| `statement` | Opening/closing claim, the ask, a section break |
+| `statement` | Section break, the demo cut, a thesis (≤ 12 words) |
 | `quotes` | The partner's own words (verbatim, attributed) |
-| `hero` | One number that proves the title |
-| `ledger` | Exceptions/financial rows: label · amount · status, hairline rules, tabular numerals |
-| `columns` | 2–3 parallel steps or phases separated by hairlines (no boxes) |
-| `table` | Built-vs-simulated, comparisons |
+| `system` | Inputs → the program → outputs (what it does) |
+| `timeline` | A linear process; `flag` marks the step that matters |
+| `duo` | Two sides split by a hairline (real vs simulated, before vs after) |
+| `points` | Two to four short claims with square markers |
+| `closing` | The ask: accent half + next steps half |
 
 ## Hackathon specifics
 - Opening slide = the partner's problem in the partner's words (judged).

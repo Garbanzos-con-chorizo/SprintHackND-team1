@@ -1,8 +1,11 @@
 """Render a deck content file (JSON) into the Slides artifact's files.
 
 Output: <out>/project/deck.json and <out>/project/slides/<id>.html, ready to
-publish to a Slides artifact with root=<out>. Layouts and themes follow
-.claude/skills/slides (Swiss grid: hairlines, one anchor color, no shadows).
+publish to a Slides artifact with root=<out> (and to bundle offline with
+export_html.py). Design system: .claude/skills/slides/reference/github-skills-deep-dive.md
+- serif = voice (titles), sans = substance (body), mono = metadata (chrome, labels)
+- two surfaces (paper / navy), one accent used only on rules, markers and *emphasis*
+- chrome bar on every slide, flat + hairline, no shadows, no gradients, system fonts only
 Schema: docs/pitch/tools/README.md.
 """
 import html
@@ -11,31 +14,19 @@ import os
 import re
 from datetime import datetime, timezone
 
-SYSTEM_SANS = "'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif"
-SYSTEM_SERIF = "Georgia, 'Times New Roman', serif"
+SERIF = "Georgia, 'Times New Roman', serif"
+SANS = "'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+MONO = "Consolas, Menlo, 'Courier New', monospace"
 
-THEMES = {
-    # Default: no network, no font files. System fonts only (works offline, in PDF and in the recording).
-    "plain": {"ink": "#231F20", "paper": "#FFFFFF", "alt": "#F4F4F2", "anchor": "#0054A4",
-              "warn": "#B25000", "body": "#3D393A", "muted": "#5C5859", "line": "#D3D2D2",
-              "head_stack": SYSTEM_SERIF, "text_stack": SYSTEM_SANS, "faces": {}},
-    "swiss": {"ink": "#231F20", "paper": "#FFFFFF", "alt": "#F4F4F2", "anchor": "#0054A4",
-              "warn": "#B25000", "body": "#4A4647", "muted": "#5C5859", "line": "#D3D2D2",
-              "head": "IBM Plex Sans", "text": "IBM Plex Sans",
-              "faces": {"ibm-plex-sans": ("IBM Plex Sans", "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap")}},
-    "keynote": {"ink": "#F5F5F7", "paper": "#111113", "alt": "#1C1C1E", "anchor": "#2997FF",
-                "warn": "#FF9F0A", "body": "#C7C7CC", "muted": "#98989D", "line": "#3A3A3C",
-                "head": "DM Sans", "text": "DM Sans",
-                "faces": {"dm-sans": ("DM Sans", "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400..700&display=swap")}},
-    "ledger": {"ink": "#1B1B1B", "paper": "#FAF8F3", "alt": "#F1EEE6", "anchor": "#0B5D3B",
-               "warn": "#A4361B", "body": "#45423C", "muted": "#5E5A52", "line": "#CFC9BB",
-               "head": "Source Serif 4", "text": "IBM Plex Sans",
-               "faces": {"source-serif-4": ("Source Serif 4", "https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&display=swap"),
-                         "ibm-plex-sans": ("IBM Plex Sans", "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap")}},
+SURFACES = {
+    "light": {"bg": "#F7F5F0", "ink": "#1A2030", "body": "#3E4452", "muted": "#5F6673",
+              "line": "#CFCAC0", "accent": "#0054A4", "warn": "#9A4A00"},
+    "dark": {"bg": "#0B2545", "ink": "#EEF0F3", "body": "#C9D2DE", "muted": "#9FB0C7",
+             "line": "#2A4670", "accent": "#8FB8E8", "warn": "#F2B36B"},
+    "accent": {"bg": "#0054A4", "ink": "#FFFFFF", "body": "#E3ECF7", "muted": "#C9DAEE",
+               "line": "#3B7BC2", "accent": "#FFFFFF", "warn": "#FFFFFF"},
 }
-
-PAD = "padding:128px 128px 160px"
-NUM = "font-variant-numeric:tabular-nums"
+TOP = 176  # content starts under the chrome bar
 
 
 def typo(s):
@@ -55,129 +46,138 @@ def esc(s):
 class Renderer:
     def __init__(self, deck):
         self.deck = deck
-        self.t = THEMES[deck.get("theme", "plain")]
-        t = self.t
-        if "head_stack" in t:
-            self.ff_head, self.ff_text = f"font-family:{t['head_stack']}", f"font-family:{t['text_stack']}"
-        else:
-            self.ff_head = f"font-family:'{t['head']}', Georgia, serif" if t["head"] != t["text"] else f"font-family:'{t['head']}', Arial, sans-serif"
-            self.ff_text = f"font-family:'{t['text']}', Arial, sans-serif"
+        self.c = SURFACES["light"]
 
-    # -- pieces ---------------------------------------------------------
-    def eyebrow(self, s, color=None):
-        return (f'<p style="font-size:28px;font-weight:600;color:{color or self.t["anchor"]}">{esc(s)}</p>') if s else ""
+    # -- type ladder ----------------------------------------------------
+    def emph(self, s):
+        """*phrase* in a title -> italic in the accent color (the one signature move)."""
+        return re.sub(r"\*(.+?)\*", lambda m: f'<i><span style="color:{self.c["accent"]}">{m.group(1)}</span></i>', esc(s))
 
-    def title(self, s, size=64, color=None):
-        return (f'<h2 style="{self.ff_head};font-size:{size}px;font-weight:700;line-height:1.1;'
-                f'color:{color or self.t["ink"]};width:1500px">{esc(s)}</h2>')
+    def title(self, s, size=72, width=1500):
+        return (f'<h2 style="font-family:{SERIF};font-size:{size}px;font-weight:400;line-height:1.12;'
+                f'color:{self.c["ink"]};width:{width}px">{self.emph(s)}</h2>')
 
-    def head(self, s):
-        return self.eyebrow(s.get("eyebrow")) + self.title(s["title"])
-
-    def body(self, inner):
-        """Body fills the space under the title and centers in it, so no half-empty slide."""
-        return f'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:32px">{inner}</div>'
-
-    def footer(self, i, n, color=None):
-        text = f'{i} / {n} · {self.deck.get("footer", "")}'.rstrip(" ·")
-        return (f'<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;'
-                f'color:{color or self.t["muted"]}">{esc(text)}</p>')
+    def label(self, s, color=None):
+        return f'<p style="font-family:{MONO};font-size:24px;color:{color or self.c["accent"]}">{esc(s)}</p>' if s else ""
 
     def p(self, s, size=32, color=None, extra=""):
-        return f'<p style="font-size:{size}px;line-height:1.4;color:{color or self.t["body"]}{extra}">{s}</p>'
+        return (f'<p style="font-family:{SANS};font-size:{size}px;line-height:1.45;'
+                f'color:{color or self.c["body"]}{extra}">{typo(s)}</p>')
+
+    def body(self, inner):
+        """Fill the space under the title and center the content in it (no gap, no crowding)."""
+        return f'<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:32px">{inner}</div>'
+
+    def marker(self, color=None):
+        return f'<div style="width:14px;height:14px;background:{color or self.c["accent"]};flex:none"></div>'
+
+    def chrome(self, i, n):
+        c = self.c
+        left = self.deck.get("chrome", "")
+        return (f'<p style="position:absolute;left:128px;top:64px;width:1200px;font-family:{MONO};font-size:24px;color:{c["muted"]}">{esc(left)}</p>'
+                f'<p style="position:absolute;right:128px;top:64px;width:300px;text-align:right;font-family:{MONO};font-size:24px;color:{c["muted"]}">{i:02d} / {n:02d}</p>'
+                f'<hr style="position:absolute;left:128px;top:112px;width:1664px;border-top:1px solid {c["line"]}">')
 
     # -- layouts --------------------------------------------------------
     def statement(self, s):
-        inner = self.eyebrow(s.get("eyebrow")) + self.title(s["title"], 96) + (self.p(esc(s["sub"]), 40) if s.get("sub") else "")
-        return inner, "display:flex;flex-direction:column;justify-content:center;gap:48px"
+        sub = self.p(s["sub"], 40, self.c["body"]) if s.get("sub") else ""
+        return (self.label(s.get("label")) + self.title(s["title"], 120, 1600) + sub,
+                "justify-content:center;gap:48px")
 
     def quotes(self, s):
-        t = self.t
+        c = self.c
         cols = "".join(
-            f'<div style="flex:1;display:flex;flex-direction:column;gap:16px;border-top:4px solid {t["anchor"]};padding:24px 0 0 0">'
-            f'<p style="font-size:28px;font-weight:600;color:{t["anchor"]}">{esc(q["label"])}</p>'
-            f'<p style="{self.ff_head};font-size:30px;line-height:1.4;color:{t["ink"]}">“{typo(q["text"])}”</p></div>'
+            f'<div style="flex:1;display:flex;flex-direction:column;gap:20px;border-top:1px solid {c["line"]};padding:28px 0 0 0">'
+            + self.label(q["label"]) +
+            f'<p style="font-family:{SERIF};font-size:32px;line-height:1.45;color:{c["ink"]}">“{typo(q["text"])}”</p></div>'
             for q in s["quotes"])
-        attr = self.p(esc(s.get("attribution", "")), 24, t["muted"])
-        return self.head(s) + self.body(f'<div style="display:flex;gap:56px">{cols}</div>' + attr), \
-            "display:flex;flex-direction:column;gap:48px"
+        attr = self.label(s.get("attribution"), c["muted"])
+        return (self.title(s["title"]) + self.body(f'<div style="display:flex;gap:64px">{cols}</div>' + attr),
+                "gap:48px")
 
-    def hero(self, s):
-        t = self.t
-        color = t["warn"] if s.get("tone") == "warn" else t["anchor"]
-        num = (f'<p style="{self.ff_head};font-size:240px;font-weight:700;line-height:1;letter-spacing:-6px;{NUM};'
-               f'color:{color}">{esc(s["number"])}</p>')
-        cap = self.p(typo(s.get("caption", "")), 40, t["ink"], ";width:1400px")
-        return self.head(s) + self.body(num + cap), "display:flex;flex-direction:column;gap:48px"
+    def system(self, s):
+        """Inputs -> the program -> outputs, drawn with hairlines (a diagram, not bullets)."""
+        c = self.c
 
-    def ledger(self, s):
-        t = self.t
-        rows = []
-        for r in s["rows"]:
-            c = t["warn"] if r.get("warn") else t["ink"]
-            rows.append(
-                f'<div style="display:flex;gap:32px;align-items:center;border-top:2px solid {t["line"]};padding:24px 0 24px 0">'
-                f'<div style="flex:1;display:flex;flex-direction:column;gap:8px">'
-                f'<p style="font-size:28px;font-weight:600;color:{c}">{esc(r.get("status", ""))}</p>'
-                f'<p style="font-size:36px;line-height:1.3;color:{t["ink"]}">{typo(r["label"])}</p></div>'
-                f'<p style="width:420px;text-align:right;{self.ff_head};font-size:64px;font-weight:700;{NUM};color:{c}">{esc(r["amount"])}</p></div>')
-        rows.append(f'<hr style="border-top:2px solid {t["line"]};width:1664px">')
-        return self.head(s) + self.body(f'<div style="display:flex;flex-direction:column">{"".join(rows)}</div>'), \
-            "display:flex;flex-direction:column;gap:48px"
+        def column(head, items):
+            rows = "".join(f'<div style="display:flex;gap:20px;align-items:center;border-top:1px solid {c["line"]};padding:20px 0 20px 0">'
+                           + self.marker() + self.p(x, 32, c["ink"]) + "</div>" for x in items)
+            return (f'<div style="flex:1;display:flex;flex-direction:column;gap:8px">{self.label(head)}'
+                    f'<div style="display:flex;flex-direction:column">{rows}</div></div>')
 
-    def columns(self, s):
-        t = self.t
-        cols = "".join(
-            f'<div style="flex:1;display:flex;flex-direction:column;gap:16px;border-top:4px solid {t["ink"]};padding:24px 0 0 0">'
-            f'<p style="font-size:28px;font-weight:600;color:{t["anchor"]}">{esc(c.get("label", ""))}</p>'
-            f'<h3 style="{self.ff_head};font-size:44px;font-weight:700;color:{t["ink"]}">{esc(c["head"])}</h3>'
-            + self.p(typo(c["text"]), 36) + "</div>" for c in s["cols"])
-        return self.head(s) + self.body(f'<div style="display:flex;gap:56px">{cols}</div>'), \
-            "display:flex;flex-direction:column;gap:48px"
+        core = s["core"]
+        mid = (f'<div style="width:440px;flex:none;display:flex;flex-direction:column;gap:16px;border:2px solid {c["accent"]};padding:40px">'
+               f'{self.label(core.get("label", ""))}<h3 style="font-family:{SERIF};font-size:48px;font-weight:400;color:{c["ink"]}">{esc(core["head"])}</h3>'
+               + "".join(self.p(x, 28) for x in core.get("lines", [])) + "</div>")
+        arrow = f'<p style="font-family:{SANS};font-size:56px;color:{c["accent"]}">→</p>'
+        return (self.title(s["title"]) +
+                self.body(f'<div style="display:flex;gap:40px;align-items:center">{column(s["in_label"], s["inputs"])}{arrow}{mid}{arrow}{column(s["out_label"], s["outputs"])}</div>'),
+                "gap:48px")
 
-    def table(self, s):
-        t = self.t
-        w = s.get("widths", [40, 60])
-        head = "".join(f'<th style="width:{w[i]}%">{esc(h)}</th>' for i, h in enumerate(s["head"]))
-        body = "".join("<tr>" + "".join(f"<td>{typo(c)}</td>" for c in r) + "</tr>" for r in s["rows"])
-        tbl = (f'<table style="font-size:28px;color:{t["ink"]};padding:16px 20px">'
-               f'<tr style="background:{t["alt"]}">{head}</tr>{body}</table>')
-        return self.head(s) + self.body(tbl), "display:flex;flex-direction:column;gap:48px"
+    def timeline(self, s):
+        """Linear steps: square node on a 1 px axis, label under it."""
+        c = self.c
+        steps, last = [], len(s["steps"]) - 1
+        for k, st in enumerate(s["steps"]):
+            node = c["warn"] if st.get("flag") else c["accent"]
+            axis = c["line"] if k < last else c["bg"]
+            steps.append(
+                f'<div style="flex:1;display:flex;flex-direction:column;gap:28px">'
+                f'<div style="display:flex;align-items:center"><div style="width:20px;height:20px;background:{node};flex:none"></div>'
+                f'<div style="flex:1;height:1px;background:{axis}"></div></div>'
+                f'<h3 style="font-family:{SERIF};font-size:40px;font-weight:400;color:{c["ink"]};width:340px">{esc(st["head"])}</h3>'
+                + (self.p(st["text"], 28, extra=";width:340px") if st.get("text") else "") + "</div>")
+        return (self.title(s["title"]) + self.body(f'<div style="display:flex">{"".join(steps)}</div>'),
+                "gap:48px")
+
+    def duo(self, s):
+        """Two halves split by one vertical hairline."""
+        c = self.c
+
+        def half(side):
+            mark = (lambda: self.marker()) if side.get("marked") else \
+                (lambda: f'<div style="width:14px;height:14px;border:2px solid {c["muted"]};flex:none"></div>')
+            rows = "".join(f'<div style="display:flex;gap:20px;align-items:center;border-top:1px solid {c["line"]};padding:18px 0 18px 0">'
+                           + mark() + self.p(x, 32, c["ink"]) + "</div>" for x in side["items"])
+            return (f'<div style="flex:1;display:flex;flex-direction:column;gap:12px">{self.label(side["label"], c.get(side.get("color", "accent")))}'
+                    f'<div style="display:flex;flex-direction:column">{rows}</div></div>')
+
+        return (self.title(s["title"]) +
+                self.body(f'<div style="display:flex;gap:72px">{half(s["left"])}<div style="width:1px;background:{c["line"]};flex:none"></div>{half(s["right"])}</div>'),
+                "gap:48px")
 
     def points(self, s):
-        """Two to four short lines, each a thing the program does, separated by hairlines."""
-        t = self.t
-        rows = "".join(f'<p style="font-size:44px;line-height:1.3;color:{t["ink"]};border-top:2px solid {t["line"]};padding:28px 0 28px 0">{typo(x)}</p>'
+        c = self.c
+        rows = "".join(f'<div style="display:flex;gap:32px;align-items:center;border-top:1px solid {c["line"]};padding:30px 0 30px 0">'
+                       + self.marker() + f'<p style="font-family:{SERIF};font-size:44px;line-height:1.25;color:{c["ink"]}">{typo(x)}</p></div>'
                        for x in s["points"])
-        return self.head(s) + self.body(f'<div style="display:flex;flex-direction:column">{rows}</div>'),             "display:flex;flex-direction:column;gap:48px"
+        return (self.title(s["title"]) + self.body(f'<div style="display:flex;flex-direction:column">{rows}</div>'),
+                "gap:48px")
 
-    def flow(self, s):
-        """Steps left to right joined by arrows: what goes in, what happens, what comes out."""
-        t = self.t
-        parts = []
-        for i, st in enumerate(s["steps"]):
-            if i:
-                parts.append(f'<p style="font-size:64px;color:{t["muted"]}">→</p>')
-            parts.append(f'<div style="flex:1;display:flex;flex-direction:column;gap:12px">'
-                         f'<h3 style="{self.ff_head};font-size:48px;font-weight:700;color:{t["ink"]}">{esc(st["head"])}</h3>'
-                         + self.p(typo(st.get("text", "")), 32) + "</div>")
-        return self.head(s) + self.body(f'<div style="display:flex;gap:40px;align-items:center">{"".join(parts)}</div>'),             "display:flex;flex-direction:column;gap:48px"
+    def closing(self, s):
+        """Left half in the accent color with the ask; right half the plain next steps."""
+        a, l = SURFACES["accent"], SURFACES["light"]
+        left = (f'<div style="display:flex;flex-direction:column;justify-content:center;gap:40px;background:{a["bg"]};padding:{TOP}px 96px 128px 128px">'
+                f'<p style="font-family:{MONO};font-size:24px;color:{a["muted"]}">{esc(s.get("label", ""))}</p>'
+                f'<h2 style="font-family:{SERIF};font-size:88px;font-weight:400;line-height:1.1;color:{a["ink"]}">{esc(s["title"])}</h2></div>')
+        rows = "".join(f'<div style="display:flex;gap:24px;align-items:center;border-top:1px solid {l["line"]};padding:24px 0 24px 0">'
+                       f'<div style="width:14px;height:14px;background:{l["accent"]};flex:none"></div>'
+                       f'<p style="font-family:{SANS};font-size:34px;line-height:1.35;color:{l["ink"]}">{typo(x)}</p></div>' for x in s["then"])
+        right = (f'<div style="display:flex;flex-direction:column;justify-content:center;gap:12px;background:{l["bg"]};padding:{TOP}px 128px 128px 96px">'
+                 f'<p style="font-family:{MONO};font-size:24px;color:{l["accent"]}">{esc(s.get("then_label", ""))}</p>{rows}</div>')
+        return left + right, "display:grid;grid-template-columns:1fr 1fr;padding:0"
 
     # -- slide ----------------------------------------------------------
     def slide(self, s, i, n):
-        t = self.t
-        inv = s.get("invert", False)
-        if inv:  # statement on the anchor color, light text
-            saved = dict(t)
-            t.update(ink=saved["paper"], body=saved["paper"], muted=saved["paper"], anchor=saved["paper"])
+        self.c = SURFACES[s.get("surface", "light")]
         inner, layout = getattr(self, s["layout"])(s)
-        bg = saved["anchor"] if inv else (t["alt"] if s.get("alt") else t["paper"])
-        out = (f'<section id="{s["id"]}" data-transition="fade" style="background:{bg};color:{t["ink"]};'
-               f'{self.ff_text};{PAD};{layout}">\n{inner}\n{self.footer(i, n)}\n'
-               f'<aside>{esc(s.get("notes", ""))}</aside>\n</section>\n')
-        if inv:
-            t.update(saved)
-        return out
+        if "display:grid" in layout:  # full-bleed split layout: its own padding, no chrome across two surfaces
+            box, chrome = layout, ""
+        else:
+            box, chrome = f"display:flex;flex-direction:column;padding:{TOP}px 128px 120px;{layout}", self.chrome(i, n)
+        return (f'<section id="{s["id"]}" data-transition="fade" style="background:{self.c["bg"]};color:{self.c["ink"]};'
+                f'font-family:{SANS};{box}">\n{inner}\n{chrome}\n'
+                f'<aside>{esc(s.get("notes", ""))}</aside>\n</section>\n')
 
 
 def build(content_path, out_dir):
@@ -193,8 +193,7 @@ def build(content_path, out_dir):
              "lists": "css", "title": deck["title"], "order": [s["id"] for s in slides],
              "sections": {f"s{k}": {"description": sec["description"], "start": sec["start"]}
                           for k, sec in enumerate(deck.get("sections") or [{"description": deck["title"], "start": slides[0]["id"]}], 1)},
-             "faces": {k: {"family": fam, "href": href} for k, (fam, href) in r.t["faces"].items()},
-             "designSystems": []}
+             "faces": {}, "designSystems": []}
     with open(os.path.join(proj, "deck.json"), "w", encoding="utf-8") as f:
         json.dump(index, f, indent=1)
     return [s["id"] for s in slides]

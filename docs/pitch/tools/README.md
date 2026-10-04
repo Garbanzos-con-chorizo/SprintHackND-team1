@@ -11,17 +11,17 @@
 
 ## content.json
 ```json
-{"title": "Deck name", "theme": "plain|swiss|keynote|ledger", "no_numbers": true, "footer": "All data synthetic · ...",
+{"title": "Deck name", "no_numbers": true, "chrome": "Team · Partner · synthetic data",
  "sections": [{"description": "one sentence", "start": "slide-id"}],
  "slides": [
-  {"id": "a", "layout": "statement", "eyebrow": "...", "title": "...", "sub": "...", "invert": false, "notes": "..."},
+  {"id": "a", "layout": "statement", "surface": "accent", "label": "Demo", "title": "Here it is, *running*.", "sub": "...", "notes": "..."},
   {"id": "b", "layout": "quotes", "title": "...", "quotes": [{"label": "...", "text": "..."}], "attribution": "..."},
-  {"id": "c", "layout": "hero", "title": "claim", "number": "$70,753.96", "caption": "...", "tone": "warn?"},
-  {"id": "d", "layout": "ledger", "title": "claim", "rows": [{"status": "...", "label": "...", "amount": "...", "warn": true}]},
-  {"id": "e", "layout": "columns", "title": "claim", "cols": [{"label": "...", "head": "...", "text": "..."}]},
-  {"id": "g", "layout": "points", "title": "claim", "points": ["...", "..."]},
-  {"id": "h", "layout": "flow", "title": "claim", "steps": [{"head": "...", "text": "..."}]},
-  {"id": "f", "layout": "table", "title": "claim", "head": ["A", "B"], "widths": [40, 60], "rows": [["...", "..."]]}
+  {"id": "c", "layout": "system", "surface": "dark", "title": "...", "in_label": "...", "inputs": ["..."],
+   "core": {"label": "...", "head": "...", "lines": ["..."]}, "out_label": "...", "outputs": ["..."]},
+  {"id": "d", "layout": "timeline", "title": "...", "steps": [{"head": "...", "text": "...", "flag": true}]},
+  {"id": "e", "layout": "duo", "title": "...", "left": {"label": "...", "marked": true, "items": ["..."]}, "right": {"label": "...", "color": "muted", "items": ["..."]}},
+  {"id": "f", "layout": "points", "title": "...", "points": ["..."]},
+  {"id": "g", "layout": "closing", "label": "The ask", "title": "...", "then_label": "Then we", "then": ["..."]}
  ]}
 ```
-Any slide takes `"alt": true` (second background tone). Text fields may hold inline `<b>`.
+`surface`: `light` (default), `dark`, `accent`. `*phrase*` in a title = italic accent (one per title). System fonts only.

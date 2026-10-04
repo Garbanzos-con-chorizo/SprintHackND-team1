@@ -6,7 +6,7 @@ import json
 import os
 import re
 
-WORD_BUDGET = {"quotes": 120, "table": 50, "ledger": 40}  # default 25 (speaker-led, short)
+WORD_BUDGET = {"quotes": 120, "table": 50, "ledger": 40, "system": 45, "timeline": 40, "duo": 40, "closing": 35}  # default 25 (speaker-led, short)
 DEFAULT_BUDGET = 25
 # Phrases that read as machine-written (Wikipedia "Signs of AI writing" + our own deck reviews).
 AI_TELLS = ["crucial", "pivotal", "seamless", "seamlessly", "leverage", "unlock", "empower", "robust",
@@ -57,7 +57,7 @@ def lint(content_path, out_dir):
         words, budget = visible_words(h), WORD_BUDGET.get(lay, DEFAULT_BUDGET)
         if words > budget:
             issues.append(("WARN", sid, f"{words} words on slide > {budget} (glance test)"))
-        title = s.get("title", "")
+        title = s.get("title", "").replace("*", "")
         if lay != "statement" and (len(title.split()) < 4 or title.endswith(":")):
             issues.append(("WARN", sid, "title reads like a label; write the claim as a sentence"))
         lines = wrap_lines(title, 96 if lay == "statement" else 64)
