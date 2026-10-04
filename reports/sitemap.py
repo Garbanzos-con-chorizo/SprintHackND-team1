@@ -36,10 +36,8 @@ MAP_CSS = """
 .map { position:relative; display:grid; grid-template-columns:repeat(var(--cols),minmax(200px,1fr)); gap:var(--sp-7);
   margin-top:var(--sp-6); padding:var(--sp-2) 0; }
 .map svg.edges { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
-.edge { fill:none; stroke:var(--accent); stroke-opacity:.28; stroke-width:1.5; stroke-dasharray:1; stroke-dashoffset:1;
-  animation:draw 900ms var(--ease-out) forwards; animation-delay:calc(var(--i, 0) * 25ms + 300ms);
+.edge { fill:none; stroke:var(--accent); stroke-opacity:.28; stroke-width:1.5; stroke-dasharray:1; stroke-dashoffset:0;
   transition:stroke-opacity var(--t-hover) var(--ease-out), stroke-width var(--t-hover) var(--ease-out); }
-@keyframes draw { to { stroke-dashoffset:0; } }
 .map.focus .edge { stroke-opacity:.06; }
 .map.focus .edge.on { stroke-opacity:.9; stroke-width:2; }
 .col h2 { margin-bottom:var(--sp-3); }
@@ -83,6 +81,7 @@ MAP_JS = """<script>
   if (!svg) return;
   var edges = JSON.parse(document.getElementById("map-edges").textContent);
   function node(id) { return document.getElementById(id); }
+  var first = true;
   function draw() {
     var box = map.getBoundingClientRect();
     svg.innerHTML = "";
@@ -99,8 +98,11 @@ MAP_JS = """<script>
       p.setAttribute("class", "edge");
       p.setAttribute("pathLength", "1");
       p.dataset.a = e[0]; p.dataset.b = e[1];
-      p.style.setProperty("--i", i);
       svg.appendChild(p);
+      // The line is drawn at rest; the draw-in only plays when motion is welcome and only on the first draw.
+      if (first && p.animate && !matchMedia("(prefers-reduced-motion: reduce)").matches)
+        p.animate([{strokeDashoffset: 1}, {strokeDashoffset: 0}],
+                  {duration: 900, delay: 300 + i * 25, easing: "cubic-bezier(.2,.8,.2,1)", fill: "backwards"});
     });
   }
   function focus(id) {
@@ -120,6 +122,7 @@ MAP_JS = """<script>
     n.addEventListener("focusout", function () { focus(null); });
   });
   draw();
+  first = false;
   window.addEventListener("resize", draw);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
 })();

@@ -238,7 +238,8 @@ main > :nth-child(n+7) { animation-delay:300ms; }
 
 @media (max-width:640px) {
   main { padding:var(--sp-5) var(--sp-4) 40px; }
-  .topbar > div { padding:0 var(--sp-4); }
+  .topbar > div { padding:0 var(--sp-4); gap:8px; }
+  .topbar .brand span { display:none; }
   header h1 { font-size:24px; }
   .facts > div { flex-basis:45%; }
   .facts > div:nth-child(odd) { border-left:0; }
@@ -280,7 +281,7 @@ main > :nth-child(n+7) { animation-delay:300ms; }
   dl.kv { padding:0 0 0 2pt; gap:1pt 10pt; font-size:7pt; }
   tbody > tr:hover > td { background:none; }
   *, *::before, *::after { animation:none !important; transition:none !important; }
-  .info, .xbtn, .xpad, .tip, details.acc, .nav, .noprint, .crumb, .tb-link { display:none !important; }
+  .info, .xbtn, .xpad, .tip, details.acc, .nav, .noprint, .crumb, .tb-link, .home-btn { display:none !important; }
   .print-only { display:block; }
   .print-notes { display:block; margin-top:5pt; padding-top:3pt; border-top:0.5pt solid #d2d2d7; font-size:6.5pt; line-height:1.3; color:#515154; }
   .print-notes p { margin:0; }
