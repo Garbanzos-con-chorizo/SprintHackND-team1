@@ -100,7 +100,7 @@ SUITE = [
      "switch": [("day", "Day"), ("week", "Week to date"), ("month", "Month to date")],
      "previous": "Previous month",
      "build": "python -m recon.kpi --month 2026-09, then python -m reports.monthly --month 2026-09"},
-    {"title": "Month-end close", "what": "Business Central import files, reconciliation and exceptions.",
+    {"title": "Month-end close", "what": "Export files for Business Central, reconciliation and exceptions.",
      "folder": "close", "pattern": r"\d{4}-\d{2}", "period": _month,
      "extras": lambda s: [(f"{s}/general_journal_{s}.csv", "General Journal"), (f"{s}/ar_invoice_{s}.csv", "AR invoice"),
                           (f"{s}/control_totals_{s}.csv", "Control totals"), (f"{s}/exceptions_{s}.csv", "Exceptions"),
@@ -239,14 +239,14 @@ def _close_row(folder, month):
     files = "".join(f'<a href="{month}/{key}_{month}.csv">{name}</a>' for key, name in CLOSE_FILES
                     if (folder / month / f"{key}_{month}.csv").exists())
     return {"cells": [f'<a href="{month}.html">{escape(_month(month))}</a>', pills, f"{len(exceptions)}",
-                      "<strong>Not posted</strong><small>import files only</small>", files],
+                      "<strong>Not posted</strong><small>export files only</small>", files],
             "find": f'{_month(month)} {month} {" ".join(r["Source"] + " " + r["Status"] for r in control)} not posted',
             "tags": "review" if review else "clean", "exceptions": len(exceptions)}
 
 
 def close_index(root):
     """<root>/close/index.html, the Month-end Close page: every month closed, newest first, with each source's
-    reconciliation status, its exceptions and its Business Central import files."""
+    reconciliation status, its exceptions and its export files for Business Central."""
     folder = root / "close"
     folder.mkdir(parents=True, exist_ok=True)
     months = sorted((f.stem for f in folder.glob("*.html") if re.fullmatch(r"\d{4}-\d{2}", f.stem)), reverse=True)
@@ -254,13 +254,13 @@ def close_index(root):
     top = library.tiles([
         ("Latest close", _month(months[0]), "the month that ended last", f"{months[0]}.html"),
         ("Exceptions to work", f'{rows[0]["exceptions"]}', f"in {_month(months[0])}", f"{months[0]}.html"),
-        ("Posting status", "Not posted", "import files for Business Central; nothing is sent", None)]) if months else ""
+        ("Posting status", "Not posted", "export files for Business Central; nothing is sent", None)]) if months else ""
     table = library.finder_table(
-        [("Month", "l"), ("Reconciliation by source", "l"), ("Exceptions", "num"), ("Posting", "l"), ("Import files", "files")],
+        [("Month", "l"), ("Reconciliation by source", "l"), ("Exceptions", "num"), ("Posting", "l"), ("Export files", "files")],
         [("", rows)], [("review", "Needs review"), ("clean", "Reconciled")],
         'Find a month: "September", "2026-09", "incomplete"', noun="close")
     body = (f'<header><h1>Month-end Close</h1><p>Goodwill Michiana e-commerce · {len(months)} month(s) · '
-            f'Business Central import files, not posted</p></header>{top}{table}')
+            f'export files for Business Central, not posted</p></header>{top}{table}')
     css = CSS + library.LIBRARY_CSS + ".pill.stale { background:var(--ink); color:#fff; }"
     (folder / "index.html").write_text(PAGE.substitute(title="Month-end Close", css=css, body=body), encoding="utf-8")
 
@@ -276,7 +276,7 @@ def build(root=ROOT / "reports"):
             f'<div class="hub-grid">\n' + "\n".join(cards) + '\n</div>'
             f'<p class="simnote"><strong>{DATA_LABEL}.</strong> Every figure on these pages comes from synthetic sample '
             f'files and simulated APIs: {DATA_NOTE}. KPIs marked "Simulated internal data" use a mock of Goodwill\'s '
-            f'internal systems. The month-end close writes Business Central import files: nothing is posted.</p>'
+            f'internal systems. The month-end close writes export files for Business Central: nothing is posted.</p>'
             f'<section class="foot"><p>Red edge: the report flags missing data or partial totals.</p></section>')
     path = root / "index.html"
     path.write_text(PAGE.substitute(title="E-commerce reports", css=CSS + HUB_CSS, body=body, root=""), encoding="utf-8")
