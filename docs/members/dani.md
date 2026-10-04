@@ -2,7 +2,7 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 21:20 EDT · **Branch:** d/kpi-calc (stacked on d/kpi-contract-v02)
+**Last updated:** 2026-10-03 21:55 EDT · **Branch:** d/checkpoint-1
 
 ## Done
 - P0 pulse contract (draft): `docs/contracts/pulse.md`, mocks `docs/contracts/examples/pulse.sample.json` (clean day) and `pulse.sample.missing.json` (eBay missing). Merged in PR #9.
@@ -21,12 +21,27 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - **D2.10** tests: 103 new (134 in `recon`). All 15 KPIs against hand-computed values; the command reproduces the four contract examples exactly; September revenue equals the `clean_month` answer key to the cent (7,075,396). The test databases are built from Victor's `engine/store/schema.sql`.
 - Decision 007: resolution appended (SQLite agreed by all three).
 
-## In progress
-- Two PRs: `d/kpi-contract-v02` (contract v0.2 and the four examples, docs only) and `d/kpi-calc` (the calculator and its tests, stacked on it).
+## Checkpoint 1: done (2026-10-03 21:45, on my machine, real commands)
+Environment: a virtual environment in the worktree (`.venv`) with `engine/requirements.txt`. Tests there: `pytest` 303 passed (engine 147, reports 22, recon 134).
 
-## Not verified yet (be careful what you claim)
-- **`recon.kpi` ran on Victor's real loader only for two fixture days.** By hand: `recon/tests/fixtures/clean_day` -> `recon.pulse` -> `engine.store` `load_day` -> `recon.kpi --date 2026-10-02`: revenue 30,147, prior day 25,800, change 4,347, the pulse's own numbers; `kpi_values` and the `runs` line written; the `other` row (`not_configured`) ignored. **Not run:** the engine's real output for a whole month (its dependencies are not installed on this machine) and anything with internal data (`internal_api pull` does not exist yet, so the 11 internal KPIs have only ever seen my test rows). That is checkpoint 1.
-- 11 of the 15 KPIs rest on simulated internal data; ASP and sell-through are per order until the transactions carry `units`.
+| Step | What I ran | What I saw |
+|---|---|---|
+| September into the store | `python -m engine.store backfill --inbox data/sample/clean_month/inbox --from 2026-09-01 --to 2026-09-30` | 30 of 30 days complete in 14 s, internal snapshot 30 of 30 days |
+| September KPIs | `python -m recon.kpi --month 2026-09` | **Revenue 7,075,396 = answer key**; gross, refunds, fees (582,033) and orders (2,422) equal it too. 13 ok, 1 partial (repeat buyers: Amazon has no buyer id), 1 no data (growth: nothing stored for August) |
+| Independent check | Plain SQL on the store, no code of mine | All 23 comparisons equal for September, October to date, week 40 and the messy month |
+| Four nights | `python -m reports.run_nightly --scenario day_clean`, `day_refund`, `day_ebay_missing`, `day_duplicates` | Exit 0 each, all 7 steps. October to date: revenue 981,461, flagged partial (eBay missing on the 3rd), up 9.6% on September 1 to 4 (895,886) |
+| Scorecard pages | `python -m reports.monthly --month 2026-09` and `2026-10` | Both pages render from my KPI files: 15 KPIs, 11 badged as simulated |
+| Messy month | Same backfill on `messy_month`, into its own store (`ECOM_DB=out/store/messy.db`) | Revenue 6,850,986 = its answer key; the three stale marketplace-days (Sep 7 ShopGoodwill, Sep 21 and 22 Amazon) are in `coverage.gaps`; 9 KPIs partial |
+
+Found on the way:
+- **Sell-through reads over 100% on single days** (203% on Sunday October 4, 113% on the 3rd): it is sold / listed in the period, and older listings sell too. Fine over a month (78%). Open: keep the definition and say so in a note, or change it. Not changed.
+- **Running `pytest` overwrites `out/kpi` and `out/pulse`** (`reports/tests/test_run_nightly.py` runs the real nightly with a temporary store but the default output folders). Told Victor. Re-run the nightly after the tests, before any demo.
+- Repeat buyer rate is 57% for September (811 buyers, 461 with two or more orders): that is the synthetic sample's small pool of buyers, not a claim about Goodwill.
+- The weekly page still uses the old math in `reports/kpi.py`; the monthly scorecard already reads my KPI file (D2.11 is half done).
+
+## Still not verified
+- Real Goodwill files and a real internal API: everything above is synthetic data and the mock.
+- `units`: no sale row has a unit count yet, so the per-unit variants of KPIs 10 and 11 ran only in tests.
 
 ## For teammates: what the new context file changes
 - **Orlando (P-O2):** Goodwill's own nightly table (slide 31) labels the rows SHOPGOODWILL, AMAZON, EBAY, OTHER E-COMMERCE CHANNELS and TOTAL E-COMMERCE, with columns DAILY REVENUE and DAILY CUSTOMERS. Use their labels.
@@ -35,14 +50,13 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - **Victor:** nothing here contradicts `docs/contracts/source-formats.md`; it agrees that staff count rows (orders) as customers. The pulse takes `customer_basis` from the engine's rows, so no pulse change is needed either way.
 
 ## Blocked / needs from others
-- Nothing blocks me. For checkpoint 1 I need September in the store (Victor: V2.4 backfill, V2.6 internal pull).
+- Nothing blocks me.
 - Orlando: tell me when the page reads `out/kpi/*.json`, then we delete the math in `reports/kpi.py` (D2.11).
 
 ## Next (task ids from `docs/PLAN_PHASE_2_3.md`)
-1. Checkpoint 1: `python -m recon.kpi --month 2026-09` on the loaded store must read 7,075,396; fix whatever differs.
-2. If the store is late (Victor's 10:00 tripwire in 007): one function in `recon/kpi/store.py` that builds the same `WindowData` from `out/pulse/*.json`. Not built.
-3. D2.11 with Orlando.
-4. Phase 3: Orlando already has the export and the reconciliation on `main` (`reports/bc_export.py`, `reports/reconcile.py`); ask at checkpoint 1 what is left to split.
+1. Decide what to do about sell-through over 100% on short periods (see checkpoint 1).
+2. D2.11 with Orlando: the weekly page still computes its own numbers.
+3. Phase 3: Orlando has the export and the reconciliation on `main` (`reports/bc_export.py`, `reports/reconcile.py`); ask what is left to split.
 
 ## How to run / test my part
 - Tests: `python -m unittest discover -s recon -t .` from the repo root (134 pass). On my machine Python 3.13 is only on the `py` launcher, so `py -m ...`.

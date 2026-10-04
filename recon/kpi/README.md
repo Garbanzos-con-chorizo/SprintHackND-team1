@@ -72,7 +72,9 @@ Rules that hold for every KPI (they are in the contract; the tests pin them):
 - `kpi_samples.py` (not a test): builds the test databases and regenerates the contract examples.
 
 ## Known limits
-- **Run on Victor's loader, but only on two fixture days, and never on the engine's own output.** Checked by hand on 2026-10-03: `recon/tests/fixtures/clean_day` -> `recon.pulse` -> `engine.store` `load_day` -> `recon.kpi --date 2026-10-02` gives revenue 30,147 with the prior day 25,800, the pulse's own numbers, and writes `kpi_values`. What has not been run: the engine's real output for a month (its dependencies are not installed on this machine), and anything with internal data, because `internal_api pull` does not exist yet. Both are checkpoint 1.
+- **Verified end to end on 2026-10-03** (checkpoint 1), with the real commands: `engine.store backfill` on `clean_month` (engine, pulse, store load and internal pull for 30 days), then `recon.kpi --month 2026-09`. Revenue 7,075,396, refunds, fees and orders all equal the answer key; 13 KPIs `ok`, growth `no_data` (nothing stored for August), repeat buyers `partial` (Amazon gives no buyer id). The four `day_*` nights through `reports.run_nightly` and the `messy_month` (revenue 6,850,986 = its key, the three stale marketplace-days flagged) agree too. Every scalar KPI of those files was recomputed with plain SQL on the store: no difference.
+- **Sell-through can exceed 100% over a short period.** It is sold / listed in the period, so a day on which little was listed and older listings sold reads 203% (October 4). Over a month it reads 78%. The page must not assume a ratio stays under 1.
+- **The test suite writes into `out/` and `reports/`.** `reports/tests/test_run_nightly.py` runs the real nightly with a temporary store but the default output folders, so after `pytest` the files `out/kpi/day-2026-10-01.json`, `week-2026-W40.json`, `month-2026-10.json` and `latest-*.json` come from a one-night store. Run the nightly again after running the tests.
 - **11 of the 15 KPIs are simulated** until Goodwill's internal data is real.
 - Growth compares with the period before, not year over year (needs 13 months stored).
 - Average selling price and sell-through are per order until the transactions carry `units`.
@@ -81,6 +83,5 @@ Rules that hold for every KPI (they are in the contract; the tests pin them):
 - A whole month is compared with the whole month before, so 30 days can face 31.
 
 ## What is left
-1. Checkpoint 1: run on the store once September is loaded (V2.4, V2.6); revenue must read 7,075,396.
-2. D2.11, with Orlando: delete the math from `reports/kpi.py` once the page reads the KPI file.
-3. Apply Goodwill's answers to the open definitions (one constant each, top of `kpis.py`).
+1. D2.11, with Orlando: delete the math from `reports/kpi.py` once the page reads the KPI file.
+2. Apply Goodwill's answers to the open definitions (one constant each, top of `kpis.py`).
