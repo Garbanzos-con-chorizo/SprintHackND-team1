@@ -7,7 +7,9 @@
 #   docker run --rm -p 127.0.0.1:8000:8000 goodwill-reports      # then open http://127.0.0.1:8000/
 FROM python:3.13-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+# CLOSE_UPLOADS=0: the image listens on 0.0.0.0 with no authentication, so adding files and re-running the
+# close from the portal (decision 010) is off here. Turn it on for a local demo with -e CLOSE_UPLOADS=1.
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 CLOSE_UPLOADS=0
 WORKDIR /app
 
 COPY engine/requirements.txt engine/requirements.txt

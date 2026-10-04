@@ -104,7 +104,8 @@ SUITE = [
      "folder": "close", "pattern": r"\d{4}-\d{2}", "period": _month,
      "extras": lambda s: [(f"{s}/general_journal_{s}.csv", "General Journal"), (f"{s}/ar_invoice_{s}.csv", "AR invoice"),
                           (f"{s}/control_totals_{s}.csv", "Control totals"), (f"{s}/exceptions_{s}.csv", "Exceptions"),
-                          (f"{s}/close_status_{s}.json", "Run status"), (f"{s}/runs.csv", "Run history")],
+                          (f"{s}/close_status_{s}.json", "Run status"), (f"{s}/runs.csv", "Run history"),
+                          ("index.html#add", "Add missing reports", "index.html")],
      "archive": None,
      "build": "python -m reports.close --inbox data/sample/messy_month/inbox --month 2026-09"},
 ]
@@ -244,13 +245,99 @@ def _close_row(folder, month):
             "tags": "review" if review else "clean", "exceptions": len(exceptions)}
 
 
+ADD_CSS = """
+.addfiles { padding:14px 16px; margin:0 0 4px; overflow:visible; }
+.addfiles h2.sec { margin:0 0 6px; }
+.addfiles p, .addfiles ul { margin:6px 0; font-size:15px; }
+.addfiles ul { padding-left:20px; }
+.addrow { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0 4px; }
+.addrow input[type=file] { font:inherit; font-size:14px; max-width:100%; }
+.btn { font:inherit; font-size:15px; font-weight:600; padding:8px 14px; border-radius:var(--radius); cursor:pointer;
+  border:1px solid var(--primary); background:var(--primary); color:#fff; }
+.btn.quiet { background:var(--card); color:var(--primary); }
+.btn:disabled { opacity:.5; cursor:default; }
+.btn:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+#add-state { min-height:1.5em; font-weight:600; }
+#add-state.bad { color:var(--down); }
+.addfiles .small { font-size:13px; color:var(--muted); }
+@media print { .addfiles { display:none; } }
+"""
+
+# The panel's script: sends each chosen file to the server, asks it to run the close again, reloads the page.
+# The server does the work (reports.close_upload); opened from disk, the panel says it needs the server.
+ADD_SCRIPT = """<script>
+(function () {
+  var box = document.getElementById("add");
+  if (!box) return;
+  var api = "../api/close/" + box.dataset.month, head = { "X-Reports": "1" };
+  var pick = document.getElementById("add-files"), run = document.getElementById("add-run");
+  var clear = document.getElementById("add-clear"), state = document.getElementById("add-state");
+  function say(text, bad) { state.textContent = text; state.className = bad ? "bad" : ""; }
+  function off(text) { pick.disabled = run.disabled = true; clear.hidden = true; say(text); }
+  function json(r) { return r.json(); }
+  function again() { return fetch(api + "/run", { method: "POST", headers: head }).then(json).then(function (d) {
+    if (!d.ok) throw new Error(d.error || (d.log || []).slice(-2).join(" ") || "the close did not run");
+    say("Done. Loading the new result...");
+    location.reload();
+  }); }
+  function fail(e) { run.disabled = clear.disabled = false; say("Not done: " + e.message, true); }
+  if (location.protocol === "file:") return off("Adding files needs the report server: run python server.py and open http://127.0.0.1:8000/");
+  fetch(api + "/uploads").then(json).then(function (d) {
+    if (!d.enabled) return off("Adding files is switched off on this server.");
+    clear.hidden = !(d.files || []).length;
+    if (!clear.hidden) say("Added so far: " + d.files.join(", "));
+  }).catch(function () { off("Adding files needs the report server (python server.py)."); });
+  run.addEventListener("click", function () {
+    var files = [].slice.call(pick.files);
+    if (!files.length) return say("Choose the report files first.", true);
+    run.disabled = true;
+    say("Adding " + files.length + " file(s)...");
+    files.reduce(function (before, f) { return before.then(function () {
+      return fetch(api + "/uploads/" + encodeURIComponent(f.name), { method: "PUT", headers: head, body: f }).then(json)
+        .then(function (d) { if (!d.ok) throw new Error(d.error || d.detail || "the file was not accepted"); });
+    }); }, Promise.resolve()).then(function () { say("Running the close again..."); return again(); }).catch(fail);
+  });
+  clear.addEventListener("click", function () {
+    clear.disabled = true;
+    say("Removing the added files and running the close again...");
+    fetch(api + "/uploads", { method: "DELETE", headers: head }).then(json).then(again).catch(fail);
+  });
+})();
+</script>"""
+
+
+def add_panel(folder, month):
+    """The "add missing reports" panel for the latest month: which reports the close says are missing (from its
+    exceptions file), a file picker and a button. The files go to the server, which runs the close again."""
+    missing = [e for e in _rows(folder / month / f"exceptions_{month}.csv") if e.get("Kind") == "missing_report"]
+    if missing:
+        what = ("<p>The close could not check these days, because no report covers them:</p><ul>"
+                + "".join(f'<li><strong>{escape(e.get("Source") or "A source")}:</strong> {escape(e.get("Detail") or "")}</li>'
+                          for e in missing) + "</ul>")
+    else:
+        what = f"<p>No report is missing for {escape(_month(month))}. A late file can still be added.</p>"
+    return (f'<section class="card addfiles" id="add" data-month="{month}">'
+            f'<h2 class="sec">Add missing reports · {escape(_month(month))}</h2>{what}'
+            f'<p>Download the report from the marketplace and add it here: the close runs again with it and this page '
+            f'shows the new result. Nothing is posted.</p>'
+            f'<div class="addrow"><input type="file" id="add-files" multiple accept=".csv,.xlsx" aria-label="Report files to add">'
+            f'<button class="btn" id="add-run" type="button">Add files and run the close again</button>'
+            f'<button class="btn quiet" id="add-clear" type="button" hidden>Remove the added files and run again</button></div>'
+            f'<p id="add-state" role="status"></p>'
+            f'<p class="small"><strong>{DATA_LABEL}:</strong> in the demo the late reports are the synthetic samples in '
+            f'<code>data/sample/messy_month/late/</code>. Added files are kept in <code>out/uploads/{month}/</code>; '
+            f'the sample folders are not changed.</p></section>')
+
+
 def close_index(root):
     """<root>/close/index.html, the Month-end Close page: every month closed, newest first, with each source's
-    reconciliation status, its exceptions and its export files for Business Central."""
+    reconciliation status, its exceptions and its export files for Business Central; and, for the latest month,
+    the panel to add the reports that were missing (decision 010)."""
     folder = root / "close"
     folder.mkdir(parents=True, exist_ok=True)
     months = sorted((f.stem for f in folder.glob("*.html") if re.fullmatch(r"\d{4}-\d{2}", f.stem)), reverse=True)
     rows = [_close_row(folder, m) for m in months]
+    panel = add_panel(folder, months[0]) + ADD_SCRIPT if months else ""
     top = library.tiles([
         ("Latest close", _month(months[0]), "the month that ended last", f"{months[0]}.html"),
         ("Exceptions to work", f'{rows[0]["exceptions"]}', f"in {_month(months[0])}", f"{months[0]}.html"),
@@ -260,16 +347,16 @@ def close_index(root):
         [("", rows)], [("review", "Needs review"), ("clean", "Reconciled")],
         'Find a month: "September", "2026-09", "incomplete"', noun="close")
     body = (f'<header><h1>Month-end Close</h1><p>Goodwill Michiana e-commerce · {len(months)} month(s) · '
-            f'export files for Business Central, not posted</p></header>{top}{table}')
-    css = CSS + library.LIBRARY_CSS + ".pill.stale { background:var(--ink); color:#fff; }"
+            f'export files for Business Central, not posted</p></header>{top}{panel}{table}')
+    css = CSS + library.LIBRARY_CSS + ADD_CSS + ".pill.stale { background:var(--ink); color:#fff; }"
     (folder / "index.html").write_text(PAGE.substitute(title="Month-end Close", css=css, body=body), encoding="utf-8")
 
 
 def build(root=ROOT / "reports"):
     """Write <root>/index.html (and the close's list of months) and return the portal's path."""
     root = Path(root)
-    cards = [card(root, item) for item in SUITE]
     close_index(root)
+    cards = [card(root, item) for item in SUITE]
     body = (f'<header><h1>Latest reports</h1>'
             f'<p>Goodwill Michiana e-commerce · updated {stamp(datetime.now().isoformat())}</p></header>'
             f'{trend(root)}'
