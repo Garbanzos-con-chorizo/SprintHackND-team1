@@ -2,7 +2,15 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 · **Branch:** victor/l7-demo-script (docs); everything else of mine is on `main`
+**Last updated:** 2026-10-04 10:45 · **Branch:** victor/frontend-design (proposal, not merged); everything else of mine is on `main`
+
+## Front end: one look for every page (branch `victor/frontend-design`, a proposal: not merged)
+- **What works:** every page has the same top bar (Reports, Nightly pulse, Scorecards, Month-end close) with a "Synthetic sample data" label, and a footer that repeats it. Before, the portal, the pulse pages and the index pages had no such label. 16px base type, one card style, plain page titles. The portal has a revenue-by-night chart by marketplace (plain HTML, no script; a marketplace with no data is named, never drawn as zero), a note on what is synthetic, simulated and not posted, a "Previous month" link and a "Daily table" link. The scorecard's "Simulated internal data" badge is darker and on its own line, the two top-10 tables no longer overflow at 1280px, and the scorecard index lists periods by name. `reports/hub.py` writes `reports/close/index.html`.
+- **Files outside my claim:** `reports/pulse.py` (shared `CSS` and `PAGE`) and `reports/monthly/index.html` are Orlando's; claimed in `docs/CLAIMS.md`, notes in his and Dani's inboxes. `reports/close_report.py` is not edited; no word or number on the close page changes.
+- **How to run it:** `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04`, then `python server.py` and open http://127.0.0.1:8000/.
+- **Checked:** `python -m pytest engine recon reports -q`: 459 passed. The September scorecard PDF is still 1 page. At 375px wide no page scrolls sideways.
+- **Known issues:** the portal chart shows Saturday Oct 3 at $2,324 (two files missing that night) while Sunday's pulse says "down 14.3% vs Saturday": Sunday's files also cover Saturday, so its comparison uses $3,243.08. Both are right for what each night had; don't linger on it in the video. The daily table (`monthly/index.html`) still prints the raw timestamp.
+- **Next:** Orlando's and Dani's yes, then one PR with the before and after screenshots.
 
 ## Phase 3: decision 009, plan in `docs/PLAN_PHASE_3.md` (my tasks V3.1 to V3.10)
 ### Done
