@@ -626,6 +626,14 @@ def messy_month(events):
                       "refunds_cents": -sum(e.order.subtotal for e in evs if isinstance(e, Refund)),
                       "fees_cents": sum(e.fee for e in sales), "orders": len(sales)}
         month[src]["revenue_cents"] = month[src]["sales_cents"] + month[src]["refunds_cents"]
+        # For the close: what the marketplace owes for this activity, and the part no payout covers yet.
+        ship = lambda o: 399 * len(o.items) if o.source == "amazon" else o.shipping_cents
+        month[src]["shipping_cents"] = (sum(ship(e) for e in sales)
+                                        - sum(ship(e.order) for e in evs if isinstance(e, Refund)))
+        month[src]["handling_cents"] = SGW_HANDLING * len(sales) if src == "shopgoodwill" else 0
+        month[src]["net_cents"] = sum(net(e) for e in evs)
+        paid = {id(e) for p in payouts if p["source"] == src for e in p["events"]}
+        month[src]["unpaid_activity_cents"] = sum(net(e) for e in evs if id(e) not in paid)
     key["close"] = {
         "month": "2026-09",
         "marketplace_totals_from_files": month,
