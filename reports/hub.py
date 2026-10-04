@@ -69,6 +69,7 @@ SUITE = [
      "extras": lambda s: [(f"{s}.csv", "KPI table (CSV)"), (f"{s}.pdf", "PDF"), (f"{s}.json", "KPI file"),
                           (f"../monthly/{s[6:]}.csv", "Daily CSV")],
      "archive": ("index.html", "All scorecards"),
+     "switch": [("day", "Day"), ("week", "Week to date"), ("month", "Month to date")],
      "build": "python -m recon.kpi --month 2026-09, then python -m reports.monthly --month 2026-09"},
     {"title": "Month-end close", "what": "Business Central import files, reconciliation and exceptions.",
      "folder": "close", "pattern": r"\d{4}-\d{2}", "period": _month,
@@ -87,6 +88,14 @@ def headline(page):
     return unescape(re.sub(r"<[^>]+>", "", m[2])).strip(), bool(m[1])
 
 
+def _period_link(item, folder, kind, label):
+    """The newest page of one period type (day, week or month) for the portal's period switch."""
+    found = sorted(f for f in folder.glob(f"{kind}-*.html") if re.fullmatch(rf"{kind}-[\dW-]+", f.stem))
+    if not found:
+        return f'<span class="muted">{label} (not built)</span>'
+    return f'<a href="{item["folder"]}/{found[-1].name}">{label}</a>'
+
+
 def card(root, item):
     folder = root / item["folder"]
     pages = sorted(f for f in folder.glob("*.html") if re.fullmatch(item["pattern"], f.stem)) if folder.is_dir() else []
@@ -103,6 +112,8 @@ def card(root, item):
     elif len(pages) > 1:
         links.append("Earlier: " + ", ".join(f'<a href="{item["folder"]}/{p.name}">{escape(item["period"](p.stem))}</a>'
                                              for p in reversed(pages[:-1])))
+    if item.get("switch"):
+        links.insert(0, "Period: " + " · ".join(_period_link(item, folder, kind, label) for kind, label in item["switch"]))
     built = datetime.fromtimestamp(latest.stat().st_mtime)
     mock = "mock data" in latest.read_text(encoding="utf-8")
     return (f'<div class="hub-card{" alert" if alert else ""}"><div class="label">{item["title"]}</div>'

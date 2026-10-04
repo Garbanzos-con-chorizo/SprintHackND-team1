@@ -57,6 +57,18 @@ class ScorecardTest(unittest.TestCase):
             self.assertIn('<a href="month-2026-09.csv">', html)
             self.assertIn('<a href="month-2026-09.pdf">', html)
 
+    def test_portal_card_switches_between_day_week_and_month_pages(self):
+        from reports import hub
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for kind, name in (("day", "kpi.sample.day.json"), ("week", "kpi.sample.week.json"),
+                               ("month", "kpi.sample.month.json")):
+                scorecard.build(EXAMPLES / name, root / "scorecard")
+            html = hub.build(root).read_text(encoding="utf-8")
+            self.assertIn("Period:", html)
+            for kind in ("day", "week", "month"):
+                self.assertRegex(html, rf'href="scorecard/{kind}-[^"]+\.html"')
+
     def test_rankings_render_their_rows_and_partial_coverage_raises_the_banner(self):
         kf, html = self.render("kpi.sample.month.partial.json")
         rank = next(k for k in kf["kpis"] if k["id"] == "cat.top_revenue")
