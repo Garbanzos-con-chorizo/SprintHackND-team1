@@ -232,7 +232,7 @@ def render_day(p):
         definitions=accordion("Definitions", f"<dl>{defs}</dl>", ", ".join(k.replace("_", " ") for k in definitions)),
         notes=print_notes([f"<b>Data quality:</b> {quality}", f"<b>Definitions:</b> {one_line}"]),
     )
-    return PAGE.substitute(title=f"Nightly pulse {p['business_date']}", css=CSS, body=body)
+    return PAGE.substitute(title=f"Nightly pulse {p['business_date']}", css=CSS, body=body, section=("Nightly pulse", "index.html"))
 
 
 def email_delta(d):
@@ -320,7 +320,7 @@ def render_index(dest):
         f'  <li><a href="{d}.html">{long_date(d)}{" <span class=\"muted\">(latest)</span>" if i == 0 else ""}</a></li>'
         for i, d in enumerate(days))
     body = INDEX.substitute(count=len(days), items=items or '  <li class="muted">No reports yet.</li>')
-    return PAGE.substitute(title="Nightly pulse", css=CSS, body=body)
+    return PAGE.substitute(title="Nightly pulse", css=CSS, body=body, section=("Nightly pulse", "index.html"))
 
 
 def main(argv=None):

@@ -36,7 +36,10 @@ MAP_CSS = """
 .map { position:relative; display:grid; grid-template-columns:repeat(var(--cols),minmax(200px,1fr)); gap:var(--sp-7);
   margin-top:var(--sp-6); padding:var(--sp-2) 0; }
 .map svg.edges { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
-.edge { fill:none; stroke:var(--accent); stroke-opacity:.28; stroke-width:1.5; transition:stroke-opacity .2s ease, stroke-width .2s ease; }
+.edge { fill:none; stroke:var(--accent); stroke-opacity:.28; stroke-width:1.5; stroke-dasharray:1; stroke-dashoffset:1;
+  animation:draw 900ms var(--ease-out) forwards; animation-delay:calc(var(--i, 0) * 25ms + 300ms);
+  transition:stroke-opacity var(--t-hover) var(--ease-out), stroke-width var(--t-hover) var(--ease-out); }
+@keyframes draw { to { stroke-dashoffset:0; } }
 .map.focus .edge { stroke-opacity:.06; }
 .map.focus .edge.on { stroke-opacity:.9; stroke-width:2; }
 .col h2 { margin-bottom:var(--sp-3); }
@@ -51,9 +54,11 @@ MAP_CSS = """
 .node a.title { display:block; font-weight:var(--fw-semi); color:var(--ink); line-height:1.3; }
 .node .path { margin-top:2px; font:12px var(--mono); color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .node .chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:var(--sp-2); }
-.chip { display:inline-flex; align-items:center; gap:4px; height:20px; padding:0 8px; border-radius:980px; font-size:11px;
-  font-weight:var(--fw-medium); background:var(--neutral-bg); color:var(--ink); }
-.chip::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--ok); }
+.chip { display:inline-block; max-width:100%; height:20px; padding:0 8px; border-radius:980px; font-size:11px; line-height:20px;
+  font-weight:var(--fw-medium); background:var(--neutral-bg); color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  transition:background-color var(--t-hover) var(--ease-out); }
+a.chip:hover { background:var(--accent-tint); text-decoration:none; }
+.chip::before { content:""; display:inline-block; width:6px; height:6px; margin-right:5px; border-radius:50%; background:var(--ok); vertical-align:1px; }
 .chip.broken { background:var(--bad-bg); color:var(--bad); }
 .chip.broken::before { background:var(--bad); }
 .chip.home::before, .chip.nohome::before { display:none; }
@@ -92,6 +97,7 @@ MAP_JS = """<script>
       var p = document.createElementNS("http://www.w3.org/2000/svg", "path");
       p.setAttribute("d", "M" + x1 + " " + y1 + " C" + (x1 + dx) + " " + y1 + " " + (x2 - dx) + " " + y2 + " " + x2 + " " + y2);
       p.setAttribute("class", "edge");
+      p.setAttribute("pathLength", "1");
       p.dataset.a = e[0]; p.dataset.b = e[1];
       p.style.setProperty("--i", i);
       svg.appendChild(p);
@@ -225,13 +231,15 @@ def node_id(rel):
 
 def node_html(page, pages):
     files = [] if page["path"] == MAP else [link for link in page["links"] if link["kind"] not in ("page", "anchor", "external")]
-    emails = [link for link in page["links"] if link["kind"] == "page" and link["ok"] and pages.get(link["target"], {}).get("email")]
+    emails = [] if page["path"] == MAP else [link for link in page["links"] if link["kind"] == "page" and link["ok"]
+                                             and pages.get(link["target"], {}).get("email")]
     seen, chips = set(), []
     for link in files + emails:
         if link["target"] in seen:
             continue
         seen.add(link["target"])
-        label = "Email copy" if link in emails else link["text"] or link["kind"]
+        text = link["text"] if link["text"] and len(link["text"]) <= 24 else link["target"].rsplit("/", 1)[-1]
+        label = "Email copy" if link in emails else text or link["kind"]
         chips.append(f'<a class="chip{"" if link["ok"] else " broken"}" href="{escape(link["target"])}" '
                      f'title="{escape(link["target"])}">{escape(label)}</a>')
     home = '<span class="chip home">⌂ Home button</span>' if page["home"] else '<span class="chip nohome">No Home button</span>'

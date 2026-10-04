@@ -99,7 +99,7 @@ details.act[open] > summary::after { transform:rotate(90deg); }
 details.act > summary:hover { background:var(--hover); }
 .act .who { font-weight:var(--fw-semi); }
 .act .what { color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.act .amt { font-weight:var(--fw-semi); color:var(--bad); }
+.act .amt { font-weight:var(--fw-semi); color:var(--ink); }
 .act p { padding:0 var(--sp-5) var(--sp-3); font-size:13px; color:var(--muted); }
 
 /* Business Central files: cards that lift, a pill that fills on hover */
