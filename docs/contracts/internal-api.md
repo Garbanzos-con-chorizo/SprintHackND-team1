@@ -1,7 +1,7 @@
 # Contract: Goodwill internal API (mock today) and its daily snapshot
 
 - **Owner:** Victor (`engine/internal_api/`). **Consumers:** Dani (`recon/kpi/`, reads the snapshot from the store), Orlando (badges).
-- **Status:** draft v0.2. The metric list is the one Dani asked for in `docs/contracts/kpi.md` ("Inputs the KPIs need"), names and dimensions unchanged.
+- **Status:** draft v0.3: client and mock built (`engine/internal_api/`); `pull` into the store is next (V2.6). The metric list is the one Dani asked for in `docs/contracts/kpi.md` ("Inputs the KPIs need"), names and dimensions unchanged.
 - **Why it exists:** 11 of the 15 KPIs need company data we don't have (labor, employees, listings, inventory, costs, categories). Decision 006 point 9 and `docs/ASSUMPTIONS.md` 2b assume Goodwill exposes it through an internal API. We have never seen one, so we build a **mock with synthetic values** behind a client interface; a real API replaces the mock without changing anything downstream.
 
 ```
@@ -29,7 +29,9 @@ engine.internal_api (mock | http client) ──> python -m engine.internal_api p
 | `costs` | `shipping_net_cost_cents`, `category_cogs_cents` by category |
 | `categories` | `category_sales_cents` by category |
 
-Python interface (`engine/internal_api/client.py`): `InternalApi.get(endpoint, date) -> dict` with two implementations, `MockInternalApi` (default) and `HttpInternalApi` (base URL from `INTERNAL_API_URL`, written but untested: there's no server). The setting `INTERNAL_API=mock|http` picks one.
+Python interface (`engine/internal_api/`): `get(endpoint, day) -> dict` with two implementations, `MockInternalApi` (default) and `HttpInternalApi` (base URL from `INTERNAL_API_URL`). The setting `INTERNAL_API=mock|http` picks one (`make_client`). `snapshot_rows(api, day)` turns the four responses into `internal_daily` rows (63 a day with the mock). `HttpInternalApi` is tested only against a local stand-in server that answers with the mock, since we have no real API.
+
+`reports/mock_api.py` (Orlando's first mock: by period, 4 functions) stays as it is. `reports/kpi.py` still uses it, and its shape differs from this contract, so a re-export would not fit. It goes when Dani's KPI file replaces that math (D2.11).
 
 ## Stored metrics (`internal_daily`)
 One row per `(business_date, metric, dimension)`. **Flow** metrics are the day's amount; to get a period, sum them. **Snapshot** metrics are the state at the end of that day; for a period, take the last day (or the average for `employees`). A single-value metric uses `dimension = 'total'`. A metric never has both a `total` row and detail rows, so summing never double-counts.
@@ -54,5 +56,6 @@ One row per `(business_date, metric, dimension)`. **Flow** metrics are the day's
 - Cost of goods for donated items is a seeded share of category sales. Goodwill may track processing cost per item instead; that changes only the mock, not this table or the KPI file.
 
 ## Changelog
+- draft v0.3 (2026-10-04, Victor): built. Seeded sizes: about 53 labor hours a day at $17.25-18.25 an hour, 9 FTE plus or minus 1 (changes by ISO week), 124 listings a day (less at the weekend), donation-to-listing median about 6 days, 3,700 active listings, 1,800 unlisted, shipping net cost about $110 a day, cost of goods 20-45% of sales by category. On September (`clean_month`) that gives revenue per labor hour about $52 and net margin about 23%.
 - draft v0.2 (2026-10-03, Victor): metric names, dimensions and kinds switched to Dani's list in `kpi.md` (`employees`, `donation_to_listing_days`, `active_listings_by_age`, `shipping_net_cost_cents`, `category_sales_cents`, `category_cogs_cents`; single values use `dimension = 'total'`). Category sales are scaled to the pulse revenue.
 - draft v0.1 (2026-10-03, Victor): initial, from `docs/PLAN_PHASE_2_3.md` section 5. Replaces the four functions of `reports/mock_api.py`, which move into `engine/internal_api/`.

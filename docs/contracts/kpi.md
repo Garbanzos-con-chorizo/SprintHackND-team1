@@ -1,8 +1,8 @@
 # Contract: KPI file, phase 2 (task C2)
 
-- **Owner:** Dani (`recon/kpi/`). **Consumers:** Orlando (scorecard page, print layout), Victor (KPI CSV, PDF and email exports).
-- **Status:** draft
-- **Inputs:** the SQLite database of decision 007 (agreed by all three on 2026-10-03): the daily pulse, the transactions and the internal API snapshots of the period. Victor's `docs/contracts/store.md` will define it; until it exists, the tables and columns the KPIs read are listed under "Inputs the KPIs need".
+- **Owner:** Dani (`recon/kpi/`). **Consumers:** Orlando (scorecard page, print layout), Victor (KPI CSV, PDF and email exports; `kpi_values` in the store).
+- **Status:** draft v0.2, implemented in `recon/kpi/`. The tests reproduce every example file from the calculator.
+- **Inputs:** the store, `docs/contracts/store.md` (the SQLite database of decision 007): the daily pulse, the transactions and the internal API snapshots of the period. What is read from it is under "Inputs the KPIs read".
 
 ## What this contract does
 Turns a period of stored nightly data into Goodwill's own scorecard (deck slide 35): **15 KPIs, five areas, three each**. The page, the PDF and the CSV all render this one file, so they cannot disagree, and none of them does arithmetic or decides what missing data means.
@@ -12,13 +12,14 @@ database (pulse_daily, transactions, internal_daily)
    └─> python -m recon.kpi --period month --month 2026-09  ─> out/kpi/month-2026-09.json   + latest-month.json
        python -m recon.kpi --period week  --week 2026-W38  ─> out/kpi/week-2026-W38.json   + latest-week.json
        python -m recon.kpi --period day   --date 2026-10-02 ─> out/kpi/day-2026-10-02.json + latest-day.json
+                                                            ─> and the same numbers into kpi_values (see below)
 ```
-- Options: `--db PATH` (default: the `ECOM_DB` environment variable, else `out/store/ecom.db`), `--out-dir` (default `out/kpi`), `--through YYYY-MM-DD` (see Period). Without `--date`, `--week` or `--month`, the period is the one containing the latest stored business date.
+- Options: `--db PATH` (default: the `ECOM_DB` environment variable, else `out/store/ecom.db`), `--out-dir` (default `out/kpi`), `--through YYYY-MM-DD` (see Period). Without `--date`, `--week` or `--month`, the period is the one containing the latest stored business date (`--period month` alone is "this month to date"). With one of them, `--period` may be left out.
 - Re-running a period overwrites its file. `latest-<type>.json` is a copy of the file with the greatest period of that type.
-- Exit code 0 whenever a file is written, including when KPIs are `partial` or `no_data`. Non-zero only if the database is absent or unreadable.
+- Exit code 0 whenever a file is written, including when KPIs are `partial` or `no_data`. Exit code 1 if the database is absent or unreadable, 2 if the options make no sense (a bad id, or no latest period in an empty database); nothing is written then.
 
 ## File
-JSON, UTF-8. Money is integer USD cents. Examples: `examples/kpi.sample.month.json` (September, complete) and `examples/kpi.sample.month.partial.json` (October to date, one eBay day missing).
+JSON, UTF-8. Money is integer USD cents. Examples, all in `examples/`: `kpi.sample.month.json` (September, complete), `kpi.sample.month.partial.json` (October to date, one eBay day missing), `kpi.sample.week.json` (the week of September 28, same gap) and `kpi.sample.day.json` (Sunday October 4, when nothing was listed).
 
 ### Top level
 | Field | Type | Rule |
@@ -29,8 +30,9 @@ JSON, UTF-8. Money is integer USD cents. Examples: `examples/kpi.sample.month.js
 | `period` | object | The period reported. See Period. |
 | `prior_period` | object | The window every `prior_value` comes from. See Period. |
 | `coverage` | object | How much of the period has marketplace data. See Coverage. |
-| `internal_data` | object or null | `{ "source": "mock" \| "api", "label", "as_of" }`. `label` is the badge text to print ("Simulated internal data" while `source` is `mock`). `null` if no internal data is stored for the period. |
+| `internal_data` | object or null | `{ "source": "mock" \| "api", "label", "as_of" }`. `source` is `mock` unless every internal row of the period came from the real API. `label` is the badge text to print: "Simulated internal data" for `mock`, "Goodwill internal data" for `api`. `as_of` is the newest day with internal data. `null` if no internal data is stored for the period. |
 | `areas` | object[] | Always five, in display order: `{ "id", "name" }` with ids `financial`, `productivity`, `inventory`, `sales`, `category_customer`. |
+| `pillars` | object[] | Always five, in the order of slide 32: `{ "id", "name" }` with ids `growth`, `profitability`, `productivity`, `inventory`, `engagement`. See Pillars. |
 | `kpis` | object[] | **Always exactly 15, in display order** (area by area, three per area, the order of the table below). |
 | `definitions` | object | Keys `revenue`, `period`, `comparison`, `simulated`: sentences to print as is. Each KPI also carries its own `definition`. |
 
@@ -41,7 +43,7 @@ JSON, UTF-8. Money is integer USD cents. Examples: `examples/kpi.sample.month.js
 | `id` | string | `2026-10-02`, `2026-W38` (ISO week, Monday to Sunday), `2026-09`. |
 | `label` | string | Text for the page title, for example `"September 2026"` or `"October 2026 (to date)"`. |
 | `start`, `end` | date | First and last calendar day of the period. Business days are Eastern, as in the pulse. |
-| `through` | date | Last day actually covered. Equals `end` if the latest stored business date is on or after `end`; otherwise it is that latest date (a period "to date"). `--through` overrides it. |
+| `through` | date | Last day actually covered. Equals `end` if the latest stored business date is on or after `end`; otherwise it is that latest date (a period "to date"), or `start` if nothing is stored that late. `--through` overrides it. |
 | `days` | integer | Days from `start` to `through`. |
 | `complete` | boolean | `through == end`. |
 
@@ -66,7 +68,8 @@ Every KPI has every key, so the renderer needs no existence checks.
 | Field | Type | Rule |
 |---|---|---|
 | `id` | string | Stable id from the table below. |
-| `area` | enum | An `areas[].id`. |
+| `area` | enum | An `areas[].id`: where the KPI sits on the scorecard (slide 35). |
+| `pillar` | enum | A `pillars[].id`: which pillar of the monthly dashboard (slide 32) it speaks to. See Pillars. |
 | `name` | string | Goodwill's wording from slide 35. |
 | `kind` | enum | `scalar` (one number) or `ranking` (a top 10 list). |
 | `unit` | enum | `cents`, `ratio` (0.195 means 19.5%), `count`, `number` (one decimal), `days` (one decimal). |
@@ -78,13 +81,13 @@ Every KPI has every key, so the renderer needs no existence checks.
 | `note` | string or null | One sentence to print under the number: what is missing, or which fallback definition was used. Can be set when `status = ok` (a fallback). |
 | `basis` | string or null | Which variant of the definition was used, when there is more than one (see the table). |
 | `covers` | string[] or null | Marketplaces the value covers, when it is not all of them. `null` = every marketplace with data. |
-| `prior_value` | number or null | The same KPI over `prior_period`. `null` for a `ranking`. |
+| `prior_value` | number or null | The same KPI over `prior_period`. `null` for a `ranking`, when it has no data there, and when it was computed on another `basis` (per order against per unit). |
 | `delta` | object | Change against `prior_value`. See Delta. |
 | `good_direction` | enum | `up` or `down`: which way is an improvement (backlog and days to list are `down`). For colouring the delta. |
 | `source` | enum | `files` (marketplace exports only), `internal` (internal API only), `mixed`. |
 | `simulated` | boolean | `true` when the value uses internal data and `internal_data.source` is `mock`. **Every simulated number must be badged** with `internal_data.label`. |
 | `definition` | string | The definition actually used, as a sentence for the footnote. |
-| `inputs` | object | The numbers the value was computed from (keys per KPI below). For tooltips, the CSV and audit; the renderer may ignore it. |
+| `inputs` | object | The numbers the value was computed from (keys per KPI below). Every key is always there; one that could not be read is `null`. For tooltips, the CSV and audit; the renderer may ignore it. |
 
 ### Status
 **No data is never 0.** A `0` only ever means a real zero.
@@ -97,21 +100,21 @@ Every KPI has every key, so the renderer needs no existence checks.
 
 | `reason` | Status | When |
 |---|---|---|
-| `missing_days` | partial | A KPI that uses the marketplace files, and `coverage.complete` is false. |
-| `missing_internal_days` | partial | Internal data is stored for only part of the period (for a snapshot KPI: the latest snapshot is older than `through`). |
-| `no_buyer_ids` | partial | Some marketplaces give no buyer id; `covers` lists the ones that do. |
-| `no_prior_period` | no_data | Revenue growth, when `prior_period.available` is false. |
-| `no_internal_data` | no_data | The internal data this KPI needs is not stored for the period. |
+| `missing_days` | partial | A KPI that uses the marketplace files, and `coverage.complete` is false. For revenue growth also when the comparison window has gaps. |
+| `missing_internal_days` | partial | Internal data is stored for only part of the period (for a snapshot KPI: the latest snapshot is older than `through`), or a category has no cost of goods (counted as zero). |
+| `no_buyer_ids` | partial, or no_data | Some marketplaces give no buyer id; `covers` lists the ones that do. `no_data` when none does, or when no transactions are stored for the period. |
+| `no_prior_period` | no_data | Revenue growth, when the comparison window has no marketplace data. |
+| `no_internal_data` | no_data | The internal data this KPI needs is not stored for the period (or the donation ages are not whole days). |
 | `no_marketplace_data` | no_data | No marketplace-day in the period is `ok`. |
 | `zero_denominator` | no_data | The divisor is zero (no labor hours, no listings, no revenue). |
 | `period_too_short` | no_data | Repeat buyer rate for a `day` period. |
 
-If several apply, `reason` is the first in this order and `note` names them all.
+If several apply, `status` is the worst of them, `reason` is the first reason of that status in this order, and `note` strings together the notes of that status. A fallback note ("Per order, not per unit...") comes last, and is dropped when there is no value.
 
 ### Delta
 | Field | Type | Rule |
 |---|---|---|
-| `value` | number or null | `value - prior_value`, in the KPI's unit. For `ratio` it is a difference of ratios: 0.0465 is +4.65 percentage points. |
+| `value` | number or null | `value - prior_value`, in the KPI's unit and rounded like it. For `ratio` it is a difference of ratios: 0.0465 is +4.65 percentage points. |
 | `pct` | number or null | Percent change, one decimal. `null` for `ratio` KPIs and when `prior_value` is zero or negative. |
 | `reason` | enum or null | `null` when the comparison is clean. |
 
@@ -149,7 +152,7 @@ Variants (`basis`) and fallbacks, each stated in `definition` and `note`:
 | KPI | `basis` | Meaning |
 |---|---|---|
 | 2 | `prior_period` (default), `year_over_year` | Slide 33 says year over year. We compare with the period before until 13 months are stored. |
-| 10 | `per_unit`, `per_order` | `per_order` (revenue / orders) until `transactions` carries `units`. |
+| 10 | `per_unit`, `per_order` | `per_order` (revenue / orders) until `transactions` carries `units`: `per_unit` needs a unit count on every sale row of the period. |
 | 11 | `units`, `orders` | `orders` (orders / listings created) until `units` exists. |
 | 13, 14 | `internal_split`, `item_level` | `internal_split` today: the files carry no category, so the internal shares are applied to the files' revenue and the list adds up to KPI 1. `item_level` later, when each sale carries a category. |
 
@@ -157,9 +160,20 @@ Consistency rules: cost of goods in KPI 3 is the sum of the category cost of goo
 
 Rounding: cents and counts are integers; `ratio` has four decimals; `number` and `days` one decimal. Rounding happens once, on the final value.
 
+### Pillars
+Goodwill describes the dashboard twice: slide 32 asks it to balance five **pillars** (growth, profitability, productivity, inventory management, customer engagement), slide 35 lays the 15 KPIs out in five **areas**. The file keeps the areas as the layout and tags each KPI with its pillar, so the page can show both without holding a mapping of its own.
+
+| Pillar | KPIs |
+|---|---|
+| Growth | `fin.revenue`, `fin.revenue_growth`, `sales.asp`, `cat.top_revenue` |
+| Profitability | `fin.net_margin`, `cat.top_margin` |
+| Productivity | `prod.listings_created`, `prod.revenue_per_labor_hour`, `prod.listings_per_employee`, `sales.sales_per_employee` |
+| Inventory | `inv.days_donation_to_listing`, `inv.unlisted_backlog`, `inv.unsold_pct`, `sales.sell_through` (slide 36 calls it inventory velocity) |
+| Engagement | `cust.repeat_buyer_rate` (the only customer KPI of the 15) |
+
 ## Example (one KPI, from `kpi.sample.month.partial.json`)
 ```json
-{ "id": "fin.revenue", "area": "financial", "name": "Total E-Commerce Revenue", "kind": "scalar",
+{ "id": "fin.revenue", "area": "financial", "pillar": "growth", "name": "Total E-Commerce Revenue", "kind": "scalar",
   "unit": "cents", "per": null, "value": 981461, "rows": null,
   "status": "partial", "reason": "missing_days", "note": "eBay has no data on 2026-10-03, so this is partial.",
   "basis": null, "covers": null, "prior_value": 895886,
@@ -169,33 +183,59 @@ Rounding: cents and counts are integers; `ratio` has four decimals; `number` and
   "inputs": { "gross_cents": 986909, "refunds_cents": -5448, "fees_cents": 66661, "orders": 321 } }
 ```
 
-## Inputs the KPIs need (request to Victor: `store.md` and `internal-api.md`)
-The calculator opens the database read-only and reads three tables. These are the names and columns it is coded against until `store.md` says otherwise; `recon/kpi/store.py` is the only module that knows them, so a rename costs one file.
+## Inputs the KPIs read
+The store is defined by `docs/contracts/store.md` (schema: `engine/store/schema.sql`) and the internal metrics by `docs/contracts/internal-api.md`; both took the names first asked for here. The calculator opens the database read-only and reads three tables. `recon/kpi/store.py` is the only module that knows their names, so reading from somewhere else (the files, if the store is late: the 10:00 tripwire in decision 007) means replacing one function.
 
 | Table | Columns read | Notes |
 |---|---|---|
-| `pulse_daily` | `business_date`, `marketplace`, `status`, `gross_cents`, `refunds_cents`, `revenue_cents`, `fees_cents`, `orders` | One row per day and marketplace, copied from `out/pulse/<date>.json`. Numbers are NULL when `status` is not `ok`. **Required.** |
-| `transactions` | `business_date`, `marketplace`, `type`, `order_id`, `customer_id`, and `units` if the column exists | The rows of `transaction.md`, **accumulated over the whole period** (today each run rewrites `transactions.csv`, so nothing holds a month of them yet). Without this table KPI 15 is `no_data` and KPIs 10 and 11 use their per-order variants. |
-| `internal_daily` | `business_date`, `metric`, `dimension`, `value`, `source` | One row per night, metric and dimension; `source` is `mock` or `api`. Without it every internal KPI is `no_data`. |
+| `pulse_daily` | `business_date`, `marketplace`, `status`, `gross_cents`, `refunds_cents`, `revenue_cents`, `fees_cents`, `orders` | **Required.** `other` counts only on a day it is `ok`; it is never an expected marketplace. |
+| `transactions` | `business_date`, `marketplace`, `type`, `order_id`, `customer_id`, `units` | Sale rows only. Without the table, or for a period with no rows, KPI 15 is `no_data`; while `units` is NULL, KPIs 10 and 11 use their per-order variants. |
+| `internal_daily` | `business_date`, `metric`, `dimension`, `value`, `source` | Without it every internal KPI is `no_data`. |
 
-Dates are `YYYY-MM-DD` text. The metrics the KPIs read from `internal_daily` (flows are the day's amount; snapshots are the state at the end of the day):
+The internal metrics read (a copy for convenience; `internal-api.md` is the authority). Flows are the day's amount; snapshots are the state at the end of the day:
 | `metric` | `dimension` | Kind | Used by |
 |---|---|---|---|
-| `labor_hours` | `total` (activities optional) | flow | 5 |
+| `labor_hours` | `total` | flow | 5 |
 | `labor_cost_cents` | `total` | flow | 3 |
 | `employees` | `total` (full-time equivalents) | snapshot | 6, 12 |
 | `listings_created` | marketplace | flow | 4, 6, 11 |
-| `donation_to_listing_days` | whole days as text (`"0"`, `"1"`, ...); value = items listed that day with that age | flow | 7 (a median cannot be rebuilt from daily medians; it can from daily counts) |
+| `donation_to_listing_days` | whole days as text (`"0"`, `"1"`, ...); value = items listed that day with that age | flow | 7 (a median cannot be rebuilt from daily medians; it can from daily counts). A day on which nothing was listed has no rows, so KPI 7 is `no_data` only when the whole period has none |
 | `unlisted_backlog` | `total` | snapshot | 8 |
 | `active_listings_by_age` | `0-30`, `31-60`, `61-90`, `91+` | snapshot | 9 |
 | `shipping_net_cost_cents` | `total`: paid to carriers minus charged to buyers | flow | 3 |
 | `category_sales_cents` | category | flow | 13, 14 |
 | `category_cogs_cents` | category | flow | 3, 14 |
 
-## Mock for parallel work
-Orlando builds the scorecard against the two example files. They follow this contract and their arithmetic is consistent (the top 10 adds up to revenue, the deltas match the values). **What is real in them:** revenue, refunds, fees and orders are the answer keys of `data/sample/clean_month` (September, and September 1 to 4 as the comparison) and of the four `day_*` scenarios (October 1 to 4, eBay missing on the 3rd). **What is invented:** every internal number, the buyer counts, and the missing donation dates in the partial file (there to show an internal `no_data`).
+## History in the store (`kpi_values`)
+After writing the file, the command records the same numbers in the store, by the rules of `store.md`: the period's rows are deleted and inserted again in one transaction, and a `runs` line with `command = 'kpi'` logs it. Re-running a period therefore replaces its rows.
 
-States the two files cover: `ok`; `partial` with `missing_days` and with `no_buyer_ids`; `no_data` with `no_prior_period` and `no_internal_data`; a fallback `basis` with a note; a period to date; deltas that are clean, `partial_period`, `no_prior_period`, `current_no_data` and `not_applicable`.
+| Column | From the file |
+|---|---|
+| `period_type`, `period_start` | `period.type`, `period.start` |
+| `period_end` | `period.through`: the last day the values cover, so a period to date shows as one |
+| `kpi_id` | `id` |
+| `dimension` | `''` for a single value. For a ranking, one row per category with its `label` (a ranking without data is one row with `''` and a NULL value) |
+| `value`, `unit`, `status`, `source` | As in the file; `value` is NULL when `no_data` |
+| `computed_at` | `generated_at` |
+
+If the table is missing (an older database), the file is still written, the command says so on stderr and exits 0.
+
+## Mock for parallel work
+Orlando builds the scorecard against the four example files. **They are the calculator's output** on a test database, so the page and the calculator cannot disagree on shape: `python -m recon.tests.kpi_samples` rewrites them, and a test fails if they drift from the code. **What is real in them:** revenue, refunds, fees and orders are the answer keys of `data/sample/clean_month` (September) and of the four `day_*` scenarios (October 1 to 4, eBay missing on the 3rd). **What is invented:** every internal number and the buyers. Three things are staged to show states: no donation dates in October (an internal `no_data`), no backlog snapshot on October 4 (an old snapshot), and no production on Sundays (real zeros and zero divisors).
+
+| Example | States it shows |
+|---|---|
+| `kpi.sample.month.json` | `ok`; `no_data` / `no_prior_period` (growth, nothing stored for August); `partial` / `no_buyer_ids`; fallback `basis` with a note; every delta `no_prior_period` |
+| `kpi.sample.month.partial.json` | A period to date; `partial` / `missing_days` and `missing_internal_days`; `no_data` / `no_internal_data`; deltas clean, `partial_period`, `current_no_data`, `not_applicable` |
+| `kpi.sample.week.json` | A complete week with one gap: `missing_days`, `missing_internal_days`, and clean deltas on the internal KPIs |
+| `kpi.sample.day.json` | `no_data` / `period_too_short` (KPI 15), `zero_denominator` (KPIs 5 and 11: no labor hours, nothing listed), `no_internal_data`; real zeros that stay `ok` (KPIs 4 and 6); a clean value whose delta is `partial_period` because the day before had a gap |
+
+To see any other period before the real database exists:
+```
+python -m recon.tests.kpi_samples --db out/store/ecom.db    # the same test database, September and October 1 to 4
+python -m recon.kpi --period week                           # out/kpi/week-2026-W40.json
+python -m recon.kpi --date 2026-10-03                       # a day with eBay missing
+```
 
 ## Open questions (default applies until answered)
 - Growth year over year or against the prior period (KPI 2): prior period, labelled.
@@ -205,4 +245,5 @@ States the two files cover: `ok`; `partial` with `missing_days` and with `no_buy
 - Net shipping cost (KPI 3): carrier cost minus shipping charged to buyers, from the internal API until `transactions` carries shipping.
 
 ## Changelog
+- draft v0.2: implemented. The example files are now generated by the calculator (differences from v0.1: a few cents in the margin ranking, `inputs.items_listed` is `null` when there are no donation dates, a note now carries the gap sentence before a fallback sentence, and in the partial month the backlog snapshot is a day old). Two more examples, a week and a day, asked for by Orlando (C5). New fields `pillar` per KPI and `pillars` at the top level, asked for by Victor (slide 32's five pillars; mapping under Pillars). Inputs now point to `store.md` and `internal-api.md`; the KPIs are also recorded in `kpi_values`. Clarified: exit codes, `--period` alone, `through` when nothing is stored, `prior_value` across bases, `inputs` keys always present, how `status`, `reason` and `note` combine, `no_buyer_ids` as `no_data`, the `internal_data` label.
 - draft v0.1: initial. Replaces the KPI list of `docs/pitch/kpi_catalog.md` and the rows produced by `reports/kpi.py` (decision 007).

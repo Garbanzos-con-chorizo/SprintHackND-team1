@@ -3,41 +3,35 @@
   "generated_at": "2026-10-05T00:20:00-04:00",
   "currency": "USD",
   "period": {
-    "type": "month",
-    "id": "2026-10",
-    "label": "October 2026 (to date)",
-    "start": "2026-10-01",
-    "end": "2026-10-31",
+    "type": "day",
+    "id": "2026-10-04",
+    "label": "October 4, 2026",
+    "start": "2026-10-04",
+    "end": "2026-10-04",
     "through": "2026-10-04",
-    "days": 4,
-    "complete": false
+    "days": 1,
+    "complete": true
   },
   "prior_period": {
-    "id": "2026-09",
-    "label": "September 1 to 4, 2026",
-    "start": "2026-09-01",
-    "through": "2026-09-04",
-    "days": 4,
+    "id": "2026-10-03",
+    "label": "October 3, 2026",
+    "start": "2026-10-03",
+    "through": "2026-10-03",
+    "days": 1,
     "available": true
   },
   "coverage": {
-    "days_expected": 4,
-    "days_complete": 3,
-    "days_partial": 1,
+    "days_expected": 1,
+    "days_complete": 1,
+    "days_partial": 0,
     "days_missing": 0,
-    "complete": false,
+    "complete": true,
     "by_marketplace": {
-      "shopgoodwill": 4,
-      "amazon": 4,
-      "ebay": 3
+      "shopgoodwill": 1,
+      "amazon": 1,
+      "ebay": 1
     },
-    "gaps": [
-      {
-        "date": "2026-10-03",
-        "marketplace": "ebay",
-        "status": "missing"
-      }
-    ]
+    "gaps": []
   },
   "internal_data": {
     "source": "mock",
@@ -97,17 +91,17 @@
       "kind": "scalar",
       "unit": "cents",
       "per": null,
-      "value": 981461,
+      "value": 278010,
       "rows": null,
-      "status": "partial",
-      "reason": "missing_days",
-      "note": "eBay has no data on 2026-10-03, so this is partial.",
+      "status": "ok",
+      "reason": null,
+      "note": null,
       "basis": null,
       "covers": null,
-      "prior_value": 895886,
+      "prior_value": 266632,
       "delta": {
-        "value": 85575,
-        "pct": 9.6,
+        "value": 11378,
+        "pct": 4.3,
         "reason": "partial_period"
       },
       "good_direction": "up",
@@ -115,10 +109,10 @@
       "simulated": false,
       "definition": "Sales minus refunds, before marketplace fees. Excludes shipping and tax.",
       "inputs": {
-        "gross_cents": 986909,
-        "refunds_cents": -5448,
-        "fees_cents": 66661,
-        "orders": 321
+        "gross_cents": 278010,
+        "refunds_cents": 0,
+        "fees_cents": 18889,
+        "orders": 79
       }
     },
     {
@@ -129,26 +123,26 @@
       "kind": "scalar",
       "unit": "ratio",
       "per": null,
-      "value": 0.0955,
+      "value": 0.0427,
       "rows": null,
       "status": "partial",
       "reason": "missing_days",
-      "note": "eBay has no data on 2026-10-03, so this is partial.",
+      "note": "The comparison period (October 3, 2026) is partial.",
       "basis": "prior_period",
       "covers": null,
-      "prior_value": null,
+      "prior_value": 0.3448,
       "delta": {
-        "value": null,
+        "value": -0.3021,
         "pct": null,
-        "reason": "no_prior_period"
+        "reason": "partial_period"
       },
       "good_direction": "up",
       "source": "files",
       "simulated": false,
       "definition": "Change in revenue against the comparison period.",
       "inputs": {
-        "revenue_cents": 981461,
-        "prior_revenue_cents": 895886
+        "revenue_cents": 278010,
+        "prior_revenue_cents": 266632
       }
     },
     {
@@ -159,16 +153,16 @@
       "kind": "scalar",
       "unit": "ratio",
       "per": null,
-      "value": 0.2241,
+      "value": 0.5973,
       "rows": null,
-      "status": "partial",
-      "reason": "missing_days",
-      "note": "eBay has no data on 2026-10-03, so this is partial.",
+      "status": "ok",
+      "reason": null,
+      "note": null,
       "basis": null,
       "covers": null,
-      "prior_value": 0.1776,
+      "prior_value": 0.1767,
       "delta": {
-        "value": 0.0465,
+        "value": 0.4206,
         "pct": null,
         "reason": "partial_period"
       },
@@ -177,12 +171,12 @@
       "simulated": true,
       "definition": "(Revenue - marketplace fees - cost of goods - net shipping cost - labor cost) / revenue.",
       "inputs": {
-        "revenue_cents": 981461,
-        "fees_cents": 66661,
-        "cogs_cents": 289681,
-        "shipping_net_cost_cents": 44100,
-        "labor_cost_cents": 361025,
-        "net_profit_cents": 219994
+        "revenue_cents": 278010,
+        "fees_cents": 18889,
+        "cogs_cents": 82052,
+        "shipping_net_cost_cents": 11025,
+        "labor_cost_cents": 0,
+        "net_profit_cents": 166044
       }
     },
     {
@@ -193,17 +187,17 @@
       "kind": "scalar",
       "unit": "count",
       "per": null,
-      "value": 471,
+      "value": 0,
       "rows": null,
       "status": "ok",
       "reason": null,
       "note": null,
       "basis": null,
       "covers": null,
-      "prior_value": 455,
+      "prior_value": 155,
       "delta": {
-        "value": 16,
-        "pct": 3.5,
+        "value": -155,
+        "pct": -100.0,
         "reason": null
       },
       "good_direction": "up",
@@ -212,9 +206,9 @@
       "definition": "New listings created in the period, all marketplaces.",
       "inputs": {
         "by_marketplace": {
-          "shopgoodwill": 254,
-          "amazon": 83,
-          "ebay": 134
+          "shopgoodwill": 0,
+          "amazon": 0,
+          "ebay": 0
         }
       }
     },
@@ -226,26 +220,26 @@
       "kind": "scalar",
       "unit": "cents",
       "per": "labor hour",
-      "value": 4757,
+      "value": null,
       "rows": null,
-      "status": "partial",
-      "reason": "missing_days",
-      "note": "eBay has no data on 2026-10-03, so this is partial.",
+      "status": "no_data",
+      "reason": "zero_denominator",
+      "note": "No labor hours in the period.",
       "basis": null,
       "covers": null,
-      "prior_value": 4439,
+      "prior_value": 3881,
       "delta": {
-        "value": 318,
-        "pct": 7.2,
-        "reason": "partial_period"
+        "value": null,
+        "pct": null,
+        "reason": "current_no_data"
       },
       "good_direction": "up",
       "source": "mixed",
       "simulated": true,
       "definition": "Revenue / e-commerce labor hours.",
       "inputs": {
-        "revenue_cents": 981461,
-        "labor_hours": 206.3
+        "revenue_cents": 278010,
+        "labor_hours": 0.0
       }
     },
     {
@@ -256,17 +250,17 @@
       "kind": "scalar",
       "unit": "number",
       "per": "employee",
-      "value": 49.6,
+      "value": 0.0,
       "rows": null,
       "status": "ok",
       "reason": null,
       "note": null,
       "basis": null,
       "covers": null,
-      "prior_value": 50.6,
+      "prior_value": 16.3,
       "delta": {
-        "value": -1.0,
-        "pct": -2.0,
+        "value": -16.3,
+        "pct": -100.0,
         "reason": null
       },
       "good_direction": "up",
@@ -274,7 +268,7 @@
       "simulated": true,
       "definition": "Listings created / average e-commerce employees (full-time equivalents).",
       "inputs": {
-        "listings_created": 471,
+        "listings_created": 0,
         "employees": 9.5
       }
     },
@@ -293,7 +287,7 @@
       "note": "The internal API returned no donation dates for this period.",
       "basis": null,
       "covers": null,
-      "prior_value": 7.0,
+      "prior_value": null,
       "delta": {
         "value": null,
         "pct": null,
@@ -315,25 +309,25 @@
       "kind": "scalar",
       "unit": "count",
       "per": null,
-      "value": 8491,
+      "value": null,
       "rows": null,
-      "status": "partial",
-      "reason": "missing_internal_days",
-      "note": "The latest backlog count snapshot is from 2026-10-03.",
+      "status": "no_data",
+      "reason": "no_internal_data",
+      "note": "The internal API returned no backlog count for this period.",
       "basis": null,
       "covers": null,
-      "prior_value": 8105,
+      "prior_value": 8491,
       "delta": {
-        "value": 386,
-        "pct": 4.8,
-        "reason": "partial_period"
+        "value": null,
+        "pct": null,
+        "reason": "current_no_data"
       },
       "good_direction": "down",
       "source": "internal",
       "simulated": true,
       "definition": "Items sent to e-commerce and not yet listed, on the last day of the period.",
       "inputs": {
-        "as_of": "2026-10-03"
+        "as_of": null
       }
     },
     {
@@ -351,9 +345,9 @@
       "note": null,
       "basis": null,
       "covers": null,
-      "prior_value": 0.3254,
+      "prior_value": 0.3139,
       "delta": {
-        "value": -0.0115,
+        "value": 0.0,
         "pct": null,
         "reason": null
       },
@@ -376,17 +370,17 @@
       "kind": "scalar",
       "unit": "cents",
       "per": "order",
-      "value": 3058,
+      "value": 3519,
       "rows": null,
-      "status": "partial",
-      "reason": "missing_days",
-      "note": "eBay has no data on 2026-10-03, so this is partial. Per order, not per unit: the exports do not give unit counts yet.",
+      "status": "ok",
+      "reason": null,
+      "note": "Per order, not per unit: the exports do not give unit counts yet.",
       "basis": "per_order",
       "covers": null,
-      "prior_value": 2928,
+      "prior_value": 3137,
       "delta": {
-        "value": 130,
-        "pct": 4.4,
+        "value": 382,
+        "pct": 12.2,
         "reason": "partial_period"
       },
       "good_direction": "up",
@@ -394,9 +388,9 @@
       "simulated": false,
       "definition": "Revenue / orders (per order until unit counts are available).",
       "inputs": {
-        "revenue_cents": 981461,
+        "revenue_cents": 278010,
         "units": null,
-        "orders": 321
+        "orders": 79
       }
     },
     {
@@ -407,18 +401,18 @@
       "kind": "scalar",
       "unit": "ratio",
       "per": null,
-      "value": 0.6815,
+      "value": null,
       "rows": null,
-      "status": "partial",
-      "reason": "missing_days",
-      "note": "eBay has no data on 2026-10-03, so this is partial. Orders / listings created, until unit counts are available.",
+      "status": "no_data",
+      "reason": "zero_denominator",
+      "note": "No listings were created in the period.",
       "basis": "orders",
       "covers": null,
-      "prior_value": 0.6725,
+      "prior_value": 0.5484,
       "delta": {
-        "value": 0.009,
+        "value": null,
         "pct": null,
-        "reason": "partial_period"
+        "reason": "current_no_data"
       },
       "good_direction": "up",
       "source": "mixed",
@@ -426,8 +420,8 @@
       "definition": "Orders / listings created in the period (a stand-in for units sold / units listed).",
       "inputs": {
         "units_sold": null,
-        "orders": 321,
-        "units_listed": 471
+        "orders": 79,
+        "units_listed": 0
       }
     },
     {
@@ -438,17 +432,17 @@
       "kind": "scalar",
       "unit": "cents",
       "per": "employee",
-      "value": 103312,
+      "value": 29264,
       "rows": null,
-      "status": "partial",
-      "reason": "missing_days",
-      "note": "eBay has no data on 2026-10-03, so this is partial.",
+      "status": "ok",
+      "reason": null,
+      "note": null,
       "basis": null,
       "covers": null,
-      "prior_value": 99543,
+      "prior_value": 28067,
       "delta": {
-        "value": 3769,
-        "pct": 3.8,
+        "value": 1197,
+        "pct": 4.3,
         "reason": "partial_period"
       },
       "good_direction": "up",
@@ -456,7 +450,7 @@
       "simulated": true,
       "definition": "Revenue / average e-commerce employees (full-time equivalents).",
       "inputs": {
-        "revenue_cents": 981461,
+        "revenue_cents": 278010,
         "employees": 9.5
       }
     },
@@ -473,77 +467,77 @@
         {
           "rank": 1,
           "label": "Collectibles",
-          "value": 166848,
+          "value": 47262,
           "share": 0.17,
           "ratio": null
         },
         {
           "rank": 2,
           "label": "Jewelry & Watches",
-          "value": 147219,
+          "value": 41701,
           "share": 0.15,
           "ratio": null
         },
         {
           "rank": 3,
           "label": "Electronics",
-          "value": 127590,
+          "value": 36142,
           "share": 0.13,
           "ratio": null
         },
         {
           "rank": 4,
           "label": "Clothing & Shoes",
-          "value": 117775,
+          "value": 33362,
           "share": 0.12,
           "ratio": null
         },
         {
           "rank": 5,
           "label": "Books & Media",
-          "value": 107961,
+          "value": 30581,
           "share": 0.11,
           "ratio": null
         },
         {
           "rank": 6,
           "label": "Home & Kitchen",
-          "value": 88332,
+          "value": 25021,
           "share": 0.09,
           "ratio": null
         },
         {
           "rank": 7,
           "label": "Toys & Games",
-          "value": 68702,
+          "value": 19460,
           "share": 0.07,
           "ratio": null
         },
         {
           "rank": 8,
           "label": "Art & Antiques",
-          "value": 49073,
+          "value": 13900,
           "share": 0.05,
           "ratio": null
         },
         {
           "rank": 9,
           "label": "Musical Instruments",
-          "value": 39259,
+          "value": 11121,
           "share": 0.04,
           "ratio": null
         },
         {
           "rank": 10,
           "label": "Sporting Goods",
-          "value": 29444,
+          "value": 8340,
           "share": 0.03,
           "ratio": null
         }
       ],
-      "status": "partial",
-      "reason": "missing_days",
-      "note": "eBay has no data on 2026-10-03, so this is partial.",
+      "status": "ok",
+      "reason": null,
+      "note": null,
       "basis": "internal_split",
       "covers": null,
       "prior_value": null,
@@ -557,10 +551,10 @@
       "simulated": true,
       "definition": "Revenue split by category using the internal sales-by-category shares, largest first.",
       "inputs": {
-        "revenue_cents": 981461,
-        "internal_sales_cents": 1021300,
+        "revenue_cents": 278010,
+        "internal_sales_cents": 255321,
         "categories": 12,
-        "rest_cents": 39258
+        "rest_cents": 11120
       }
     },
     {
@@ -576,77 +570,77 @@
         {
           "rank": 1,
           "label": "Collectibles",
-          "value": 130141,
+          "value": 36864,
           "share": 0.1881,
           "ratio": 0.78
         },
         {
           "rank": 2,
           "label": "Jewelry & Watches",
-          "value": 120720,
+          "value": 34196,
           "share": 0.1745,
           "ratio": 0.82
         },
         {
           "rank": 3,
           "label": "Clothing & Shoes",
-          "value": 82442,
+          "value": 23354,
           "share": 0.1192,
           "ratio": 0.7
         },
         {
           "rank": 4,
           "label": "Electronics",
-          "value": 79106,
+          "value": 22408,
           "share": 0.1144,
           "ratio": 0.62
         },
         {
           "rank": 5,
           "label": "Books & Media",
-          "value": 62617,
+          "value": 17737,
           "share": 0.0905,
           "ratio": 0.58
         },
         {
           "rank": 6,
           "label": "Home & Kitchen",
-          "value": 58299,
+          "value": 16514,
           "share": 0.0843,
           "ratio": 0.66
         },
         {
           "rank": 7,
           "label": "Toys & Games",
-          "value": 46030,
+          "value": 13038,
           "share": 0.0665,
           "ratio": 0.67
         },
         {
           "rank": 8,
           "label": "Art & Antiques",
-          "value": 39258,
+          "value": 11120,
           "share": 0.0567,
           "ratio": 0.8
         },
         {
           "rank": 9,
           "label": "Musical Instruments",
-          "value": 28266,
+          "value": 8008,
           "share": 0.0409,
-          "ratio": 0.72
+          "ratio": 0.7201
         },
         {
           "rank": 10,
           "label": "Sporting Goods",
-          "value": 19138,
+          "value": 5421,
           "share": 0.0277,
           "ratio": 0.65
         }
       ],
-      "status": "partial",
-      "reason": "missing_days",
-      "note": "eBay has no data on 2026-10-03, so this is partial.",
+      "status": "ok",
+      "reason": null,
+      "note": null,
       "basis": "internal_split",
       "covers": null,
       "prior_value": null,
@@ -660,11 +654,11 @@
       "simulated": true,
       "definition": "Category revenue minus category cost of goods, largest first, with margin as a share of category revenue.",
       "inputs": {
-        "revenue_cents": 981461,
-        "cogs_cents": 289681,
-        "margin_cents": 691780,
+        "revenue_cents": 278010,
+        "cogs_cents": 82052,
+        "margin_cents": 195958,
         "categories": 12,
-        "rest_cents": 25763
+        "rest_cents": 7298
       }
     },
     {
@@ -675,31 +669,28 @@
       "kind": "scalar",
       "unit": "ratio",
       "per": null,
-      "value": 0.0375,
+      "value": null,
       "rows": null,
-      "status": "partial",
-      "reason": "missing_days",
-      "note": "eBay has no data on 2026-10-03, so this is partial. ShopGoodwill and eBay only (80% of orders): Amazon gives no buyer id.",
+      "status": "no_data",
+      "reason": "period_too_short",
+      "note": "One day is too short to measure repeat buyers.",
       "basis": null,
-      "covers": [
-        "shopgoodwill",
-        "ebay"
-      ],
-      "prior_value": 0.0297,
+      "covers": null,
+      "prior_value": null,
       "delta": {
-        "value": 0.0078,
+        "value": null,
         "pct": null,
-        "reason": "partial_period"
+        "reason": "current_no_data"
       },
       "good_direction": "up",
       "source": "files",
       "simulated": false,
       "definition": "Buyers with two or more orders in the period / buyers, where the marketplace gives a buyer id.",
       "inputs": {
-        "buyers": 240,
-        "repeat_buyers": 9,
-        "orders_with_buyer_id": 256,
-        "orders": 321
+        "buyers": null,
+        "repeat_buyers": null,
+        "orders_with_buyer_id": null,
+        "orders": null
       }
     }
   ],
