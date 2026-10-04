@@ -166,8 +166,8 @@ details.notes ul { margin:6px 0; padding-left:20px; }
 
 # Motion, from the report-design skill (o/ui-map): modest and honest. Blocks rise in once, cards that
 # lead somewhere lift on hover, controls answer a press, pop-outs and opened details settle in, the
-# portal's bars grow from the baseline. Only transform and opacity move (plus colour and shadow on
-# hover); numbers never animate, so a screenshot or PDF can't catch a wrong value. Everything stops for
+# portal's bars grow from the baseline, the charts' slices sweep in and their lines draw. Mostly transform
+# and opacity move (plus colour and shadow on hover, the pie's stroke, the line's clip); numbers never animate, so a screenshot or PDF can't catch a wrong value. Everything stops for
 # prefers-reduced-motion and in print.
 MOTION_CSS = """
 :root { --ease-out:cubic-bezier(.2,.8,.2,1); --t-press:120ms; --t-hover:200ms; --t-reveal:220ms; --t-enter:520ms;
@@ -204,6 +204,25 @@ details[open] > :not(summary) { animation:settle var(--t-reveal) var(--ease-out)
 
 .col .seg { transform-origin:50% 100%; animation:grow 700ms var(--ease-out) both 250ms; }
 @keyframes grow { from { transform:scaleY(0); } }
+
+/* The charts (reports/charts.py): a donut's slices sweep in clockwise one after another; the trend line
+   wipes in from the left and its dots pop in after it; a hovered slice thickens, a hovered dot grows. */
+.pie circle { animation:sweep 800ms var(--ease-out) both 200ms;
+  transition:opacity var(--t-hover) var(--ease-out), stroke-width var(--t-hover) var(--ease-out); }
+.pie circle:nth-of-type(2) { animation-delay:320ms; }
+.pie circle:nth-of-type(3) { animation-delay:440ms; }
+.pie circle:nth-of-type(n+4) { animation-delay:560ms; }
+.pie circle:hover { stroke-width:9.5; }
+@keyframes sweep { from { stroke-dasharray:0 100; } }
+.pie text { animation:rise var(--t-enter) var(--ease-out) both 500ms; }
+.pielegend li { transition:background-color var(--t-hover) var(--ease-out); }
+.pielegend li:hover { background:#f7f8fa; }
+svg.line .path { animation:wipe 900ms var(--ease-out) both 250ms; }
+@keyframes wipe { from { clip-path:inset(0 100% 0 0); } to { clip-path:inset(0 0 0 0); } }
+svg.line .dot { transform-box:fill-box; transform-origin:center; animation:pop 320ms var(--ease-out) both 900ms;
+  transition:transform var(--t-hover) var(--ease-out); }
+svg.line a:hover .dot, svg.line a:focus .dot { transform:scale(1.35); }
+@keyframes pop { from { opacity:0; transform:scale(.4); } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration:.01ms !important; animation-delay:0s !important; animation-iteration-count:1 !important;
