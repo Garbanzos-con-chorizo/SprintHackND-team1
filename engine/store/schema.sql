@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS internal_daily (
 -- One row per command that wrote to the store.
 CREATE TABLE IF NOT EXISTS runs (
     run_id          TEXT    NOT NULL PRIMARY KEY,
-    command         TEXT    NOT NULL,              -- load | pull | kpi
+    command         TEXT    NOT NULL,              -- load | pull | kpi | close
     business_date   TEXT,                          -- NULL for a kpi run over a period
     started_at      TEXT    NOT NULL,
     finished_at     TEXT,

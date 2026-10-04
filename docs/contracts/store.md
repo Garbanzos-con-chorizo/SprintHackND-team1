@@ -23,6 +23,7 @@ internal API (mock)                                         ──> python -m en
 | `python -m engine.store [--db PATH] load --in-dir out [--date D] [--pulse-dir DIR]` | built | Loads one business date (rules below). `--date` defaults to the one in `source_status.json`; the pulse file defaults to `<in-dir>/pulse/<D>.json`. Exit 1 and nothing changed if an input is missing or wrong. |
 | `python -m engine.store backfill --inbox DIR --from D1 --to D2 [--out out]` | built | Reads the inbox once, then for each day writes the engine files for that date (exactly what `engine run --date` writes), runs `recon.pulse`, loads the day and pulls that day's internal API snapshot. A failed day is listed and skipped; the others load; exit 1 if any day failed. The pulse files land in `<out>/pulse/`, the history Orlando's pages read. September: about 12 s. |
 | `python -m engine.store status [--month M \| --from D1 --to D2]` | built | Per marketplace: days ok, missing, stale, unknown and not loaded, and revenue over the ok days ("no data" when none). Lists partial days (loaded, but an expected marketplace isn't ok) and days not loaded, and how many days have an internal API snapshot (and whether it's simulated). Default: the latest month in the store. |
+| `python -m engine.store log-close --month M --exit-code N [--close-dir out/close]` | built (V3.4) | One `runs` row with `command = 'close'` for a month-end close that just ran (`python -m reports.close`, `close-outputs.md`). It reads the close's exit code and its `close_status_<month>.json`; the close itself writes nothing to the store. `business_date` is the last day of the month closed, `files_read` the inbox folders, `rows_written` the journal and invoice lines, `warnings_total` the exceptions, and `message` each source's status, the exception count, "needs review" when flagged, and "not posted". Exit 0 is `ok`. Exit 2 (files failed the read-back check) and exit 1 (refused) are `failed`; a refused run never reads an older run's status file. `status` prints the latest close on its own line, `last close: ...`, whatever ran after it. |
 
 ## Conventions (all tables)
 - Money: `INTEGER` cents. Dates: `TEXT 'YYYY-MM-DD'`, the Eastern business date. Timestamps: `TEXT`, ISO 8601 with offset.
@@ -35,7 +36,7 @@ internal API (mock)                                         ──> python -m en
 | `transactions` | sale or refund: the columns of `transaction.md` (v0.4: with `shipping_cents`, `handling_cents`, `units`; `units` is NULL when the export has no unit count) and `run_id` | `txn_id` | `store load` |
 | `pulse_daily` | business date and marketplace, from the pulse: `status` and the money/count fields. Measures are NULL when `status <> 'ok'` | `(business_date, marketplace)` | `store load` |
 | `internal_daily` | business date, metric, dimension: `value`, `unit`, `source` (`mock` or `api`). Metric list: `internal-api.md` | `(business_date, metric, dimension)` | `internal_api pull` |
-| `runs` | command that wrote to the store: when, which date, files read, rows written, warnings, result | `run_id` | every writer |
+| `runs` | command that wrote to the store, or a month-end close: `command` is `load`, `pull`, `kpi` or `close`; when, which date, files read, rows written, warnings, result | `run_id` | every writer, and `log-close` |
 | `warnings` | engine warning, with the business date of the run that loaded it | `(run_id, seq)` | `store load` |
 | `kpi_values` | period, KPI and dimension (`''`, or the category of a top 10 row): value, unit, status, source | `(period_type, period_start, kpi_id, dimension)` | `recon.kpi` |
 | `v_daily` | business date: enterprise totals over the `ok` marketplaces, how many were ok and how many had no data | | view |
@@ -75,6 +76,7 @@ How the store helps on the rubric. Every claim below is true of what we build; s
 - **Don't claim:** live Azure, multi-user access, or real internal data. The rubric's overclaim flag drops Working Evidence to level 1.
 
 ## Changelog
+- v0.6 (2026-10-04, Victor, V3.4): `runs.command` gains `close`; `engine.store log-close`; `status` shows the last close. No schema change.
 - v0.5 (2026-10-04, Victor): schema version 2: `transactions.shipping_cents` and `handling_cents` (default 0). `init` adds them to an existing database in place (rows kept), so nobody has to rebuild. `load` still reads a `transactions.csv` written before v0.4 (0, 0, units unknown).
 - v0.4 (2026-10-04, Victor): backfill also pulls the internal snapshot; status shows internal coverage; `runs.command` is `load` or `pull` so far.
 - v0.3 (2026-10-03, Victor): `status` and `backfill` built.
