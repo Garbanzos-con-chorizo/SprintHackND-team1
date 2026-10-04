@@ -1,5 +1,7 @@
 # Roadmap: Goodwill Michiana, Reporting
 
+> **Status, 2026-10-03.** This was the first-hour roadmap. Phase 1 (the nightly pulse) is **done** and runs end to end. The sections marked *obsolete* below no longer describe the plan. Current plan: `docs/PLAN_PHASE_2_3.md`. Task status: `docs/PHASES.md`. Phase 1 against the deck: `docs/PHASE1_ALIGNMENT.md`. What we assumed and why: `docs/ASSUMPTIONS.md`.
+
 ## Brief
 **Reporting.** Automate the recurring operations reports that staff put together by hand today.
 
@@ -53,6 +55,8 @@ inbox/ (CSV/XLSX exports per source)  ->  parsers (one per source, same output s
 - **LLM use (optional):** suggest GL accounts for unknown descriptions, with human approval. Keep it out of the critical path so the demo is deterministic.
 
 ## Questions for Amanda (office hours, 3-5 PM, room 109B)
+*Partly answered (decisions 004 and 005): an Upright API is assumed, reports arrive as emailed Excel, e-commerce finalizes at 9 PM Pacific. Still open: real sample files, revenue definition, what "Other" is. See `docs/OFFICE_HOURS.md`.*
+
 1. Can we get **real or anonymized sample exports** from each source, especially a messy month? What do Cash Monkey, Upright and Books actually export?
 2. **Business Central:** which version (cloud or on-prem)? How do entries go in today (journal, Excel paste, config package)? Can we get the chart of accounts and one finished month-end journal?
 3. What are the **top 5 spreadsheet rules** staff apply, in order?
@@ -68,14 +72,18 @@ inbox/ (CSV/XLSX exports per source)  ->  parsers (one per source, same output s
 - **Overclaiming "Business Central integration":** say "BC-ready import file" unless actually connected to a sandbox.
 - **Eligibility flag:** all code must be written this weekend; no reuse of old repos.
 
-## Suggested lanes (3 people)
+## Suggested lanes (3 people) - obsolete
+*Replaced by the real lanes in `docs/TASKS.md` and the phase 2 and 3 owners in decision 007.*
+
 - **A, ingestion and rules:** parsers, canonical schema, rules engine, exceptions queue.
 - **B, outputs and UI:** nightly pulse, dashboard, exceptions and journal views.
 - **C, data and story:** synthetic datasets (clean and messy), BC journal format, demo script, slides, built-vs-used text, Amanda liaison.
 
 Contracts to write first in `docs/contracts/`: the canonical transaction schema and the rule format.
 
-## Next steps
+## Next steps - done
+*Steps 1 to 4 were completed on 2026-10-03: `PROBLEM.md` is filled in, the schema is locked (`docs/contracts/transaction.md`), Amanda was asked, and the demo runs. What is left is in `docs/PLAN_PHASE_2_3.md`.*
+
 1. Fill in `docs/PROBLEM.md` from this document.
 2. Send one person to office hours with the question list.
 3. Lock the canonical schema within the first hour so lanes can work in parallel against mocks.

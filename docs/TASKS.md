@@ -1,5 +1,7 @@
 # Tasks: Goodwill Michiana Reporting
 
+> **Original plan, written 2026-10-03 morning.** Task descriptions and sizes still apply, but **status now lives in `docs/PHASES.md`** and the phase 2 and 3 plan in `docs/PLAN_PHASE_2_3.md`. Phase 1 (all the `P-*` tasks and V1-V3, V6, V9, V10) is done. `O3` and `O4` were superseded by the `P-*` tasks, as noted below. Phase 3 tasks (V4, V5, V7, V8, V11, D2-D10) are not started.
+
 Split across three people by lane. Sizes: **S** < 30 min, **M** 30-90 min, **L** 90+ min. "Needs" lists the tasks or contracts a task depends on; code against the contract and a mock, not the teammate's work in progress. See `docs/roadmap.md` for the reasoning.
 
 | Person | Lane | Owns |
