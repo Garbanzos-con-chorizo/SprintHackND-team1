@@ -1,7 +1,7 @@
 # Contract: close inputs (C3.1): what the engine hands the month-end close
 
 - **Owner:** Victor (`engine/`). **Consumers:** Dani (`reports.reconcile`, the close), by decision 009.
-- **Status:** draft v0.4. `transactions.csv`, `payouts.csv`, `bank.csv`, `source_coverage.json`, `ledger.csv` and `statements.csv` are **built**, and so is the command that delivers the simulated month-end sources. The other files are **planned** (their task in brackets) and keep the shapes below unless this file says otherwise.
+- **Status:** draft v0.5. `transactions.csv`, `payouts.csv`, `bank.csv`, `source_coverage.json`, `ledger.csv` and `statements.csv` are **built**, and so is the command that delivers the simulated month-end sources. The other files are **planned** (their task in brackets) and keep the shapes below unless this file says otherwise.
 - **Plan:** `docs/PLAN_PHASE_3.md`, sections 3 and 4.
 
 ## The command
@@ -23,16 +23,18 @@ It reads every file in the inbox and rewrites every file below in `<dir>`. Each 
 | `source_coverage.json` | built (V3.3) | per source, the files read, the days each covers, whether a simulator wrote it, and the days no file covers (section below) |
 
 ### `payouts.csv`
-One row per payout a marketplace report says it sent to the bank. Today: eBay's Transaction report `Payout` rows and Amazon's Date Range report `Transfer` rows. ShopGoodwill has no payout report until V3.8 adds the periodic reports.
+One row per payout a marketplace report says it sent to the bank: eBay's Transaction report `Payout` rows, Amazon's Date Range report `Transfer` rows, and each period of ShopGoodwill's periodic report (V3.8). Without a periodic report in the inbox ShopGoodwill has no rows here, and the close takes each of its deposits as a payout.
 
 | Column | Rule |
 |---|---|
 | `payout_id` | `<marketplace>:<paid_date>`, e.g. `ebay:2026-09-02`. A second payout on the same day in the same file gets `#2`, `#3`. |
-| `marketplace` | `ebay`, `amazon`, and `shopgoodwill` from V3.8. |
+| `marketplace` | `ebay`, `amazon`, `shopgoodwill`. |
 | `paid_date` | `YYYY-MM-DD`, **the date as the report writes it**, in the report's own zone. Amazon's `Sep 15, 2026 9:12:44 AM PDT` is `2026-09-15` even when the Eastern date would be different. |
 | `amount_cents` | Positive = paid to Goodwill. The reports print payouts as negative (money leaving the marketplace); the sign is flipped. eBay: `Net amount` (or `Gross transaction amount` in the older layout); Amazon: `total`. |
-| `period_from`, `period_to` | Empty, unless the report states the period it pays for (ShopGoodwill's periodic report, V3.8). The engine never infers a window: that is the close's rule (D3.1). |
+| `period_from`, `period_to` | Empty, unless the report states the period it pays for: ShopGoodwill's periodic report does (`Period Start`, `Period End`, in Pacific days). The engine never infers a window: that is the close's rule (D3.1). |
 | `source_file`, `source_row` | Where it was read. |
+
+**ShopGoodwill's periodic report** (`shopgoodwill_periodic_<month>.csv`; **the layout is ours**, from the sample generator: `Period Start`, `Period End`, `Paid Date`, `Payout Amount`, `Reference`; what the deck calls "Period 1" and "Period 3" is not modeled). The two sample months have one each in `data/sample/<month>/periodic/`: add that folder to the inbox. A row whose period ends before it starts, or with no amount, is a warning. The report is not a sales report, so it never counts as coverage of ShopGoodwill's days: in `source_coverage.json` it has its own key, `shopgoodwill_periodic`.
 
 **Overlapping downloads:** the same `payout_id` in two files counts once, and the first copy (in sorted file order) wins. The dropped copy is a `duplicate` warning whose reason starts `same payout as`, and that reason also says when the amounts differ. Payout rows never appear in `transactions.csv`.
 
@@ -95,7 +97,7 @@ The simulated feed of account `0101` (`bank_activity_0101_<month>.csv`: the bank
 - **`rows`:** the rows this file gave this source (transactions plus payouts, or bank lines), counted before cross-file de-duplication.
 - **`simulated`:** `true` when `engine fetch --simulate` wrote the file. The simulator records each file it writes in `<inbox>/_simulated.json`, and a later real fetch of the same name removes it. The inbox reader skips that manifest (it is not a report).
 - **`days_missing`:** the days of the month, up to `through`, that no file of the source covers. A source with no file has every day missing. `null` for a source made only of statements or lookups, which do not report day by day (from V3.8 on).
-- A month-end file that feeds no marketplace is keyed by its parser: `bank` (both accounts), `bc_ledger`, `goodwillbooks_statement` (`days_missing` is `null`).
+- A month-end file that feeds no marketplace is keyed by its parser: `bank` (both accounts), `bc_ledger`, and with `days_missing` `null`, `goodwillbooks_statement` and `shopgoodwill_periodic`.
 
 ## The simulated month-end sources
 ```
@@ -106,13 +108,16 @@ We assume each month-end source nobody has shown us can be fetched through an AP
 - `DIR2/fetch_log.json`: `{"close_month": "2026-09", "sources": {"bc_ledger": {"status": "ok", "files": ["bc_gl_entries_2026-09.csv"], "detail": "simulated: synthetic data, no real API", "simulated": true}}}`;
 - `DIR2/expected_close_sources.json`: the answer key for those files, **computed from the generated records, never by the parsers**. Dani's tests read this file; they never import the simulators.
 
-Without `--simulate` nothing is written and every source reads `not_configured`. The nightly `engine fetch --date` never delivers these sources.
+A source marked "on request" is delivered only when named with `--source`. Without `--simulate` nothing is written and every source reads `not_configured`. The nightly `engine fetch --date` never delivers these sources.
 
 | Source (`--source`) | File in the inbox | Engine output | In the answer key | Task |
 |---|---|---|---|---|
 | `bc_ledger` | `bc_gl_entries_<month>.csv` | `ledger.csv` | `fedex`: `gl_account`, `department`, `vendor_no`, `refund_document_prefix`, `charges_cents`, `refunds_cents` (positive), `net_cents`, `entries`, `entries_left_out` | V3.5 |
 | `bank_0101` | `bank_activity_0101_<month>.csv` | rows of `bank.csv` with `account` `0101` | `carriers`: `bank_account`, `osm` / `pb` / `easypost` (each `bank_text`, `cents`, `payments`), `total_cents`, `lines`, `other_debits` | V3.7 |
 | `goodwillbooks` | `goodwillbooks_statement_<prior month>.csv` | `statements.csv` | `goodwillbooks`: the statement's columns, plus `bank_account` and `bank_text` of its payment | V3.9 |
+| `shopgoodwill_periodic` (**on request**) | `shopgoodwill_periodic_<month>.csv` | ShopGoodwill rows of `payouts.csv` | `shopgoodwill_periodic`: a list of `period_from`, `period_to`, `paid_date`, `amount_cents`, `reference` | V3.8 |
+
+**Why the periodic report is on request.** Its simulator adds up the simulated Upright orders of the month, so it agrees with an inbox filled by `engine fetch --simulate --from D1 --to D2` and with nothing else. The sample months have their own report, which agrees with their bank file; a second one beside it would disagree (the close refuses two files of the same name).
 
 ## What the engine does not do
 - It matches nothing: deposits to payouts, payouts to windows and the FedEx filter are all Dani's (`reports/reconcile.py`).
@@ -126,6 +131,7 @@ Without `--simulate` nothing is written and every source reads `not_configured`.
 - `source_coverage.json` with `days_missing` of `2026-09-21` and `2026-09-22` for Amazon, `2026-09-07` for ShopGoodwill, and none for eBay or the bank (`engine/tests/test_source_coverage.py`).
 
 ## Changelog
+- v0.5 (2026-10-04, Victor, V3.8): ShopGoodwill's periodic report becomes payout rows with `period_from` and `period_to`. A simulator for months without a sample report, on request only.
 - v0.4 (2026-10-04, Victor, V3.7 and V3.9): `statements.csv` built; the simulated bank feed of account `0101` (carriers, and the Goodwill Books payment as a credit) lands in `bank.csv`.
 - v0.3 (2026-10-04, Victor, V3.5): `ledger.csv` built, with `entry_no` added as its first column. `engine fetch --simulate --close-month` and `expected_close_sources.json` built, with `bc_ledger` as the first source. `days_missing` may be `null`.
 - v0.2 (2026-10-04, Victor, V3.3): `source_coverage.json` built. Additions to the planned shape: `through`, and `basis` on each file. Simulated files are recorded in `<inbox>/_simulated.json`.

@@ -197,3 +197,45 @@ def simulate_bank_0101(month: str, dest_dir: Path) -> tuple[list[Path], dict]:
              _money(r["amount_cents"]) if r["amount_cents"] > 0 else "", _money(r["balance_cents"])] for r in records]
     path = _write_csv(dest_dir / f"bank_activity_{BANK_ACCOUNT}_{month}.csv", BANK_HEADER, rows)
     return [path], bank_0101_key(records)
+
+
+# ---------------------------------------------------------------- ShopGoodwill periodic report (V3.8)
+
+PERIODIC_HEADER = ["Period Start", "Period End", "Paid Date", "Payout Amount", "Reference"]
+
+
+def shopgoodwill_periods(month: str) -> list[dict]:
+    """ShopGoodwill's payouts paid during `month`, for a month whose Upright files came from the nightly
+    simulators: one per week through Sunday (Pacific days), paid the next day, the first one starting on
+    the 1st. Each amount is what the simulated Upright orders of those days add up to: merchandise plus
+    shipping and handling, less the shipping discount and the fee."""
+    from .simulation import UPRIGHT_HEADER, upright_rows
+
+    col = {name: i for i, name in enumerate(UPRIGHT_HEADER)}
+    first, last = month_span(month)
+    net_by_day: dict[date, int] = {}
+    for offset in range((last - first).days + 2):  # an order early on an Eastern day is the day before in Pacific
+        for row in upright_rows((first + timedelta(days=offset)).isoformat()):
+            net = (row[col["Subtotal"]] + row[col["Shipping Charged"]] - row[col["Shipping Discount"]]
+                   + row[col["Handling"]] - row[col["Final Value Fee"]])
+            day = row[col["Payment Date"]].date()
+            net_by_day[day] = net_by_day.get(day, 0) + round(net * 100)
+    periods, start = [], first
+    for offset in range((last - first).days):
+        end = first + timedelta(days=offset)
+        if end.weekday() == 6 and end + timedelta(days=1) <= last:
+            cents = sum(c for day, c in net_by_day.items() if start <= day <= end)
+            periods.append({"period_from": start, "period_to": end, "paid_date": end + timedelta(days=1),
+                            "amount_cents": cents, "reference": f"SGW-{end:%m%d}"})
+            start = end + timedelta(days=1)
+    return periods
+
+
+def simulate_shopgoodwill_periodic(month: str, dest_dir: Path) -> tuple[list[Path], dict]:
+    periods = shopgoodwill_periods(month)
+    rows = [[_us(p["period_from"]), _us(p["period_to"]), _us(p["paid_date"]), f"{p['amount_cents'] / 100:.2f}",
+             p["reference"]] for p in periods]
+    key = {"shopgoodwill_periodic": [{**p, "period_from": p["period_from"].isoformat(),
+                                      "period_to": p["period_to"].isoformat(),
+                                      "paid_date": p["paid_date"].isoformat()} for p in periods]}
+    return [_write_csv(dest_dir / f"shopgoodwill_periodic_{month}.csv", PERIODIC_HEADER, rows)], key
