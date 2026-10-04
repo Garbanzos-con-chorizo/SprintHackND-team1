@@ -8,42 +8,56 @@
      fetch() is blocked on file:// pages, so serve this folder:
        python -m http.server 8000 -d reports/monthly   ->  http://localhost:8000/?month=2026-09 -->
 <style>
-:root { --bg:#fff; --card:#fff; --ink:#231F20; --muted:#5c5859; --line:#d3d2d2;
-  --warn-ink:#CC1F40; --nodata:#f4f4f4; --accent:#0054A4; }
+/* Same look as the generated pages: the values and the top bar are copied from CSS in reports/pulse.py. */
+:root { --bg:#f5f6f8; --card:#fff; --ink:#231F20; --muted:#5c5859; --line:#d3d2d2;
+  --warn-ink:#CC1F40; --nodata:#eff0f2; --accent:#0054A4; --radius:6px; --shadow:0 1px 2px rgba(35,31,32,.07); }
 * { box-sizing:border-box; }
 body { margin:0; background:var(--bg); color:var(--ink);
-  font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
-main { max-width:1100px; margin:0 auto; padding:24px 16px 48px; }
+  font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
+.topbar { background:var(--accent); color:#fff; }
+.topbar-in { max-width:1100px; margin:0 auto; padding:10px 16px; display:flex; flex-wrap:wrap;
+  align-items:center; gap:6px 22px; }
+.topbar .brand { color:#fff; font-weight:700; text-decoration:none; margin-right:auto; }
+.topbar nav { display:flex; flex-wrap:wrap; gap:4px 18px; }
+.topbar nav a { color:#fff; text-decoration:none; font-size:14px; padding:3px 0; border-bottom:2px solid transparent; }
+.topbar nav a:hover, .topbar nav a.here { border-bottom-color:#fff; }
+.topbar nav a.here { font-weight:700; }
+.datalabel { background:#fff; color:var(--ink); font-size:12px; font-weight:700; letter-spacing:.04em;
+  text-transform:uppercase; padding:3px 10px; border-radius:999px; white-space:nowrap; }
+main { max-width:1100px; margin:0 auto; padding:20px 16px 32px; }
 header { display:flex; flex-wrap:wrap; gap:12px; align-items:end; justify-content:space-between; }
-h1 { margin:0; font-size:22px; }
-header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
-select { font:inherit; padding:6px 10px; border-radius:2px; border:1px solid var(--line);
+h1 { margin:0; font-size:26px; line-height:1.2; }
+header p { margin:4px 0 0; color:var(--muted); font-size:14px; }
+select { font:inherit; padding:6px 10px; border-radius:var(--radius); border:1px solid var(--line);
   background:var(--card); color:var(--ink); }
-.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin:20px 0; }
-.kpi, .card { background:var(--card); border:1px solid var(--line); border-radius:2px; }
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin:16px 0; }
+.kpi, .card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
 .kpi { padding:14px 16px; }
-.kpi .label { color:var(--accent); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
-.kpi .value { font-size:24px; font-weight:650; font-variant-numeric:tabular-nums; }
-.kpi .sub { font-size:13px; color:var(--muted); }
-.banner { background:var(--card); color:var(--ink); border:1px solid var(--line); border-left:5px solid var(--warn-ink); border-radius:2px; padding:10px 14px;
-  margin:0 0 16px; font-size:14px; }
+.kpi .label { color:var(--accent); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+.kpi .value { font-size:26px; font-weight:700; font-variant-numeric:tabular-nums; }
+.kpi .sub { font-size:14px; color:var(--muted); }
+.banner { background:var(--card); color:var(--ink); border:1px solid var(--line); border-left:5px solid var(--warn-ink);
+  border-radius:var(--radius); padding:10px 14px; margin:0 0 16px; font-size:15px; box-shadow:var(--shadow); }
 .card { overflow-x:auto; }
-table { width:100%; border-collapse:collapse; min-width:820px; }
+table { width:100%; border-collapse:collapse; min-width:820px; font-size:15px; }
 th, td { padding:8px 12px; text-align:right; border-bottom:1px solid var(--line);
   font-variant-numeric:tabular-nums; white-space:nowrap; }
-th { font-size:12px; color:var(--accent); font-weight:600; text-transform:uppercase; letter-spacing:.04em;
+th { font-size:13px; color:var(--accent); font-weight:700; text-transform:uppercase; letter-spacing:.04em;
   position:sticky; top:0; background:var(--card); }
 th:first-child, td:first-child { text-align:left; }
 td.nodata { background:var(--nodata); color:var(--muted); font-style:italic; }
 tr.partial td:first-child::after { content:" *"; color:var(--warn-ink); }
-tfoot td { font-weight:650; border-top:2px solid var(--ink); border-bottom:none; }
-.foot { margin-top:16px; font-size:13px; color:var(--muted); }
+tfoot td { font-weight:700; border-top:2px solid var(--accent); border-bottom:none; }
+.foot { margin-top:16px; font-size:14px; color:var(--muted); }
+.pagefoot { width:calc(100% - 32px); max-width:1068px; margin:0 auto; padding:14px 0 28px;
+  border-top:1px solid var(--line); font-size:13px; color:var(--muted); }
 #error { display:none; }
 code { font-size:13px; }
 a { color:var(--accent); }
 </style>
 </head>
 <body>
+<div class="topbar"><div class="topbar-in"><a class="brand" href="../index.html">Goodwill Michiana e-commerce reports</a><nav><a href="../index.html">Overview</a><a href="../pulse/index.html">Daily Reports</a><a href="../scorecard/index.html" class="here">COO Scorecards</a><a href="../close/index.html">Month-end Close</a></nav><span class="datalabel">Synthetic sample data</span></div></div>
 <main>
   <header>
     <div>
@@ -60,6 +74,7 @@ a { color:var(--accent); }
   <div class="card"><table id="table"></table></div>
   <div class="foot" id="notes"></div>
 </main>
+<footer class="pagefoot">Goodwill Michiana e-commerce reports · <strong>Synthetic sample data</strong>: no real Goodwill file has been read.</footer>
 
 <script>
 const MARKETS = [["shopgoodwill", "ShopGoodwill"], ["amazon", "Amazon"], ["ebay", "eBay"], ["other", "Other"]];
