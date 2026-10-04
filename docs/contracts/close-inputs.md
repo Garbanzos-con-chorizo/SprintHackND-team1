@@ -1,7 +1,7 @@
 # Contract: close inputs (C3.1): what the engine hands the month-end close
 
 - **Owner:** Victor (`engine/`). **Consumers:** Dani (`reports.reconcile`, the close), by decision 009.
-- **Status:** draft v0.5. `transactions.csv`, `payouts.csv`, `bank.csv`, `source_coverage.json`, `ledger.csv` and `statements.csv` are **built**, and so is the command that delivers the simulated month-end sources. The other files are **planned** (their task in brackets) and keep the shapes below unless this file says otherwise.
+- **Status:** draft v0.6. **Every file below is built**, and so is the command that delivers the simulated month-end sources.
 - **Plan:** `docs/PLAN_PHASE_3.md`, sections 3 and 4.
 
 ## The command
@@ -19,7 +19,7 @@ It reads every file in the inbox and rewrites every file below in `<dir>`. Each 
 | `bank.csv` | built (V3.2) | `bank_txn_id`, `account`, `posting_date`, `description`, `amount_cents`, `balance_cents`, `source_file`, `source_row` |
 | `ledger.csv` | built (V3.5) | `entry_no`, `posting_date`, `document_type`, `document_no`, `gl_account`, `department`, `vendor_no`, `description`, `amount_cents` (debit positive), `source_file`, `source_row`. Every row of the export; the FedEx filter is Dani's rule, not the parser's (section below) |
 | `statements.csv` | built (V3.9) | `source` (`goodwillbooks`), `period_from`, `period_to`, `sales_cents`, `fees_cents`, `net_cents`, `paid_date`, `reference`, `source_file`, `source_row` |
-| `jewelry.csv` | planned (V3.10) | `item_id`, `order_id`, `sold_date`, `amount_cents`, `supplier` (empty when the lookup does not know the item), `source_file`, `source_row` |
+| `jewelry.csv` | built (V3.10) | `item_id`, `order_id`, `sold_date`, `amount_cents`, `supplier` (empty when the lookup does not know the item), `source_file`, `source_row` |
 | `source_coverage.json` | built (V3.3) | per source, the files read, the days each covers, whether a simulator wrote it, and the days no file covers (section below) |
 
 ### `payouts.csv`
@@ -81,6 +81,21 @@ One row per payment statement. **The statement's layout is ours** (`Statement Pe
 
 Its payment is a credit in the bank feed of account `0101`: same day, same amount, with the reference in the description. Until the close has a rule for it (D3.13), `reconcile` lists that credit as an `unmatched_deposit` and holds it out of the journal.
 
+### `jewelry.csv` (Jewelry Report with Supplier: a simulated API)
+The month's jewelry sales, one row per item, each with the supplier a lookup gives for it. **Both input layouts are ours**, and so is the reading of "Supplier" as the Goodwill store that supplied the item (`ASSUMPTIONS.md` 2c.3):
+- the report, `jewelry_report_<month>.csv`: `Item ID`, `Order ID`, `Sold Date`, `Description`, `Sale Amount`, with no supplier;
+- the lookup, `jewelry_supplier_lookup_<month>.csv`, standing for whatever "Co-Pivot populates Supplier" is: `Item ID`, `Supplier`.
+
+| Column | Rule |
+|---|---|
+| `item_id`, `order_id` | As written. The same item and order in two files counts once. |
+| `sold_date` | `YYYY-MM-DD`. |
+| `amount_cents` | The sale amount. |
+| `supplier` | From the lookup, by `item_id`. **Empty when the lookup does not know the item**, with a `missing_supplier` warning naming the item and its amount: never a guess. A report that already has a `Supplier` column keeps its value. With no lookup file in the inbox, every row is empty and every row is a warning. Two lookup rows that give one item different suppliers: the first wins and the other is a `duplicate` warning. |
+| `source_file`, `source_row` | The report's file and row. |
+
+The lookup is an input only: the engine writes no file for it. These sales are also in the marketplaces' own reports, so `jewelry.csv` must never be added to revenue; what the supplier is used for in the close is still open (plan, question 7). The simulator plants one item the lookup does not know.
+
 ### Carriers in `bank.csv` (OSM, PB, EasyPost: a simulated API)
 The simulated feed of account `0101` (`bank_activity_0101_<month>.csv`: the bank layout plus an `Account` column) holds the month's carrier payments as debits, the Goodwill Books payment as its only credit, and a few debits that are no carrier's. A carrier's month is the debits on account `0101` whose description contains its text: `OSM WORLDWIDE`, `PITNEY BOWES` (PB), `EASYPOST`. **Those texts are ours**; the answer key repeats them (`carriers.<name>.bank_text`). Which G/L account they post to (slide 38 says 10009 for the bank account) is the close's rule.
 
@@ -97,7 +112,7 @@ The simulated feed of account `0101` (`bank_activity_0101_<month>.csv`: the bank
 - **`rows`:** the rows this file gave this source (transactions plus payouts, or bank lines), counted before cross-file de-duplication.
 - **`simulated`:** `true` when `engine fetch --simulate` wrote the file. The simulator records each file it writes in `<inbox>/_simulated.json`, and a later real fetch of the same name removes it. The inbox reader skips that manifest (it is not a report).
 - **`days_missing`:** the days of the month, up to `through`, that no file of the source covers. A source with no file has every day missing. `null` for a source made only of statements or lookups, which do not report day by day (from V3.8 on).
-- A month-end file that feeds no marketplace is keyed by its parser: `bank` (both accounts), `bc_ledger`, and with `days_missing` `null`, `goodwillbooks_statement` and `shopgoodwill_periodic`.
+- A month-end file that feeds no marketplace is keyed by its parser: `bank` (both accounts), `bc_ledger`, `jewelry_report`, and with `days_missing` `null`, `goodwillbooks_statement`, `shopgoodwill_periodic` and `jewelry_suppliers`.
 
 ## The simulated month-end sources
 ```
@@ -115,6 +130,7 @@ A source marked "on request" is delivered only when named with `--source`. Witho
 | `bc_ledger` | `bc_gl_entries_<month>.csv` | `ledger.csv` | `fedex`: `gl_account`, `department`, `vendor_no`, `refund_document_prefix`, `charges_cents`, `refunds_cents` (positive), `net_cents`, `entries`, `entries_left_out` | V3.5 |
 | `bank_0101` | `bank_activity_0101_<month>.csv` | rows of `bank.csv` with `account` `0101` | `carriers`: `bank_account`, `osm` / `pb` / `easypost` (each `bank_text`, `cents`, `payments`), `total_cents`, `lines`, `other_debits` | V3.7 |
 | `goodwillbooks` | `goodwillbooks_statement_<prior month>.csv` | `statements.csv` | `goodwillbooks`: the statement's columns, plus `bank_account` and `bank_text` of its payment | V3.9 |
+| `jewelry` | `jewelry_report_<month>.csv`, `jewelry_supplier_lookup_<month>.csv` | `jewelry.csv` | `jewelry`: `items`, `sales_cents`, `by_supplier` (`{"Store 01": {"cents": ..., "items": ...}}`), `missing_supplier` (`items`, `cents`) | V3.10 |
 | `shopgoodwill_periodic` (**on request**) | `shopgoodwill_periodic_<month>.csv` | ShopGoodwill rows of `payouts.csv` | `shopgoodwill_periodic`: a list of `period_from`, `period_to`, `paid_date`, `amount_cents`, `reference` | V3.8 |
 
 **Why the periodic report is on request.** Its simulator adds up the simulated Upright orders of the month, so it agrees with an inbox filled by `engine fetch --simulate --from D1 --to D2` and with nothing else. The sample months have their own report, which agrees with their bank file; a second one beside it would disagree (the close refuses two files of the same name).
@@ -131,6 +147,7 @@ A source marked "on request" is delivered only when named with `--source`. Witho
 - `source_coverage.json` with `days_missing` of `2026-09-21` and `2026-09-22` for Amazon, `2026-09-07` for ShopGoodwill, and none for eBay or the bank (`engine/tests/test_source_coverage.py`).
 
 ## Changelog
+- v0.6 (2026-10-04, Victor, V3.10): `jewelry.csv` built: the Jewelry Report joined with the supplier lookup, `missing_supplier` for an item the lookup does not know.
 - v0.5 (2026-10-04, Victor, V3.8): ShopGoodwill's periodic report becomes payout rows with `period_from` and `period_to`. A simulator for months without a sample report, on request only.
 - v0.4 (2026-10-04, Victor, V3.7 and V3.9): `statements.csv` built; the simulated bank feed of account `0101` (carriers, and the Goodwill Books payment as a credit) lands in `bank.csv`.
 - v0.3 (2026-10-04, Victor, V3.5): `ledger.csv` built, with `entry_no` added as its first column. `engine fetch --simulate --close-month` and `expected_close_sources.json` built, with `bc_ledger` as the first source. `days_missing` may be `null`.

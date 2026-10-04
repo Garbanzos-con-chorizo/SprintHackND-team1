@@ -268,3 +268,58 @@ def test_a_bad_periodic_row_is_a_warning(tmp_path):
     assert [p["amount_cents"] for p in read(tmp_path / "out" / "payouts.csv")] == ["1088878"]
     warnings = json.loads((tmp_path / "out" / "warnings.json").read_text(encoding="utf-8"))
     assert [(w["source_row"], w["kind"]) for w in warnings] == [(2, "bad_date"), (3, "bad_amount")]
+
+
+# ---------------------------------------------------------------- V3.10: Jewelry Report with its supplier
+
+def test_jewelry_sales_by_supplier_equal_the_key_and_the_unknown_item_is_flagged(close_month):
+    inbox, out, key, _ = close_month
+    assert (inbox / f"jewelry_report_{MONTH}.csv").exists() and (inbox / f"jewelry_supplier_lookup_{MONTH}.csv").exists()
+    assert "Supplier" not in (inbox / f"jewelry_report_{MONTH}.csv").read_text(encoding="utf-8").splitlines()[0]
+    jewelry, expected = read(out / "jewelry.csv"), key["jewelry"]
+    assert len(jewelry) == expected["items"]
+    assert sum(int(r["amount_cents"]) for r in jewelry) == expected["sales_cents"]
+    by_supplier = {}
+    for r in jewelry:
+        if r["supplier"]:
+            entry = by_supplier.setdefault(r["supplier"], {"cents": 0, "items": 0})
+            entry["cents"] += int(r["amount_cents"])
+            entry["items"] += 1
+    assert by_supplier == expected["by_supplier"] and len(by_supplier) > 1
+    # Every row has a supplier but the one the simulator plants without one, which is a warning.
+    unknown = [r for r in jewelry if not r["supplier"]]
+    assert [r["item_id"] for r in unknown] == expected["missing_supplier"]["items"] and len(unknown) == 1
+    assert int(unknown[0]["amount_cents"]) == expected["missing_supplier"]["cents"]
+    warnings = json.loads((out / "warnings.json").read_text(encoding="utf-8"))
+    assert [(w["kind"], w["source_file"], w["source_row"]) for w in warnings] == [
+        ("missing_supplier", unknown[0]["source_file"], int(unknown[0]["source_row"]))]
+    assert unknown[0]["item_id"] in warnings[0]["reason"]
+    assert not (out / "jewelry_suppliers.csv").exists()  # the lookup is an input, not an output
+
+
+def test_without_a_lookup_every_jewelry_item_is_flagged_and_none_is_guessed(close_month, tmp_path):
+    inbox, _, key, _ = close_month
+    (tmp_path / "inbox").mkdir()
+    (tmp_path / "inbox" / f"jewelry_report_{MONTH}.csv").write_text(
+        (inbox / f"jewelry_report_{MONTH}.csv").read_text(encoding="utf-8"), encoding="utf-8")
+    run(tmp_path / "inbox", tmp_path / "out", "2026-09-30")
+    jewelry = read(tmp_path / "out" / "jewelry.csv")
+    assert len(jewelry) == key["jewelry"]["items"] and all(r["supplier"] == "" for r in jewelry)
+    warnings = json.loads((tmp_path / "out" / "warnings.json").read_text(encoding="utf-8"))
+    assert len(warnings) == len(jewelry) and all(w["kind"] == "missing_supplier" for w in warnings)
+    assert "no supplier lookup file was read" in warnings[0]["reason"]
+
+
+def test_a_report_that_already_names_the_supplier_keeps_it_and_a_conflicting_lookup_is_logged(tmp_path):
+    (tmp_path / "inbox").mkdir()
+    (tmp_path / "inbox" / "jewelry_report_2026-09.csv").write_text(
+        "Item ID,Order ID,Sold Date,Description,Sale Amount,Supplier\n"
+        "JW-1,1001,09/02/2026,Ring,25.00,Store 09\n"
+        "JW-2,1002,09/03/2026,Watch,40.00,\n", encoding="utf-8")
+    (tmp_path / "inbox" / "jewelry_supplier_lookup_2026-09.csv").write_text(
+        "Item ID,Supplier\nJW-1,Store 01\nJW-2,Store 02\nJW-2,Store 03\n", encoding="utf-8")
+    run(tmp_path / "inbox", tmp_path / "out", "2026-09-30")
+    assert [(r["item_id"], r["supplier"]) for r in read(tmp_path / "out" / "jewelry.csv")] == [
+        ("JW-1", "Store 09"), ("JW-2", "Store 02")]
+    warnings = json.loads((tmp_path / "out" / "warnings.json").read_text(encoding="utf-8"))
+    assert [(w["kind"], w["source_row"]) for w in warnings] == [("duplicate", 3)] and "Store 03" in warnings[0]["reason"]
