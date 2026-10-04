@@ -2,6 +2,8 @@
 
 Written 2026-10-03 20:30 EDT by Dani's agent. **Status: proposed**, see `docs/decisions/007-phase-2-3-owners-database-scorecard.md`. It replaces the phase 2 and phase 3 rows of `docs/PHASES.md` once Victor and Orlando accept it. Sizes: **S** < 30 min, **M** 30-90 min, **L** 90+ min.
 
+Checked against `main` at 78f876f (Orlando's static portal and the "static first" update to decision 006).
+
 **Time left:** code freeze is Sunday 15:00, submission 16:00. That is one working morning. Everything below is ordered so that each checkpoint leaves something demo-able, and the cut order in section 9 says what goes first.
 
 ## 1. Where we want to get
@@ -38,20 +40,20 @@ Phase 3 is done when: the messy month produces balanced Business Central files p
 
 This replaces the five groups in decision 006 / `docs/pitch/kpi_catalog.md` (Financial; Listings & Production; Sales Effectiveness; Category Effectiveness; Customer & Marketplace). Using Goodwill's own scorecard, word for word, is the stronger Partner Fit answer. Definitions are in section 5.
 
-## 2. Where we are (checked on `main` at 92269e4)
+## 2. Where we are
 
 | Piece | Today | Gap to the target |
 |---|---|---|
 | Nightly pipeline | Works end to end: `engine run` -> `recon.pulse` -> `reports.pulse`, chained by `reports.run_nightly`. Recon tests: 31 pass (run today). Engine tests not run on this machine (no pytest); Victor's status says 93 pass. | None for phase 1. |
-| Storage | Files only: `out/transactions.csv` is rewritten on every run, `out/pulse/<date>.json` accumulates. Decision 006 proposed SQLite for app state only. | **No database.** Nothing keeps the transactions, the internal data or the run history across nights. |
+| Storage | Files only: `out/transactions.csv` is rewritten on every run, `out/pulse/<date>.json` accumulates. Decision 006 proposed SQLite for app state only, then deferred it (evening update, "static first"). | **No database.** Decision 007 brings SQLite back, as the data store only. Nothing keeps the transactions, the internal data or the run history across nights. |
 | Daily / weekly / monthly | `reports/weekly.py` and `reports/monthly.py` re-read the pulse JSON files and sum them on the fly. | Rollups should be queries on the database, shared by KPIs, dashboard and exports. |
 | KPIs | `reports/kpi.py` computes about 12 numbers in the decision 006 groups. The math and the HTML are in the same file, in Orlando's lane. | Of the 15 scorecard KPIs: **3 exist** (total revenue, listings created, revenue per labor hour), **5 are partial** (growth shows n/a without a full prior month; gross margin instead of net margin; average order value instead of average selling price; sell-through is orders / listings; 7 simulated categories instead of a top 10), **7 are missing** (listings per employee, the three inventory KPIs, sales per employee, top 10 by margin, repeat buyer rate). No tests on any KPI. |
 | Internal data | `reports/mock_api.py`: 4 in-process functions (labor hours, listings, cost per order, category mix), labelled "Simulated internal data". | No headcount, inventory, donation dates, cost by category. Not shaped as an API (no client interface, no HTTP). Not stored. |
-| Dashboard | Static HTML: pulse page, weekly page, monthly scorecard, daily table. | Rebuild the scorecard as 5 areas x 3 KPIs from the KPI file; day / week / month switch; download links. |
+| Dashboard | Static HTML, opens from disk: portal `reports/index.html` (`reports.hub`) linking the latest pulse, weekly page and monthly scorecard, plus the daily table. | Rebuild the scorecard as 5 areas x 3 KPIs from the KPI file; day / week / month switch; download links in the portal. Stays static. |
 | KPI CSV | `reports/monthly/<month>-kpis.csv` and `<month>.csv` exist. | Regenerate from the KPI file so page, PDF and CSV can never disagree. |
 | PDF | None. The pulse has print CSS and an email-ready HTML. | One-page scorecard PDF, and an `.eml` with it attached. |
 | Business Central | Nothing built. Orlando's CSV schema proposal sits in `docs/members/dani.md`; `rules.md` and `outputs.md` are not written. The engine skips payout and transfer rows; the bank file has no parser. Test data and answer key exist (`messy_month`). | All of phase 3. |
-| Web app, Docker | Decision 006, proposed; no `app/` directory. | Stretch. The plan works with static pages and commands; the app, if built, calls the same functions. |
+| Web app, Docker | Deferred by the team (decision 006, evening update); no `app/` directory. | Not in this plan. Everything here is static pages and commands; a later app calls the same functions. |
 
 ## 3. Who does what (new split)
 
@@ -92,7 +94,7 @@ Every step is a function with a thin command on top, so the scheduler, a web app
 | `close --month M` (module decided at the split; `TASKS.md` had it in `recon/`) | phase 3, to be split | new | Matching, exceptions, journal, the three BC CSV files. Exits non-zero and writes no journal if a document does not balance. |
 | `python -m reports.run_nightly` | Victor | extend | Nightly chain: fetch -> run -> pulse -> store load -> internal pull -> kpi (day, week to date, month to date) -> render -> export. `--close-month M` adds the close. |
 
-If the web app of decision 006 is built, its routes are wrappers over the same functions: `GET /api/kpis?period=`, `GET /export/kpis.csv`, `GET /export/scorecard.pdf`, `GET /export/bc/<file>.csv`, `POST /api/run`.
+The web app of decision 006 is deferred. When it is built, its routes are wrappers over the same functions: `GET /api/kpis?period=`, `GET /export/kpis.csv`, `GET /export/scorecard.pdf`, `GET /export/bc/<file>.csv`, `POST /api/run`.
 
 ## 5. KPI definitions (Dani; these go into `docs/contracts/kpi.md`)
 
@@ -205,10 +207,10 @@ Contract changes this needs in `transaction.md` (Victor, small PR, non-breaking)
 |---|---|---|---|
 | O2.1 | Scorecard page from the sample KPI file: 5 areas x 3 tiles, value, change against the prior period, source badge, "no data" and "partial" states, definitions | L | C2 |
 | O2.2 | The two top 10 tables | S | O2.1 |
-| O2.3 | Day / week / month switch and a period picker (static pages linked together, or query parameters if the app exists) | M | O2.1 |
+| O2.3 | Day / week / month switch and a period picker (static pages linked together, reachable from the portal) | M | O2.1 |
 | O2.4 | Print layout: one page, landscape, readable in grayscale, simulated badges kept | M | O2.1 |
 | O2.5 | Point `reports.monthly` and `reports.weekly` at the KPI file; remove their own sums | M | D2.9 |
-| O2.6 | Download links: KPI CSV, PDF, and in phase 3 the BC files | S | V2.8, V2.9 |
+| O2.6 | Download links in the scorecard and the portal (`reports.hub`): KPI CSV, PDF, and in phase 3 the BC files | S | V2.8, V2.9 |
 | O2.7 | Revenue trend over the month (daily bars from the monthly view) | M | cut early |
 | O2.8 | Demo script for phases 2 and 3; check every simulated number is badged | S | |
 
