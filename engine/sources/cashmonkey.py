@@ -27,3 +27,4 @@ class CashMonkey(OrderReportParser):
     channel = ("Channel",)
     channel_marketplaces = {"amazon mf": "amazon", "amazon": "amazon", "ebay": "ebay", "goodwillbooks": "other"}
     date_assume_tz = "UTC"
+    identical_rows_are_duplicates = False  # one line per unit: two identical units are two units

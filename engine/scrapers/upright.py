@@ -20,6 +20,7 @@ Environment: UPRIGHT_URL, UPRIGHT_TOKEN.
 """
 from pathlib import Path
 
+from . import simulation
 from .base import NotConfigured, Scraper, register_scraper
 
 
@@ -30,3 +31,6 @@ class Upright(Scraper):
 
     def fetch(self, business_date: str, dest_dir: Path, env: dict[str, str]) -> list[Path]:
         raise NotConfigured("Upright API is assumed but not documented: endpoint and fields unknown")
+
+    def simulate(self, business_date: str, dest_dir: Path) -> list[Path]:
+        return simulation.simulate_upright(business_date, dest_dir)

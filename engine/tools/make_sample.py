@@ -163,11 +163,12 @@ def render_upright(rng: random.Random, orders: list[Order], day: date, noise_row
     return _csv(UPRIGHT_HEADER, rows)
 
 
-def render_cashmonkey(rng: random.Random, orders: list[Order], utc_from: date, utc_to: date, faults: bool) -> str:
+def render_cashmonkey(rng: random.Random, orders: list[Order], utc_from: date, utc_to: date, faults: bool,
+                      only: set[str] | None = None) -> str:
     rows: list[list] = []
     n = 0
     for o in orders:
-        if o.marketplace == "shopgoodwill":
+        if o.marketplace == "shopgoodwill" or (only is not None and o.marketplace not in only):
             continue
         for _ in range(o.units):  # one line per unit
             n += 1

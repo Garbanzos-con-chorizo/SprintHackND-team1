@@ -29,6 +29,9 @@ class OrderReportParser(Parser):
     # True when staff count customers as rows (Upright, slide 26) even though a buyer column exists:
     # the buyer id is kept in customer_id but customer_basis is "order", so the pulse counts orders.
     customers_are_orders: bool = False
+    # An export with one line per unit can repeat an identical line for 2 units of the same item, so for
+    # those sources identical rows in one file are NOT duplicates. (Cross-file dedupe still applies.)
+    identical_rows_are_duplicates: bool = True
     strict_channels: bool = False        # True: rows of channels not in the map belong to another source; skip them
     date_assume_tz: str | None = None    # zone of timestamps that carry none (Cash Monkey writes UTC)
     # Regex with three groups (month, day, year) for a date in the file name, used when the file has no
@@ -50,7 +53,7 @@ class OrderReportParser(Parser):
         grouped: dict[tuple[str, str, str], dict] = {}
         for row_no, row in table.rows:
             identity = tuple(str(v) for v in row.values())
-            if identity in seen:
+            if self.identical_rows_are_duplicates and identity in seen:
                 result.warn(table, row_no, "duplicate", "identical to an earlier row in this file")
                 continue
             seen.add(identity)

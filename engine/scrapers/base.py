@@ -32,6 +32,11 @@ class Scraper:
         """Download the report(s) for `business_date` (YYYY-MM-DD) into dest_dir; return the paths."""
         raise NotImplementedError
 
+    def simulate(self, business_date: str, dest_dir: Path) -> list[Path]:
+        """Demo stand-in for the provider's API: write the report it would have emailed (synthetic data)
+        into dest_dir. Used by `engine fetch --simulate`. Providers without a simulator raise NotConfigured."""
+        raise NotConfigured(f"{self.source} has no simulator")
+
     def target(self, dest_dir: Path, business_date: str, suffix: str) -> Path:
         """Standard file name so parser detection by file name keeps working: <source>_<date><suffix>."""
         return dest_dir / f"{self.source}_{business_date}{suffix}"
@@ -49,7 +54,7 @@ def register_scraper(cls: type[Scraper]) -> type[Scraper]:
     return cls
 
 
-_INFRASTRUCTURE = {"base", "http", "env", "runner"}  # modules that are not portals
+_INFRASTRUCTURE = {"base", "http", "env", "runner", "simulation"}  # modules that are not portals
 
 
 def load_scrapers() -> list[Scraper]:
