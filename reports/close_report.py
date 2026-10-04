@@ -2,10 +2,11 @@
 
 Reads out/close/<YYYY-MM>/ (control totals, exceptions, General Journal, AR invoice; and, when they are
 there, the close payload, the engine's files and the run history) and writes reports/close/<YYYY-MM>.html:
-what is simulated, the reconciliation status per source, the exceptions to work with who owns each,
-shipping cost per carrier, the Cash Monkey cross-check, Goodwill's nine month-end sources with what this
-run has for each and a file picker beside each one (below), jewelry sales by supplier, and a block of
-download buttons for the export files (copied next to the page). The explanations of each table sit in a "Notes and Definitions" dropdown at the bottom;
+what is simulated; then, at the top because the close is produced from them, (1) Goodwill's nine month-end
+sources with what this run has for each, what the month still needs to be complete, and a file picker beside
+each one, and (2) the button that generates the close; then the result: a block of download buttons for the
+export files (copied next to the page), the reconciliation status per source, the exceptions to work with who
+owns each, shipping cost per carrier, the Cash Monkey cross-check and jewelry sales by supplier. The explanations of each table sit in a "Notes and Definitions" dropdown at the bottom;
 an asterisk beside a heading opens it.
 
 The nine sources and their wording come from reports/config/close_sources.csv (deck slide 38). `Detect`
@@ -43,6 +44,7 @@ TO_IMPORT = {"general_journal", "ar_invoice"}  # the two files that go into Busi
 STATUS_CLASS = {"RECONCILED": "ok", "OPEN": "stale", "INCOMPLETE": "missing", "UNEXPLAINED": "missing",
                 "MISMATCH": "missing"}
 LABELS = {"cashmonkey": "Cash Monkey"}
+MARKETPLACES = {"shopgoodwill": "ShopGoodwill", "ebay": "eBay", "amazon": "Amazon"}
 
 CLOSE_CSS = """
 main { max-width:1100px; }
@@ -59,16 +61,31 @@ table.tight th { white-space:normal; }
 .export .actions { margin:0; }
 .export .hint { margin:10px 0 0; font-size:14px; color:var(--muted); }
 .simnote { margin:12px 0 0; font-size:13px; border:1px dashed var(--ink); padding:8px 12px; border-radius:var(--radius); }
-/* One file picker per month-end source, and the button that hands the chosen files to the close. */
-td.pick, th.pick { white-space:normal; text-align:left; }
-td.pick input[type=file] { font:inherit; font-size:13px; max-width:230px; }
-.byhand { margin:0 0 8px; font-size:15px; }
-.pickrun { padding:12px 16px; margin:8px 0 0; overflow:visible; border-left:5px solid var(--primary); }
-.pickrun .actions { margin:0; }
+/* Step 1 and 2, at the top: the month-end files (one picker per source) and the button that generates the close. */
+.step { display:flex; align-items:center; gap:10px; margin:22px 0 8px; }
+.step .num { flex:none; width:30px; height:30px; border-radius:50%; background:var(--primary); color:#fff;
+  font-weight:700; display:flex; align-items:center; justify-content:center; }
+.step h2 { margin:0; font-size:20px; color:var(--ink); }
+.byhand { margin:0 0 10px; font-size:15px; }
+.needs { margin:0 0 10px; padding:10px 14px; border-radius:var(--radius); font-size:15px; background:var(--card);
+  border:1px solid var(--line); border-left:5px solid var(--down); }
+.needs.done { border-left-color:var(--up); }
+.needs ul { margin:4px 0 0; padding-left:20px; }
+table.files td { white-space:normal; vertical-align:middle; text-align:left; }
+table.files th { text-align:left; }
+table.files td:first-child { font-weight:700; }
+table.files small { display:block; color:var(--muted); font-size:13px; font-weight:400; }
+table.files .pill { margin-right:6px; }
+table.files tr:has(.pill.missing) td { background:#fdf3f5; }
+td.pick input[type=file] { font:inherit; font-size:14px; max-width:260px; }
+.pickrun { padding:16px 18px; margin:0; overflow:visible; border-left:5px solid var(--primary); }
+.pickrun .actions { margin:0; display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+.pickrun .btn.big { font-size:18px; padding:12px 22px; }
 .pickrun [hidden] { display:none; }
-.pickrun p { margin:8px 0 0; font-size:13px; color:var(--muted); }
-.pickrun p#pick-state { min-height:1.5em; font-size:15px; font-weight:600; color:var(--ink); }
+.pickrun p { margin:10px 0 0; font-size:14px; color:var(--muted); }
+.pickrun p#pick-state { min-height:1.5em; font-size:16px; font-weight:600; color:var(--ink); }
 .pickrun p#pick-state.bad { color:var(--down); }
+.result { margin-top:28px; }
 .state { font-weight:700; }
 .state.absent { font-weight:400; color:var(--muted); }
 @media print {
@@ -78,7 +95,7 @@ td.pick input[type=file] { font:inherit; font-size:13px; max-width:230px; }
   th, td { padding:3px 5px; }
   td.detail { max-width:none; }
   .simnote { font-size:7.5pt; padding:3px 6px; }
-  .export, .nav, .pick, .pickrun { display:none; }
+  .export, .nav, .pick, .pickrun, .step.two { display:none; }
 }
 """
 
@@ -114,17 +131,17 @@ PICK_SCRIPT = """<script>
   run.addEventListener("click", function () {
     var files = [], seen = {};
     picks.forEach(function (p) { [].forEach.call(p.files, function (f) { if (!seen[f.name]) { seen[f.name] = 1; files.push(f); } }); });
-    if (!files.length) return say("Choose a downloaded file beside at least one source first.", true);
     run.disabled = true;
+    if (!files.length) { say("Generating the month-end close..."); return again().catch(fail); }
     say("Adding " + files.length + " file(s)...");
     files.reduce(function (before, f) { return before.then(function () {
       return fetch(api + "/uploads/" + encodeURIComponent(f.name), { method: "PUT", headers: head, body: f }).then(json)
         .then(function (d) { if (!d.ok) throw new Error(d.error || d.detail || "the file was not accepted"); });
-    }); }, Promise.resolve()).then(function () { say("Running the close again..."); return again(); }).catch(fail);
+    }); }, Promise.resolve()).then(function () { say("Generating the month-end close..."); return again(); }).catch(fail);
   });
   clear.addEventListener("click", function () {
     clear.disabled = true;
-    say("Removing the added files and running the close again...");
+    say("Removing the added files and generating the close again...");
     fetch(api + "/uploads", { method: "DELETE", headers: head }).then(json).then(again).catch(fail);
   });
 })();
@@ -157,11 +174,37 @@ def headline(control, journal_docs, exceptions):
     return "; ".join(parts) + ".", bool(bad)
 
 
+def missing_reports(exceptions):
+    """The reports a close says it still needs, from its `missing_report` exceptions (payload or CSV rows):
+    [(source as written, [days as "Sep 21"], detail)]. Empty when the month is complete."""
+    # Which of the nine sources carries each marketplace's sales (ShopGoodwill's come in Upright's report), so the
+    # page names the report to download, not only the marketplace.
+    carrier = {}
+    if SOURCES.exists():
+        with open(SOURCES, encoding="utf-8-sig", newline="") as f:
+            for row in csv.DictReader(f):
+                how, _, what = row["Detect"].partition(":")
+                if how == "marketplace":
+                    carrier[what] = row["Source"]
+    found = []
+    for e in exceptions:
+        if (e.get("kind") or e.get("Kind")) != "missing_report":
+            continue
+        key = e.get("source") or next((k for k, v in MARKETPLACES.items() if v == e.get("Source")), "")
+        source = e.get("Source") or {**MARKETPLACES, **LABELS}.get(key) or key.title()
+        if carrier.get(key) and carrier[key] != source:
+            source = f"{source} ({carrier[key]})"
+        detail = e.get("detail") or e.get("Detail") or ""
+        days = [f"{date.fromisoformat(d):%b} {date.fromisoformat(d).day}" for d in re.findall(r"\d{4}-\d{2}-\d{2}", detail)]
+        found.append((source, days, detail))
+    return found
+
+
 def source_states(folder, payload, path=SOURCES):
     """Goodwill's nine month-end sources and what this run has for each: (config row, present, note)."""
     engine = folder / "engine"
     bank, payouts = read_if_there(engine / "bank.csv"), read_if_there(engine / "payouts.csv")
-    missing = {e["source"] for e in payload.get("exceptions", []) if e["kind"] == "missing_report"}
+    missing = {e["source"]: e.get("detail", "") for e in payload.get("exceptions", []) if e["kind"] == "missing_report"}
     states = []
     with open(path, encoding="utf-8-sig", newline="") as f:
         for row in csv.DictReader(f):
@@ -173,7 +216,10 @@ def source_states(folder, payload, path=SOURCES):
                 "bank_account": lambda: any(r.get("account") == what for r in bank),
                 "payout_period": lambda: any(r["marketplace"] == what and r.get("period_from") for r in payouts),
             }[how]()
-            note = "a report is missing for some days: see the exceptions" if how == "marketplace" and what in missing else ""
+            note = ""
+            if how == "marketplace" and what in missing:
+                days = re.findall(r"\d{4}-\d{2}-\d{2}", missing[what])
+                note = "a report is missing for some days" + (f": {', '.join(days)}" if days else ": see the exceptions")
             states.append((row, present, note))
     return states
 
@@ -222,32 +268,51 @@ def render(month, folder):
 
     sources = ""
     if payload:
-        rows = "\n".join(
-            f'<tr class="src"><td>{escape(r["Source"])}</td><td class="text">{escape(r["Month_End_Input"])}</td>'
-            f'<td class="text">{escape(r["Acquisition_Rule"])}</td>'
-            f'<td class="text"><span class="state{"" if present else " absent"}">'
-            f'{escape(r["Origin"] if present else r["When_Absent"])}</span>{"; " + escape(note) if note else ""}</td>'
-            f'<td class="detail">{escape(r["What_We_Read"]) if present else ""}</td>'
-            f'<td class="pick"><input type="file" class="src-file" multiple accept=".csv,.xlsx" '
-            f'aria-label="Downloaded file for {escape(r["Source"])}"></td></tr>'
-            for r, present, note in source_states(folder, payload))
+        def row(r, present, note):
+            """One source: its report, a pill a person reads first, the page's own wording, and its file picker."""
+            if present and note:
+                pill = '<span class="pill missing">Missing days</span>'
+            elif present:
+                pill = '<span class="pill ok">In this run</span>'
+            else:
+                pill = '<span class="pill not_configured">Not in this run</span>'
+            state = (f'<span class="state{"" if present else " absent"}">{escape(r["Origin"] if present else r["When_Absent"])}'
+                     f'</span>{"; " + escape(note) if note else ""}')
+            read_what = f'<small>{escape(r["What_We_Read"])}</small>' if present else ""
+            return (f'<tr class="src"><td>{escape(r["Source"])}</td>'
+                    f'<td>{escape(r["Month_End_Input"])}<small>{escape(r["Acquisition_Rule"])}</small></td>'
+                    f'<td>{pill}{state}{read_what}</td>'
+                    f'<td class="pick"><input type="file" class="src-file" multiple accept=".csv,.xlsx" '
+                    f'aria-label="Downloaded file for {escape(r["Source"])}"></td></tr>')
+
+        rows = "\n".join(row(r, present, note) for r, present, note in source_states(folder, payload))
         note_sources = ('The first three columns are Goodwill\'s own (their slide 38). "Sample file" is a synthetic file '
                         'we generated; "simulated API" is a file written by our simulator: Goodwill has no such API today, '
                         'and the simulator stands in for the Controller\'s download; '
                         '"not in this inbox" means no file of that source reached this run. A file chosen here is '
                         f'kept in out/uploads/{month}/ and the same close runs again with it; the engine recognizes '
                         'each file by its own name and layout, whichever source it was chosen beside.')
-        sources = (f'<h2 class="sec">Goodwill\'s nine month-end sources, and what this run has for each{ast(note_sources)}</h2>'
-                   f'<p class="byhand">{escape(BY_HAND)} Choose each downloaded file beside its source.</p>'
-                   '<div class="card"><table><thead><tr><th>Source</th><th class="text">Month-end input</th>'
-                   '<th class="text">Acquisition / rule</th>'
-                   f'<th class="text">In this run</th><th class="text">What we read</th>'
-                   f'<th class="pick">Choose the downloaded file</th></tr></thead><tbody>\n{rows}\n</tbody></table></div>'
+        needed = missing_reports(payload.get("exceptions", []))
+        if needed:
+            needs = ('<div class="needs"><strong>To be complete, this month needs '
+                     f'{len(needed)} more report{"s" if len(needed) != 1 else ""}:</strong><ul>'
+                     + "".join(f'<li><strong>{escape(s)}</strong> report covering {escape(", ".join(d) or "the missing days")}</li>'
+                               for s, d, _ in needed) + '</ul></div>')
+        else:
+            needs = '<div class="needs done"><strong>Complete:</strong> every report the close needs is in this run.</div>'
+        sources = (f'<div class="step"><span class="num">1</span><h2>Month-end files{ast(note_sources)}</h2></div>'
+                   f'<p class="byhand">{escape(BY_HAND)} Choose each downloaded file beside its source.</p>{needs}'
+                   '<div class="card"><table class="files"><thead><tr><th>Source</th><th>Month-end report</th>'
+                   '<th>In this run</th><th class="pick">Downloaded file</th></tr></thead><tbody>\n'
+                   f'{rows}\n</tbody></table></div>'
+                   '<div class="step two"><span class="num">2</span><h2>Generate the month-end close</h2></div>'
                    f'<section class="card pickrun" id="pick" data-month="{month}"><div class="actions">'
-                   '<button class="btn" id="pick-run" type="button">Add the chosen files and run the close again</button>'
-                   '<button class="btn quiet" id="pick-clear" type="button" hidden>Remove the added files and run again</button>'
+                   '<button class="btn big" id="pick-run" type="button">Generate the month-end close</button>'
+                   '<button class="btn quiet" id="pick-clear" type="button" hidden>Remove the added files and generate again</button>'
                    '</div><p id="pick-state" role="status"></p>'
-                   '<p>Only .csv and .xlsx. A file whose name is already in the run is refused, not counted twice. '
+                   '<p>This button generates the report: it runs the close on the files already in this run plus any file '
+                   'chosen above, then rebuilds this page (the reconciliation, the exceptions and the export files below). '
+                   'Only .csv and .xlsx; a file whose name is already in the run is refused, not counted twice. '
                    'Nothing is posted.</p></section>' + PICK_SCRIPT)
 
     shipping = ""
@@ -260,7 +325,8 @@ def render(month, folder):
         total = sum(cents(r["Net"]) for r in shipping_rows)
         charged = sum(s.get("shipping_cents", 0) + s.get("handling_cents", 0) for s in payload.get("sources", {}).values())
         note_shipping = (f"Net shipping cost {money(total)}; shipping and handling charged to buyers this month "
-                         f"{money(charged)}. Both lookups come from simulated APIs with layouts we made up. The carriers "
+                         f"{money(charged)}. Both lookups come from our simulators, standing in for the Controller's download, "
+                         f"with layouts we made up. The carriers "
                          f"paid from the bank post to a placeholder expense account against G/L 10009; FedEx is read from "
                          f"the ledger, so nothing is posted for it. What entry Goodwill's workbook makes here is not known.")
         shipping = (f'<h2 class="sec">Shipping cost, from the two lookups on Goodwill\'s slide 38{ast(note_shipping)}</h2>'
@@ -319,14 +385,16 @@ def render(month, folder):
             f'<p class="simnote"><strong>Synthetic sample data.</strong> <strong>Posting status: Not posted.</strong> '
             f'Export files only{ast(not_real)}</p>'
             f'<p class="summary{" alert" if alert else ""}">{escape(text)}</p>'
-            f'{export}'
+            f'{sources}'
+            f'<div class="result">{"<div class=\"step\"><span class=\"num\">3</span><h2>Review the result, then export</h2></div>" if sources else ""}'
+            f'{export}</div>'
             f'<h2 class="sec">Reconciliation by Source{ast("What OPEN, INCOMPLETE and UNEXPLAINED mean is in the notes")}</h2>'
             f'<div class="card"><table class="tight"><thead><tr><th>Source</th><th>Path</th>'
             + "".join(f"<th>{c}</th>" for c in cols) + '<th class="status">Status</th></tr></thead><tbody>\n'
             f'{control_rows}\n</tbody></table></div>'
             f'<h2 class="sec">Exceptions to Work</h2><div class="card"><table><thead><tr><th>Kind</th><th>Source</th><th>Amount</th>'
             f'<th>Effect</th><th class="text">Detail</th><th class="text">Owner</th><th class="text">What to do</th></tr></thead><tbody>\n{exc_rows}\n</tbody></table></div>'
-            f'{shipping}{checks}{sources}{jewelry}{history}'
+            f'{shipping}{checks}{jewelry}{history}'
             f'<div class="actions"><a class="btn quiet" href="index.html">All Months</a></div>{about}')
     return PAGE.substitute(title=f"Month-End Close {month}", css=CSS + CLOSE_CSS, body=body)
 

@@ -84,8 +84,13 @@ class ClosePageTest(unittest.TestCase):
             self.assertIn("Controller downloads these reports by hand today", text_of(html))
             self.assertIn(f'id="pick" data-month="{MONTH}"', html)
             self.assertIn('id="pick-run"', html)
+            # The files and the button come before the result, and the button says it generates the close.
+            self.assertLess(html.index('id="pick"'), html.index("Export Files for Business Central"))
+            self.assertIn(">Generate the month-end close</button>", html)
             self.assertIn("Goodwill has no such API today", html)
             self.assertNotIn(">Post<", html)
+        self.assertIn("To be complete, this month needs 2 more reports", text_of(self.messy))
+        self.assertIn("Complete:", text_of(self.tidy))
 
     def test_a_source_is_only_called_simulated_when_its_file_reached_the_run(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -66,5 +66,8 @@ def test_the_close_list_has_the_panel_and_names_the_missing_reports(tmp_path):
     hub.close_index(tmp_path)
     html = (tmp_path / "close" / "index.html").read_text(encoding="utf-8")
     assert f'id="add" data-month="{MONTH}"' in html and 'type="file"' in html
-    assert "<li><strong>Amazon:</strong> no Amazon report covers 2026-09-21</li>" in html and "<li><strong>eBay" not in html
+    assert "September 2026 needs 1 more report to be complete" in html
+    assert "<li><strong>Amazon</strong> report covering Sep 21" in html and "<li><strong>eBay" not in html
+    assert "Needs 1 report" in html and "<strong>Amazon</strong> covering Sep 21" in html   # the month's row says it too
+    assert ">Add files and generate the month-end close<" in html
     assert "Nothing is posted" in html and "synthetic samples" in html
