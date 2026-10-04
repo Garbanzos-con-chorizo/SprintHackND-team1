@@ -2,7 +2,7 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 17:10 EDT · **Branch:** d/goodwill-context
+**Last updated:** 2026-10-03 20:45 EDT · **Branch:** claude/phase-2-3-kpi-dashboard-9cb46c
 
 ## Done
 - P0 pulse contract (draft): `docs/contracts/pulse.md`, mocks `docs/contracts/examples/pulse.sample.json` (clean day) and `pulse.sample.missing.json` (eBay missing). Merged in PR #9.
@@ -16,7 +16,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - Added `docs/goodwill-project-context.md` (deck, rubric and problem-sheet extraction) for the whole team, linked from `docs/PROBLEM.md`
 
 ## In progress
-- Nothing. PR #9 and PR #10 are merged.
+- **Phases 2 and 3 plan (proposed, not yet accepted by Victor and Orlando):** `docs/PLAN_PHASE_2_3.md` and `docs/decisions/007-phase-2-3-owners-database-scorecard.md`. Phase 2 split: I own the 15 scorecard KPIs (`recon/kpi/`), Orlando the frontend, Victor the database, internal API and exports. Phase 3 (Business Central, including D2 to D8) is a separate task with no owner yet; it is split between the three of us at the first phase 2 checkpoint. Internal API assumption added to `docs/ASSUMPTIONS.md` section 2b (claimed in `docs/CLAIMS.md`). Requests left in both teammates' files. No code yet for phase 2.
 
 ## For teammates: what the new context file changes
 - **Orlando (P-O2):** Goodwill's own nightly table (slide 31) labels the rows SHOPGOODWILL, AMAZON, EBAY, OTHER E-COMMERCE CHANNELS and TOTAL E-COMMERCE, with columns DAILY REVENUE and DAILY CUSTOMERS. Use their labels.
@@ -29,9 +29,12 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - Victor: I accept decision 002 (Python). The pulse uses the standard library only, tests with `unittest`, so it adds no dependency.
 - Not run against real engine output yet; that is integration (I1). The engine landed on main in PR #8.
 
-## Next (phase 1, in order)
-1. I1: run the pulse on the engine's real `out/` and fix what differs
-2. P-D5: the five scenarios are tested on my fixtures; re-run on Orlando's P-O1 sample days when they exist
+## Next (phase 2, in order; task ids from `docs/PLAN_PHASE_2_3.md`)
+1. C2: `docs/contracts/kpi.md` and `docs/contracts/examples/kpi.sample.month.json` (unblocks Orlando's page)
+2. D2.1 to D2.3: `recon/kpi/` scaffold, periods, a fixture database built from Victor's `schema.sql` (hand-made until it exists)
+3. D2.4 to D2.9: the 15 KPIs and `python -m recon.kpi`
+4. D2.10: tests, including September revenue against `data/sample/clean_month/expected.json`
+- Phase 1 leftovers (I1, P-D5) are done in practice: Victor and Orlando ran the pulse on the real engine output and all 8 sample scenarios match their answer keys.
 
 ## How to run / test my part
 - Tests: `python -m unittest discover -s recon -t .` from the repo root (31 pass).
