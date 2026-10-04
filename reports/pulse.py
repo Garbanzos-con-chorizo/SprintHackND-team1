@@ -16,7 +16,7 @@ from pathlib import Path
 from string import Template
 
 from reports.schema import day_record, write_csv
-from reports.theme import CSS, E, EMAIL_FONT, PAGE
+from reports.theme import CSS, E, EMAIL_FONT, PAGE, accordion, expander, info, kv, print_notes, stamp
 
 ROOT = Path(__file__).resolve().parent.parent
 ORDER = ["shopgoodwill", "amazon", "ebay", "other"]
@@ -38,36 +38,29 @@ REASONS = {
 
 DAY = Template("""<header>
   <h1>Nightly pulse: $day_long</h1>
-  <p>Compared with $prior_long · times in $tz · generated $generated$mock</p>
+  <p>Compared with $prior_long · generated $generated$mock</p>
 </header>
 <p class="summary$summary_class">$summary</p>
 <div class="kpis">
-  <div class="kpi"><div class="label">Enterprise revenue</div><div class="value">$ent_revenue</div><div class="sub">$ent_delta</div></div>
-  <div class="kpi"><div class="label">Orders</div><div class="value">$ent_orders</div><div class="sub muted">sale orders; refunds not counted</div></div>
-  <div class="kpi"><div class="label">Customers</div><div class="value">$ent_customers</div><div class="sub">$ent_customers_delta</div></div>
-  <div class="kpi"><div class="label">Marketplace fees</div><div class="value">$ent_fees</div><div class="sub muted">not deducted from revenue</div></div>
+  <div class="kpi"><div class="label has-tip">Enterprise revenue$tip_revenue</div><div class="value">$ent_revenue</div><div class="sub">$ent_delta</div></div>
+  <div class="kpi"><div class="label has-tip">Orders$tip_orders</div><div class="value">$ent_orders</div></div>
+  <div class="kpi"><div class="label has-tip">Customers$tip_customers</div><div class="value">$ent_customers</div><div class="sub">$ent_customers_delta</div></div>
+  <div class="kpi"><div class="label has-tip">Marketplace fees$tip_fees</div><div class="value">$ent_fees</div></div>
 </div>
 $banner
+<h2 class="sec">By marketplace<span class="aside noprint">Select a row for customers, refunds and fees</span></h2>
 <div class="card">
 <table>
-  <thead><tr>
-    <th>Marketplace</th><th class="status">Status</th><th>Revenue</th><th>vs prior day</th>
-    <th>Orders</th><th>Customers</th><th>Refunds</th><th>Fees</th>
-  </tr></thead>
+  <thead><tr><th>Marketplace</th><th>Revenue</th><th>vs prior day</th><th>Orders</th><th class="status">Status</th></tr></thead>
   <tbody>
 $rows
   </tbody>
 </table>
 </div>
-<section class="foot">
-  <h2>Data quality</h2>
-  <p>$quality</p>
-  <h2>Definitions</h2>
-  <dl>
+$quality
 $definitions
-  </dl>
-  <p class="nav"><a href="index.html">All days</a> · <a href="$email_name">Email version</a></p>
-</section>""")
+$notes
+<p class="nav"><a href="index.html">All days</a> · <a href="$email_name">Email version</a></p>""")
 
 INDEX = Template("""<header>
   <h1>Nightly pulse</h1>
@@ -100,17 +93,16 @@ def prior_date(p):
 
 
 def delta_html(d, note=None):
+    """The revenue change, and the note on it (shown in the row's details, not in the cell)."""
     if not d or d.get("revenue_cents") is None:
         reason = (d or {}).get("reason")
-        reason = REASONS.get(reason, reason) or "no comparison"
-        return f'<span class="muted">n/a</span><small class="note">{escape(reason)}</small>'
+        return '<span class="muted">n/a</span>', REASONS.get(reason, reason) or "no comparison"
     cents, pct = d["revenue_cents"], d.get("revenue_pct")
     cls, arrow = ("up", "▲") if cents > 0 else ("down", "▼") if cents < 0 else ("", "")
     pct_txt = f" ({pct:+.1f}%)" if pct is not None else ""
     sign = "+" if cents > 0 else ""
-    note = note or REASONS.get(d.get("reason"), d.get("reason"))
-    note = f'<small class="note">{escape(note)}</small>' if note else ""
-    return f'<span class="chg {cls}">{arrow} {sign}{money(cents)}{pct_txt}</span>{note}'
+    return (f'<span class="chg {cls}">{arrow} {sign}{money(cents)}{pct_txt}</span>',
+            note or REASONS.get(d.get("reason"), d.get("reason")) or "")
 
 
 def count_delta(n):
@@ -155,18 +147,25 @@ def summary_line(p):
     return "; ".join(parts) + "."
 
 
+def detail_row(detail_id, m, note):
+    """A row's details: customers (and how they are counted), refunds, fees, the comparison note."""
+    basis = " (counted by order)" if m.get("customer_basis") == "order" else ""
+    pairs = kv([("Customers", f'{m["customers"]:,}{basis}'), ("Refunds", money(m["refunds_cents"])),
+                ("Fees", money(m["fees_cents"])), ("Comparison", escape(note))])
+    return f'    <tr class="xdetail" id="{detail_id}" hidden><td colspan="5">{pairs}</td></tr>'
+
+
 def row_html(key, m):
     name = escape(label(key, m))
     status = m.get("status", "missing")
-    pill = f'<span class="pill {status}">{PILL.get(status, escape(status))}</span>'
+    pill = f'<td class="status"><span class="pill {status}">{PILL.get(status, escape(status))}</span></td>'
     if status != "ok":
-        return (f'    <tr><td>{name}</td><td class="status">{pill}</td>'
-                f'<td class="nodata{" quiet" if status == "not_configured" else ""}" colspan="6">'
-                f'{NO_DATA.get(status, "No data")}</td></tr>')
-    basis = '<small class="note">counted by order</small>' if m.get("customer_basis") == "order" else ""
-    return (f'    <tr><td>{name}</td><td class="status">{pill}</td><td>{money(m["revenue_cents"])}</td>'
-            f'<td>{delta_html(m.get("delta"))}</td><td>{m["orders"]:,}</td><td>{m["customers"]:,}{basis}</td>'
-            f'<td>{money(m["refunds_cents"])}</td><td>{money(m["fees_cents"])}</td></tr>')
+        return (f'    <tr><td><span class="xpad"></span>{name}</td>'
+                f'<td class="nodata{" quiet" if status == "not_configured" else ""}" colspan="3">'
+                f'{NO_DATA.get(status, "No data")}</td>{pill}</tr>')
+    delta, note = delta_html(m.get("delta"))
+    return (f'    <tr class="xrow"><td>{expander("mk-" + key)}{name}</td><td>{money(m["revenue_cents"])}</td>'
+            f'<td>{delta}</td><td>{m["orders"]:,}</td>{pill}</tr>\n' + detail_row("mk-" + key, m, note))
 
 
 def render_day(p):
@@ -175,11 +174,11 @@ def render_day(p):
     excluded = [label(k, markets.get(k)) for k in excluded_keys(ent)]
     ed = ent.get("delta") or {}
     same = "same marketplaces on both days" if excluded and ed.get("revenue_cents") is not None else None
+    ent_delta, ent_note = delta_html(ed, same)
     rows.append(
-        f'    <tr class="total"><td>Enterprise total</td><td class="status">'
-        f'{"Partial" if excluded else "Complete"}</td><td>{money(ent["revenue_cents"])}</td>'
-        f'<td>{delta_html(ed, same)}</td><td>{ent["orders"]:,}</td><td>{ent["customers"]:,}</td>'
-        f'<td>{money(ent["refunds_cents"])}</td><td>{money(ent["fees_cents"])}</td></tr>')
+        f'    <tr class="total xrow"><td>{expander("mk-total")}Enterprise total</td><td>{money(ent["revenue_cents"])}</td>'
+        f'<td>{ent_delta}</td><td>{ent["orders"]:,}</td>'
+        f'<td class="status">{"Partial" if excluded else "Complete"}</td></tr>\n' + detail_row("mk-total", ent, ent_note))
 
     banner = ""
     if excluded:
@@ -191,32 +190,43 @@ def render_day(p):
     if dq.get("warnings_total"):
         parts = ", ".join(f"{escape(k.replace('_', ' '))} rows: {n}" for k, n in sorted(dq.get("by_kind", {}).items()))
         quality = f"{dq['warnings_total']} issue(s) handled automatically: {parts}. Duplicates were counted once."
+        quality_meta = f"{dq['warnings_total']} issue(s) handled automatically"
     else:
-        quality = "No issues found in tonight's files."
+        quality, quality_meta = "No issues found in tonight's files.", "no issues"
     if dq.get("rows_rejected"):
         quality += f" {dq['rows_rejected']} row(s) could not be read and were left out."
+        quality_meta += f", {dq['rows_rejected']} row(s) left out"
 
-    defs = "\n".join(f"    <dt>{escape(k.replace('_', ' ').capitalize())}</dt><dd>{escape(v)}</dd>"
-                     for k, v in (p.get("definitions") or {}).items())
+    definitions = dict(p.get("definitions") or {})
+    definitions.setdefault("timezone", p.get("timezone", "America/New_York"))
+    defs = "".join(f"<div><dt>{escape(k.replace('_', ' ').capitalize())}</dt><dd>{escape(v)}</dd></div>"
+                   for k, v in definitions.items())
+    one_line = " ".join(f"{escape(k.replace('_', ' ').capitalize())}: {escape(v)}" for k, v in definitions.items())
+    get = definitions.get
     body = DAY.substitute(
         summary=escape(summary_line(p)),
         email_name=f"{p['business_date']}.email.html",
         summary_class=" alert" if excluded else "",
         day_long=long_date(p["business_date"]),
         prior_long=long_date(prior_date(p)) if prior_date(p) else "no prior day",
-        tz=escape(p.get("timezone", "America/New_York")),
-        generated=escape(p.get("generated_at", "")),
+        generated=escape(stamp(p.get("generated_at", ""))),
         mock=" · <strong>mock data</strong>" if p.get("mock") else "",
+        tip_revenue=info("tip-revenue", "enterprise revenue", [("Definition", escape(get("revenue", ""))),
+                                                               ("Comparison", escape(ent_note))]),
+        tip_orders=info("tip-orders", "orders", [("Definition", "Sale orders of the day; refunds are not counted.")]),
+        tip_customers=info("tip-customers", "customers", [("Definition", escape(get("customers", "")))]),
+        tip_fees=info("tip-fees", "marketplace fees", [("Definition", escape(get("fees", "Not deducted from revenue.")))]),
         ent_revenue=money(ent["revenue_cents"]),
-        ent_delta=delta_html(ed, same),
+        ent_delta=ent_delta,
         ent_orders=f"{ent['orders']:,}",
         ent_customers_delta=count_delta(ed.get("customers")),
         ent_customers=f"{ent['customers']:,}",
         ent_fees=money(ent["fees_cents"]),
         banner=banner,
         rows="\n".join(rows),
-        quality=quality,
-        definitions=defs,
+        quality=accordion("Data quality", f"<p>{quality}</p>", quality_meta),
+        definitions=accordion("Definitions", f"<dl>{defs}</dl>", ", ".join(k.replace("_", " ") for k in definitions)),
+        notes=print_notes([f"<b>Data quality:</b> {quality}", f"<b>Definitions:</b> {one_line}"]),
     )
     return PAGE.substitute(title=f"Nightly pulse {p['business_date']}", css=CSS, body=body)
 

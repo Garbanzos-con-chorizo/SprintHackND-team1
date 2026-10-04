@@ -12,29 +12,34 @@ from datetime import date, datetime
 from html import escape, unescape
 from pathlib import Path
 
-from reports.theme import CSS, PAGE
+from reports.theme import CSS, PAGE, accordion, info, print_notes
 
 ROOT = Path(__file__).resolve().parent.parent
 
 HUB_CSS = """
-/* One panel per report, divided by hairlines; the top rule is blue, red when the page flags missing data */
-.hub-grid { display:flex; flex-wrap:wrap; gap:1px; margin:var(--sp-5) 0 0; background:var(--rule); border:var(--bd); }
-.hub-card { flex:1 1 260px; display:flex; flex-direction:column; gap:var(--sp-3); padding:var(--sp-5) var(--sp-5) var(--sp-5);
-  background:var(--bg); border-top:3px solid var(--blue); }
-.hub-card.alert { border-top-color:var(--red); }
-.hub-card.empty { border-top-color:var(--rule-dk); background:var(--bg-1); }
-.hub-card .label { color:var(--blue); }
-.hub-card.alert .label { color:var(--red); }
-.hub-card h2 { font-size:var(--fs-lead); font-weight:var(--fw-bold); line-height:1.3; }
+/* One card per report: what it is (info button), the latest period, its headline, its files */
+.hub-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:var(--sp-3); }
+.hub-card { display:flex; flex-direction:column; gap:var(--sp-2); padding:var(--sp-5); background:var(--card);
+  border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); }
+.hub-card.empty { background:transparent; box-shadow:none; border-style:dashed; border-color:var(--line-2); }
+.hub-card .label { display:flex; align-items:center; gap:6px; }
+.hub-card .label::before { content:""; width:8px; height:8px; border-radius:50%; background:var(--ok); }
+.hub-card.alert .label::before { background:var(--bad); }
+.hub-card.empty .label::before { background:var(--faint); }
+.hub-card h2 { font-size:22px; font-weight:var(--fw-bold); line-height:1.2; letter-spacing:-0.025em; }
 .hub-card h2 a { color:var(--ink); }
-.hub-card .headline { font-weight:var(--fw-semi); line-height:1.4; }
-.hub-card .links { font-size:var(--fs-small); color:var(--muted); margin-top:auto; padding-top:var(--sp-3); border-top:var(--bd); }
-.hub-card .built { font-size:var(--fs-small); color:var(--muted); }
+.hub-card .headline { font-size:13px; line-height:1.45; color:var(--muted); }
+.hub-card .links { display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; padding-top:var(--sp-2); }
+.hub-card .links a { padding:3px 10px; border-radius:980px; background:var(--neutral-bg); color:var(--ink); font-size:var(--fs-small); }
+.hub-card .links a:hover { background:var(--accent-tint); text-decoration:none; }
+.hub-card .built { font-size:var(--fs-small); color:var(--faint); }
+.hub-card code { font-size:11px; color:var(--muted); }
 @media print {
   @page { size:letter portrait; margin:0.5in; }
-  .hub-grid { margin-top:8pt; }
-  .hub-card { flex-basis:45%; padding:6pt 8pt; gap:3pt; break-inside:avoid; }
-  .hub-card h2 { font-size:10pt; }
+  .hub-grid { grid-template-columns:repeat(2,1fr); gap:6pt; }
+  .hub-card { padding:6pt 8pt; gap:3pt; box-shadow:none; border-color:#d2d2d7; border-radius:8px; break-inside:avoid; }
+  .hub-card h2 { font-size:11pt; }
+  .hub-card .headline { font-size:7.5pt; }
   .hub-card .links { display:none; }
 }
 """
@@ -92,9 +97,11 @@ def headline(page):
 def card(root, item):
     folder = root / item["folder"]
     pages = sorted(f for f in folder.glob("*.html") if re.fullmatch(item["pattern"], f.stem)) if folder.is_dir() else []
+    tip_id = f'tip-{item["folder"]}'
+    about = info(tip_id, item["title"], [("What it is", escape(item["what"])), ("Rebuild", f'<code>{escape(item["build"])}</code>')])
     if not pages:
-        return (f'<div class="hub-card empty"><div class="label">{item["title"]}</div>'
-                f'<h2>Not built yet</h2><p class="links">Build it with <code>{escape(item["build"])}</code></p></div>'), False
+        return (f'<div class="hub-card empty"><div class="label has-tip">{item["title"]}{about}</div>'
+                f'<h2>Not built yet</h2><p class="built">Build it with <code>{escape(item["build"])}</code></p></div>'), False
     latest = pages[-1]
     text, alert = headline(latest)
     href = f'{item["folder"]}/{latest.name}'
@@ -103,27 +110,29 @@ def card(root, item):
     if item["archive"] and (folder / item["archive"][0]).exists():
         links.append(f'<a href="{item["folder"]}/{item["archive"][0]}">{item["archive"][1]} ({len(pages)})</a>')
     elif len(pages) > 1:
-        links.append("Earlier: " + ", ".join(f'<a href="{item["folder"]}/{p.name}">{escape(item["period"](p.stem))}</a>'
-                                             for p in reversed(pages[:-1])))
+        links += [f'<a href="{item["folder"]}/{p.name}">{escape(item["period"](p.stem))}</a>' for p in reversed(pages[:-1])]
     built = datetime.fromtimestamp(latest.stat().st_mtime)
     mock = "mock data" in latest.read_text(encoding="utf-8")
-    return (f'<div class="hub-card{" alert" if alert else ""}"><div class="label">{item["title"]}</div>'
+    return (f'<div class="hub-card{" alert" if alert else ""}"><div class="label has-tip">{item["title"]}{about}</div>'
             f'<h2><a href="{href}">{escape(item["period"](latest.stem))}</a></h2>'
             f'<p class="headline">{escape(text)}</p>'
-            f'<p class="links">{" · ".join(links)}</p>'
-            f'<p class="built">{escape(item["what"])} Built {built:%Y-%m-%d %H:%M}.</p></div>'), mock
+            f'<p class="links">{"".join(links)}</p>'
+            f'<p class="built">Built {built:%b} {built.day}, {built:%H:%M}</p></div>'), mock
 
 
 def build(root=ROOT / "reports"):
     """Write <root>/index.html and return its path."""
     root = Path(root)
     cards, mock = zip(*(card(root, item) for item in SUITE))
-    note = ("<p>Pages marked <strong>mock data</strong> are built from the synthetic sample exports; "
-            "KPIs marked SIMULATED use simulated internal data.</p>") if any(mock) else ""
+    about = ("<p>Pages marked <strong>mock data</strong> are built from the synthetic sample exports; "
+             "KPIs marked SIMULATED use simulated internal data.</p>" if any(mock) else "")
+    about += "<p>A red dot means the report flags missing data or partial totals; green means its data is complete.</p>"
+    now = datetime.now()
     body = (f'<header><h1>E-commerce reports</h1>'
-            f'<p>Latest of each report · updated {datetime.now():%Y-%m-%d %H:%M}</p></header>'
+            f'<p>Latest of each report · updated {now:%b} {now.day}, {now:%H:%M}</p></header>'
             f'<div class="hub-grid">\n' + "\n".join(cards) + '\n</div>'
-            f'<section class="foot">{note}<p>Red top rule: the report flags missing data or partial totals.</p></section>')
+            + accordion("About these reports", about, "mock data, status dots")
+            + print_notes(["Red dot: the report flags missing data or partial totals."]))
     path = root / "index.html"
     path.write_text(PAGE.substitute(title="E-commerce reports", css=CSS + HUB_CSS, body=body), encoding="utf-8")
     return path
