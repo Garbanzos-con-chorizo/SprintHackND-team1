@@ -38,7 +38,7 @@ The third run is the panel in the browser, not a command.
 | Time | On screen | Say |
 |---|---|---|
 | 0:00 | Slide 1, Goodwill's three sentences | "This is Goodwill's problem in their words: three reports, built by hand from six or more systems." |
-| 0:15 | Slide 2 | "We automated all three. The data is synthetic, and we'll show exactly what is real." |
+| 0:15 | Slide 2, the diagram | "One program builds all three. In: the reports Goodwill already receives. Out: the pulse, the scorecard and the Business Central files. The data is synthetic, and we'll show exactly what is real." |
 | 0:25 | Slide 3, then switch to the terminal | "Here it is running, in one take: a clean input, then a messy one." |
 
 **Nightly pulse (0:30 to 0:55)**
@@ -66,20 +66,22 @@ The third run is the panel in the browser, not a command.
 - **Say:** "And the monthly dashboard: Goodwill's own fifteen KPIs in their five areas, computed from the nightly data. Eleven need internal data we haven't seen, so each one says 'simulated' on the tile. The change against August is against a simulated August, so it's illustrative."
 - **Point at:** a "Simulated internal data" badge; Repeat Buyer Rate marked partial.
 
-**Back to the slides (2:10 to 3:00)**
+**Back to the slides (2:10 to 3:15)**
 
 | Time | On screen | Say |
 |---|---|---|
 | 2:10 | Slide 4 | "It checks its own work. Totals match an answer key computed apart from the program; a journal that doesn't balance is never written; a missing report is never zero." |
-| 2:22 | Slide 5 | "It uses tools they already pay for: Excel, Outlook, Business Central's import format. Nothing new to buy." |
-| 2:32 | Slide 6 | "What we simulated: all the data, the provider APIs and the mailbox, and the internal data behind eleven of the fifteen KPIs. Not done: posting, their real accounts, and their workbook's rules." |
-| 2:48 | Slide 7 | "Send us one real month of files and your allocation workbook. We'll run your close and compare it with yours, line by line. The backend can already write the same lines as Business Central API requests; it has never been connected." (Never "integrated" or "posts": `docs/contracts/bc-api.md`.) |
+| 2:20 | Slide 5, the missing-report steps | "What you just saw, step by step: a payout arrives, no report covers some of its days, the close names them and gives them an owner, and adding the report closes the gap." |
+| 2:32 | Slide 6, integration | "It fits the systems they already run: Excel, Outlook drafts, and Business Central, which Goodwill told us is cloud and takes CSV uploads; our files follow its column order. The backend can also write the same lines as Business Central API requests; it has never been connected. The Controller still downloads the reports by hand; everything after the download is automatic. It runs on one computer or one Docker image, and the account rules are a CSV, not code." (Never "integrated", "posts" or "fetches": `docs/contracts/bc-api.md`, decision 012.) |
+| 2:52 | Slide 7 | "What we simulated: all the data, the provider APIs and the mailbox, and the internal data behind eleven of the fifteen KPIs. Not done: posting, their real accounts, and their workbook's rules." |
+| 3:07 | Slide 8 | "From manual reporting to management visibility: the nightly pulse, the scorecard and the close. Thank you." |
 
 ## If the slot is shorter: cut in this order
-1. The Excel step in the close (about 5 s).
-2. The scorecard down to one sentence and the badge (saves about 10 s).
-3. Slide 4 (12 s).
-Never cut slide 1, the messy close or slide 6.
+1. Slide 5, the missing-report steps (12 s): the messy close already showed it.
+2. The Excel step in the close (about 5 s).
+3. The scorecard down to one sentence and the badge (saves about 10 s).
+4. Slide 4 (10 s).
+Never cut slide 1, the messy close, slide 6 or slide 7.
 
 ## Numbers to expect (synthetic; check them at the dry run)
 

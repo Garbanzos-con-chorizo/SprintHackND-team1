@@ -2,7 +2,7 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 13:35 · **Branch:** `victor/pitch-deck` (the pitch deck); everything else of mine is on `main`
+**Last updated:** 2026-10-04 14:40 · **Branch:** `victor/pitch-deck` (the pitch deck); everything else of mine is on `main`
 
 ## Pitch deck and the take's narration: `victor/pitch-deck`, a proposal to Orlando
 - **What works:** `docs/pitch/deck-proposal/` holds new files only: `content.json` (seven slides in Orlando's format, team name Chorizo Power), `deck.html` (one offline file: arrows to move, F for full screen) and `narration.md` (the three-minute take: slides 1-3, then pulse, close and scorecard live, then slides 4-7; what to run, say and point at). Built from Orlando's v2 deck (`origin/o/skills-sdd`), which is not merged.
@@ -14,6 +14,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
   - The CLI close does not rebuild the Month-end Close list page; only the scheduled run and the panel do, so the take keeps `out/` from the scheduled run.
 - **13:35, the deck to use is a Slides artifact:** https://claude.ai/artifact/F1y3oyZP9vKm88Vn6Tqcti (private until shared from its Share menu). `docs/pitch/deck-proposal/slides-artifact/` is a copy of its files; `README.md` there says how to edit it. Rendered locally at 1920x1080: nothing overflows. It downloads as PowerPoint for Google Slides. Dani is asked (her inbox) to edit on this branch and check the close part of the narration.
 - **13:50, shared:** the branch is open to all three (claim row, `README.md`, a draft PR mentioning Orlando and Dani); both paged in their inboxes. Orlando has the last word on the deck.
+- **14:40, eight slides (Victor's call):** Orlando's diagram (2) and missing-report steps (5) ported in; an integration slide (6) worded by decision 012; the "Send us one real month" ask removed; a closing slide in Goodwill's words (8). About 3:15 with the take. `built-vs-used.md` updated for decision 012. Orlando paged.
 - **Next:** Orlando takes or changes it; Dani confirms the close commands in the narration; dry run, record, Google Slides by 15:00.
 
 ## Front end: one look for every page (#76) and adding missing reports from the portal (#77): on `main`
