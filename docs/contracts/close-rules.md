@@ -1,7 +1,7 @@
 # The rules of the month-end close (D3.10)
 
 - **Owner:** Dani for phase 3 (decision 009). **Readers:** anyone who has to say what "automates the rules" means, and Goodwill, to correct us.
-- **Status:** v0.1, 2026-10-04. It describes what is on `main` (the code in `reports/reconcile.py` and `reports/bc_export.py`, the config in `reports/config/`).
+- **Status:** v0.2, 2026-10-04. It describes what is on `main` (the code in `reports/reconcile.py` and `reports/bc_export.py`, the config in `reports/config/`).
 
 Goodwill's slide 41 asks, as workstream 3, for the workbook's rules to be written down: "orange-field inputs, workbook formulas, control totals and source-to-account/dimension mapping". **We have never seen the workbook.** This is the list of the rules *our* close applies, each with where it lives and where it comes from, so that a person at Goodwill can read it and say which ones their workbook does differently. Nothing here has been compared with the workbook.
 
@@ -39,6 +39,17 @@ Goodwill's slide 41 asks, as workstream 3, for the workbook's rules to be writte
 | 19 | A day no report covers is `missing_report` | the report file names | control |
 | 20 | Cash Monkey's month report is compared with a marketplace's own report order by order, and never added to it | `Cross_Check_Source` | assumed (2c.7); which file the workbook uses is unknown |
 
+## Shipping cost and statements
+| # | Rule | Where it lives | From |
+|---|---|---|---|
+| 24 | A carrier paid from the bank (OSM, PB, EasyPost): its month is the lines of bank account 0101 that carry its text, debits as charges, credits as refunds. It posts as one document, a debit per carrier to an expense account and a credit to G/L 10009 | `reports/config/close_shipping.csv` (`Bank_Account`, `Bank_Text`, `Expense_Account`, `Offset_Account`) | deck (slide 38: "1st Source acct 0101 • GL 10009"). The texts, the expense account and the entry itself are assumed (2c.4) |
+| 25 | FedEx: its month is the ledger entries on G/L 40356, department 180, vendor V00122, and the entries whose document starts BNKDEPOSIT are the refunds, netted. Nothing is posted: the entries are already in Business Central | `close_shipping.csv` (`GL_Account`, `Department_Code`, `Vendor_No`, `Refund_Document`) | deck (slide 38 gives the four codes); how they combine is assumed (2c.5) |
+| 26 | A carrier is listed only when its lookup reached the run. A credit from a carrier is a refund of shipping cost, never a marketplace deposit | `reports/reconcile.py`, `shipping_costs` | control |
+| 27 | Goodwill Books posts from its payment statement, in the month the statement is paid, though it reports the month before; the lines say which month. Its payment is matched to the bank credit that carries the statement's reference | the `goodwillbooks` row of `bc_mapping.csv`; `reports/reconcile.py` | deck (slide 38: "prior-month payment statement"); posting it a month late is assumed (2c.6) |
+| 28 | A statement whose payment the bank does not show reads `UNEXPLAINED` (`statement_not_in_bank`) | `reports/reconcile.py` | control |
+| 29 | ShopGoodwill's periodic report, when it is in the inbox, gives its payouts with the period each covers, and those periods replace the assumed weekly cycle | the engine's `payouts.csv`; rule 15 | assumed (2c.6). What "Period 1" and "Period 3" mean is unknown |
+| 30 | Jewelry sales are shown by supplier and change no journal line: they are already in the marketplaces' reports | `reports/close_report.py`, from the engine's `jewelry.csv` | assumed (2c.3) |
+
 ## Reading the result
 | # | Rule | Where it lives | From |
 |---|---|---|---|
@@ -46,13 +57,14 @@ Goodwill's slide 41 asks, as workstream 3, for the workbook's rules to be writte
 | 22 | Every exception has an owner and an action | `reports/config/close_exceptions.csv` | deck asks for "owned exceptions" (slide 40); **the role names are ours** |
 | 23 | Every run is archived with its inputs and a manifest, and says `not_posted` | `reports/close.py`; `close-outputs.md` | deck (slides 39 and 40: the archive folder, "run history", "posting status ... retained"); the archive is a local folder |
 
-## Rules Goodwill named that we do not have
-These are on slide 38 and nothing on `main` applies them yet (tasks in `docs/PLAN_PHASE_3.md`):
-- **Shipping cost:** the bank lookup for OSM, PB and EasyPost (1st Source account 0101, GL 10009) and the FedEx lookup (GL 40356, department 180, vendor V00122, net of BNKDEPOSIT refunds). Tasks V3.5, V3.7, D3.5.
-- **Jewelry:** the Jewelry Report and the Supplier that "Co-Pivot" fills in. Task V3.10.
-- **ShopGoodwill's periodic reports:** "Period 1 periodic only; Period 3 all reports". We do not know what the periods are. Task V3.8 reads a report of our own design as payouts.
-- **Goodwill Books:** the prior-month payment statement. Tasks V3.9, D3.13.
+## What Goodwill named that we only guess at
+Every source on slide 38 now reaches the close, but five of them through files we designed ourselves (the Cash Monkey month file, the periodic report) or through simulated APIs (the bank feed of account 0101, the ledger, the Books statement, the Jewelry report). For those, the rule above is our reading of one line of a slide:
+- **What entry the workbook makes** from the FedEx and carrier lookups. We report a net cost per carrier and post only the bank-paid ones, to a placeholder account. An allocation across departments, if there is one, is not built.
+- **What Supplier is for.** We show jewelry sales by supplier and do nothing else with them.
+- **ShopGoodwill's "Period 1 periodic only; Period 3 all reports".** We do not know what the periods are.
+- **Whether the Books statement posts a month late**, and to which accounts.
 - **Whatever the workbook's formulas do** that is not in the tables above.
 
 ## Changelog
+- v0.2 (2026-10-04, Dani): rules 24 to 30 (shipping cost, the Books statement, the periodic report, jewelry), after D3.5 and D3.13.
 - v0.1 (2026-10-04, Dani): first list, from the code on `main` after D3.1 to D3.4, D3.7 to D3.9 and D3.14.

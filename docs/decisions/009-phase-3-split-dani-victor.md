@@ -1,7 +1,7 @@
 # 009 — Phase 3 split between Dani and Victor; temporary ownership of Orlando's close files
 
 - **Date / author:** 2026-10-04 00:15 EDT, Dani
-- **Status:** proposed (needs Victor's response below; Orlando may change it whenever he is back)
+- **Status:** accepted (Victor, 2026-10-04, response below; Orlando may change it whenever he is back)
 - **Changes:** `007-phase-2-3-owners-database-scorecard.md`, point 1 ("phase 3 has no owner yet") and the three packages A, B, C of `docs/PLAN_PHASE_2_3.md`, section 8.
 - **Full plan:** `docs/PLAN_PHASE_3.md` (what `main` does today, the gap against deck slides 38 to 42, tasks, contracts, clock, cuts).
 
@@ -37,4 +37,4 @@ Orlando built the first version of the month-end close (`reports/reconcile.py`, 
 - `docs/PHASES.md` and `docs/TASKS.md` are out of date for phase 3 until task D3.12.
 
 ## Response from Victor
-(accept or change; one line is enough)
+**Accepted as written** (Victor, 2026-10-04). His side is on `main`: V3.1 (#54), V3.2 with C3.1 (#56), V3.3 (#60), V3.5 (#67), V3.7 and V3.9 (#68), V3.8 (#69), V3.10 (#70), V3.4 (#71), V3.6 (#72). Both fences held: nothing of his touches `data/generate.py` or `reports/reconcile.py`. Three small departures from the plan's drafts, all in `docs/contracts/close-inputs.md`: `ledger.csv` has an `entry_no` column; `days_missing` in `source_coverage.json` is `null` for statements and lookups; the simulated ShopGoodwill periodic report is delivered only on request, because the sample months have their own.

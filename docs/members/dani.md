@@ -2,42 +2,39 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 01:50 EDT · **Branch:** d/close-demo-script (docs); everything else of mine is on `main`
+**Last updated:** 2026-10-04 10:30 EDT · **Branch:** d/shipping-cost (D3.5 and D3.13); everything else of mine is on `main`
 
-## Phase 3 (now): plan `docs/PLAN_PHASE_3.md`, decision 009 (proposed, waiting for Victor's response)
-My tasks are D3.1 to D3.14 in section 3 of the plan. **Done and on `main`: all of them except D3.5 and D3.13, which wait for Victor's simulated sources.** Both checkpoints of the plan are met for what is built: every cent explained on both months, and one command from an empty `out/`.
+## Phase 3 (now): plan `docs/PLAN_PHASE_3.md`, decision 009 (accepted by Victor)
+My tasks are D3.1 to D3.14 in section 3 of the plan. **All fourteen are done**; D3.5 and D3.13 are in this branch, the rest on `main`. Victor's side (V3.1 to V3.10) is on `main` too, so **all nine of Goodwill's month-end sources reach the close**: five from sample files we generated, four from his simulated APIs, each labelled on the page.
 
-- **How to run it** (each prints Goodwill's six steps and ends `posting: NOT POSTED (import files ready)`; the page is `reports/close/2026-09.html`):
+- **How to run it** (each prints Goodwill's six steps and ends `posting: NOT POSTED (import files ready)`; the page is `reports/close/2026-09.html`; the demo script is `docs/pitch/demo_script_close.md`):
   ```
-  python -m reports.close --inbox data/sample/tidy_month/inbox --month 2026-09
-  python -m reports.close --inbox data/sample/messy_month/inbox --month 2026-09
-  python -m reports.close --inbox data/sample/messy_month/inbox --inbox data/sample/messy_month/late --month 2026-09
+  python -m engine fetch --simulate --close-month 2026-09 --inbox out/sim/2026-09 --out out/sim_fetch
+  python -m reports.close --month 2026-09 --inbox data/sample/tidy_month/inbox --inbox data/sample/tidy_month/periodic --inbox out/sim/2026-09
+  python -m reports.close --month 2026-09 --inbox data/sample/messy_month/inbox --inbox data/sample/messy_month/periodic --inbox out/sim/2026-09
+  python -m reports.close --month 2026-09 --inbox data/sample/messy_month/inbox --inbox data/sample/messy_month/periodic --inbox out/sim/2026-09 --inbox data/sample/messy_month/late
   ```
-- **What works** (run 01:35 to 01:45 on `main` at 752e63f; `python -m pytest engine recon reports -q`: 422 passed, 1 skipped):
-  - **Tidy month:** 56 journal lines in 25 documents, each 0.00; one invoice of 3 lines; eBay, Amazon and ShopGoodwill `OPEN`, each `unexplained 0.00`; six exceptions (three payouts in transit, three "not yet paid out").
-  - **Messy month:** the journal still balances; Amazon `INCOMPLETE` (`payout_data_gap -743.10` for September 21-22, `not_yet_paid_out 516.32`); ShopGoodwill `INCOMPLETE` (`payout_data_gap -1875.64` for September 7, `not_yet_paid_out 5429.93`); eBay `OPEN`; the $412.37 deposit held out; 16 exceptions, each with an owner and an action. 35 of 35 payouts equal the answer key.
-  - **Messy month plus `late/`:** 40 files from 2 inboxes; all three `OPEN`; 12 exceptions (the deposit is still held out); `runs.csv` and the page's run history keep every run.
-  - **With `cashmonkey/` as another inbox:** the Cash Monkey month file is compared order by order and never added. eBay agrees; Amazon differs by 1 order ($31.99) on the tidy month and 34 orders ($835.11) on the messy one.
-  - Each run leaves `out/close/2026-09/` (four CSVs, payload, `close_status_2026-09.json`, `runs.csv`) and an archive under `out/archive/Accounting/Month End/2026/2026-09/Journal Entries/E-Commerce JEs/<run id>/` with the inputs and a manifest.
-- **What landed, by task:**
-  - **D3.1** (#57) payout windows and the status `INCOMPLETE`. **D3.2, D3.3** (#59) no silent drops, `origin`, owners. **D3.4** (#61) the close reads the engine's `bank.csv` and `payouts.csv`. **D3.14** (#62) the Cash Monkey cross-check.
-  - **D3.6** (#58) the tidy month, with `periodic/` and `cashmonkey/` beside both inboxes. **D3.7** (#63) `python -m reports.close`, the archive, the status file. **D3.8** (#64) the page: what is simulated, owners, the nine sources, the cross-check, the run history. **D3.9** (#65) `messy_month/late/` and `expected_after_late.json`.
-  - **D3.10, D3.11, D3.12** (this branch): `docs/contracts/close-rules.md`, `docs/pitch/demo_script_close.md`, and the phase 3 lines of `docs/PHASES.md`, `CLAUDE.md` and `docs/ASSUMPTIONS.md` (2d).
-  - D3.6 and D3.7 were built by a second agent each in its own worktree; I verified both on the latest `main` before merging (whole suite, both months, regeneration leaves `git status` empty).
-- **Contracts, mine for phase 3:** `close-payload.md` v0.5 (payout windows, `INCOMPLETE`, `origin`, owners, `cross_checks`), `close-outputs.md` v0.1 (the command, exit codes, files, status file, `runs.csv`), `close-rules.md` v0.1 (every rule the close applies, and where it comes from).
-- **Left, and what it waits for:**
-  - **D3.5** (shipping cost: carriers from bank account 0101, FedEx from the ledger) needs Victor's V3.5 and V3.7. **D3.13** (Goodwill Books) needs V3.9 and V3.7. Until they land, the page lists those sources as "not modeled".
-  - When a simulated source lands: change its `When_Absent` in `reports/config/close_sources.csv` from "not modeled" to "not in this inbox", and add its folder as another `--inbox`.
-  - Victor's V3.4 switches `run_scheduled` to the one command; until then the scheduled run still calls the three old commands and writes no archive.
-  - `reports/reconcile.py` still finds missing days from the report file names (`covered_days`); the engine's `source_coverage.json` (V3.3, on `main`) can replace it.
+  `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04` does the fetch and the close on the 1st by itself (Victor's V3.4).
+- **What works** (run 10:15 to 10:28 on this branch; `python -m pytest engine recon reports -q`: 463 passed, 1 skipped):
+  - **Tidy month:** 44 files from 3 inboxes; 65 journal lines in 28 documents, each 0.00; one invoice of 3 lines; eBay, Amazon and ShopGoodwill `OPEN`, Goodwill Books `RECONCILED`, each `unexplained 0.00`; 7 exceptions (three payouts in transit, three "not yet paid out", one jewelry item with no supplier).
+  - **Messy month:** the journal still balances; Amazon `INCOMPLETE` (`payout_data_gap -743.10` for September 21-22); ShopGoodwill `INCOMPLETE` (`-1875.64` for September 7); the $412.37 deposit held out; 17 exceptions, each with an owner and an action.
+  - **Messy month plus `late/`:** 47 files from 4 inboxes; all three marketplaces `OPEN`; 13 exceptions.
+  - **Shipping cost (D3.5):** OSM $1,493.39, PB $1,026.45, EasyPost $444.27 from the debits of bank account 0101; FedEx $3,282.10 of charges less $136.94 of refunds from the ledger. Every figure equals the simulators' answer key. The bank-paid carriers post as `ECOM-2609-SHIP` (a placeholder expense account against G/L 10009); FedEx posts nothing, it is already in the ledger. A fifth file, `shipping_costs_2026-09.csv`.
+  - **Goodwill Books (D3.13):** the August statement (sales $3,690.37, fees $553.56, net $3,136.81) posts in September as its own source and is matched to its bank credit of September 13 by its reference. Without the credit it reads `UNEXPLAINED`.
+  - **The page:** shipping cost per carrier, the nine sources with what the run has for each, jewelry sales by supplier, the Cash Monkey cross-check when its file is in the inbox, the run history.
+- **Landed, by task:** D3.1 (#57) payout windows. D3.2, D3.3 (#59) no silent drops, owners. D3.4 (#61) the close reads the engine's bank and payout files. D3.14 (#62) Cash Monkey cross-check. D3.6 (#58) the tidy month and the side folders. D3.7 (#63) one command, archive, status file. D3.8 (#64) the page. D3.9 (#65) the late reports. D3.10 to D3.12 (#66) rules, demo script, status. D3.5 and D3.13: this branch.
+- **Contracts, mine for phase 3:** `close-payload.md` v0.6 (adds `shipping_costs`, statement sources), `close-outputs.md` (a fifth CSV), `close-rules.md` v0.2 (30 rules, each marked deck or assumed).
+- **One change in a file of Victor's:** `reports/tests/test_run_scheduled_close.py` expected three sources; with D3.13 there are four (`goodwillbooks: RECONCILED`). One line; he has a note in his requests.
 - **Known limits, said in the code and on the page:**
+  - What entry Goodwill's workbook makes for shipping cost is unknown: we post only the bank-paid carriers, to a placeholder account, and report FedEx.
+  - Jewelry sales by supplier are shown and change no journal line.
   - Last month's open items are not carried over: the first payout of the month starts on the 1st.
-  - A source that pays by Pacific days and has a row with no `occurred_at` falls back to the older one-figure check and says so (`no_order_times`). No sample triggers it today.
-  - The Cash Monkey cross-check compares sales only (the generator's Cash Monkey writer has no refunds).
-  - The archive is a local folder with Goodwill's folder names, not their drive. Nothing is posted.
-- **Decided by me at 00:35, in the plan and in 009:** Orlando is back at 11:00 Sunday and owns the presentation, recording and submission (`docs/pitch/presentation_guide.md`, and now `docs/pitch/demo_script_close.md`); Victor adds `occurred_at` (done, #54); the month-end sources we have never seen are built as simulated APIs by Victor, written down in `docs/ASSUMPTIONS.md` 2c, and asked to Debie on Sunday (plan, section 6, question 16 first).
+  - The Cash Monkey cross-check compares sales only.
+  - `reports/reconcile.py` still finds missing days from the report file names (`covered_days`); the engine's `source_coverage.json` could replace it.
+  - The archive is a local folder with Goodwill's folder names. Nothing is posted.
+- **Decided by me, in the plan and in 009:** Orlando is back at 11:00 Sunday and owns the presentation, recording and submission (`docs/pitch/presentation_guide.md`, `docs/pitch/demo_script_close.md`); the month-end sources we have never seen are simulated APIs (`docs/ASSUMPTIONS.md` 2c), to be asked to Debie today (plan, section 6, question 16 first).
 - **How to run anything here:** this worktree has its own `.venv` (`.venv\Scripts\python.exe -m ...`). Tests for the close: `python -m pytest reports/tests -q`.
-- **Next step:** D3.5 and D3.13 as soon as V3.5, V3.7 and V3.9 are on `main` (they can be built against hand-made `ledger.csv`, `statements.csv` and `bank.csv` rows in the columns of `close-inputs.md` before that). Then the 13:00 dry run with Orlando.
+- **Next step:** the 13:00 dry run with Orlando and Victor, from a fresh clone, with the demo script. No phase 3 feature is left on my list.
 
 ## Handoff (2026-10-03 23:45): my side of phase 2 is finished; Victor finishes the rest
 Dani's decision: Victor takes what is left of phase 2, and he has accepted (PR #45). **His list, L1 to L8 in `docs/members/victor.md`, is the one to follow**: it is the table below plus one item (the pillar names on the page). On record in decision 007 (last amendment) and `docs/PLAN_PHASE_2_3.md`, section 11.
@@ -175,3 +172,4 @@ Found on the way:
 - [from Victor, 2026-10-04 03:40] **V3.10: `jewelry.csv` (branch `victor/v3-10-jewelry`, `close-inputs.md` v0.6). All five simulated sources are now delivered by `engine fetch --simulate --close-month`.** September: 36 jewelry items, $7,358.50, six suppliers (`jewelry.by_supplier` in the key), and one item the lookup does not know (`JW-20006-00`, $163.33): its `supplier` is empty and `warnings.json` has a `missing_supplier` entry. Three things for your side: (1) your close turns that warning into an exception whose detail ends "; left out of the totals", which is your generic wording: the item is in `jewelry.csv`, only its supplier is missing; (2) `close_exceptions.csv` has no row for `missing_supplier`, so it gets the `*` owner; (3) with all the sources in, the messy month reads 18 exceptions: your 16, the Books payment as `unmatched_deposit` (until D3.13), and this one. The page's table of jewelry sales by supplier (D3.8) can read `out/close/<month>/engine/jewelry.csv`.
 - [from Victor, 2026-10-04 04:00] **V3.4: `run_scheduled` now calls your one command on the 1st (branch `victor/v3-4-scheduled-close`).** It runs `engine fetch --simulate --close-month M` into `out/close_sources/M/inbox`, then `python -m reports.close --inbox <sample>/inbox --inbox <sample>/periodic --inbox out/close_sources/M/inbox --month M`, then `engine.store log-close` (a `runs` row with `command = 'close'`). It copies `close_status_M.json` and `runs.csv` beside the page's CSVs in `reports/close/M/`, and the portal card links both. `python -m reports.run_scheduled --from 2026-09-27 --to 2026-10-04` exits 0 in about 50 s from an empty `out/` and prints `close page: reports/close/2026-09.html`. The scheduled close of the messy month reads 45 files from 3 inboxes and 18 exceptions (see my 03:40 note). Your three demo commands are untouched and give the numbers of your script. I read only the exit code and the status file, as `close-outputs.md` says.
 - [from Victor, 2026-10-04 03:10] **My phase 3 list is finished and on `main`: V3.1 to V3.10 (#54 to #72).** The acceptance line for decision 009 is drafted in a PR that waits for Victor himself (branch `victor/decision-009-response`). What is left on your side that my files now allow: D3.5 (FedEx from `ledger.csv`, carriers from account `0101` in `bank.csv`) and D3.13 (Goodwill Books from `statements.csv`; its payment is the `unmatched_deposit` $3,136.81 your close shows today). Small things in your files, when you pass by: `reports/config/close_sources.csv` still says `not modeled` in `When_Absent` for the five sources that are now simulated; `close_exceptions.csv` has no row for `missing_supplier`; the demo script's line "The others are 'not modeled' unless Victor's simulated APIs for them are on `main`" can now give the count (with the scheduled run's inboxes the page shows four "sample file" and four "simulated API"); and `docs/PHASES.md` phase 3 can mention the simulated sources. The answer key for your tests is `expected_close_sources.json` beside the fetch log.
+- [from Victor, 2026-10-04] **Decision 009 is accepted as written** (Victor himself; the response line is in the decision file, and my claim row is in `docs/CLAIMS.md`). The header of the decision still reads "proposed": yours to change.

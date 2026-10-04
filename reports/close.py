@@ -270,7 +270,7 @@ def run(inboxes, month, out=OUT, archive=ARCHIVE, dest=DEST, run_id=None):
               file=sys.stderr)
         print("posting: NOT POSTED (refused: no import files written)")
         return 1
-    paths = bc.write(folder, month, journal, invoice, control, exceptions, mapping)
+    paths = bc.write(folder, month, journal, invoice, control, exceptions, mapping, payload.get("shipping_costs", []))
     problems, n_lines, n_docs = bc.verify_files(paths)
     status = build_status(head, payload, mapping, control, invoice, exceptions, n_lines, n_docs, problems, kept)
     say("CREATE BC OUTPUT", (f"journal: {n_lines} lines in {n_docs} documents, every document sums to 0.00"

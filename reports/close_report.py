@@ -2,13 +2,13 @@
 
 Reads out/close/<YYYY-MM>/ (control totals, exceptions, General Journal, AR invoice; and, when they are
 there, the close payload, the engine's files and the run history) and writes reports/close/<YYYY-MM>.html:
-what is simulated, the reconciliation status per source, the exceptions to work with who owns each, the
-Cash Monkey cross-check, Goodwill's nine month-end sources with what this run has for each, and download
-links to the four Business Central CSV files (copied next to the page).
+what is simulated, the reconciliation status per source, the exceptions to work with who owns each,
+shipping cost per carrier, the Cash Monkey cross-check, Goodwill's nine month-end sources with what this
+run has for each, jewelry sales by supplier, and download links to the CSV files (copied next to the page).
 
 The nine sources and their wording come from reports/config/close_sources.csv (deck slide 38). `Detect`
-says how the page knows a source reached this run; `When_Absent` is what it says otherwise: change it
-from "not modeled" to "not in this inbox" when a reader for that source lands in the engine.
+says how the page knows a source reached this run; `When_Absent` is what it says otherwise ("not in
+this inbox" now that the engine reads all nine; "not modeled" for a source nothing reads).
 
     python -m reports.close_report --month 2026-09
 """
@@ -30,6 +30,7 @@ DEST = ROOT / "reports" / "close"
 SOURCES = ROOT / "reports" / "config" / "close_sources.csv"
 FILES = [("general_journal", "General Journal lines"), ("ar_invoice", "AR invoice lines"),
          ("control_totals", "Control totals"), ("exceptions", "Exceptions")]
+OPTIONAL = [("shipping_costs", "Shipping costs")]  # written since D3.5; a folder from before has none
 STATUS_CLASS = {"RECONCILED": "ok", "OPEN": "stale", "INCOMPLETE": "missing", "UNEXPLAINED": "missing",
                 "MISMATCH": "missing"}
 LABELS = {"cashmonkey": "Cash Monkey"}
@@ -246,6 +247,9 @@ def action_html(items, exceptions):
 
 def render(month, folder):
     t = {k: read(folder / f"{k}_{month}.csv") for k, _ in FILES}
+    shipping_rows = read_if_there(folder / f"shipping_costs_{month}.csv")
+    if shipping_rows:
+        t["shipping_costs"] = shipping_rows
     payload_file = folder / f"close_payload_{month}.json"
     payload = json.loads(payload_file.read_text(encoding="utf-8")) if payload_file.exists() else {}
     docs = defaultdict(int)
@@ -271,9 +275,28 @@ def render(month, folder):
     items = action_items(t["control_totals"], t["exceptions"], docs, unbalanced)
     groups = exception_groups(t["exceptions"])
     files = "".join(f'<a class="file" href="{month}/{k}_{month}.csv" download><b>{label}<span>{len(t[k])} rows</span></b>'
-                    f'<code>{k}_{month}.csv</code><span class="get">{DOWNLOAD_ICON}Download CSV</span></a>' for k, label in FILES)
+                    f'<code>{k}_{month}.csv</code><span class="get">{DOWNLOAD_ICON}Download CSV</span></a>'
+                    for k, label in FILES + (OPTIONAL if shipping_rows else []))
 
     extras, notes = [], []
+    if shipping_rows:
+        rows = "\n".join(
+            f'<tr><td>{escape(r["Carrier"])}</td><td class="text">{escape(r["Figure From"])}</td>'
+            f'<td>{money(cents(r["Charges"]))}</td><td>{money(cents(r["Refunds"]))}</td><td>{money(cents(r["Net"]))}</td>'
+            f'<td>{escape(r["Lines"])}</td><td class="text">{escape(r["Journal Document"]) or "none: already in Business Central"}</td></tr>'
+            for r in shipping_rows)
+        total = sum(cents(r["Net"]) for r in shipping_rows)
+        charged = sum(src.get("shipping_cents", 0) + src.get("handling_cents", 0) for src in payload.get("sources", {}).values())
+        table = ('<div class="card"><table><thead><tr><th>Carrier</th><th class="text">Where the figure comes from</th>'
+                 '<th>Charges</th><th>Refunds</th><th>Net</th><th>Lines</th><th class="text">Journal document</th>'
+                 f'</tr></thead><tbody>\n{rows}\n</tbody></table></div>'
+                 f'<p class="acc-note">Net shipping cost {money(total)}; shipping and handling charged to buyers this month '
+                 f'{money(charged)}. Both lookups come from simulated APIs with layouts we made up. The carriers paid from the '
+                 f'bank post to a placeholder expense account against G/L 10009; FedEx is read from the ledger, so nothing is '
+                 f'posted for it. What entry Goodwill\'s workbook makes here is not known.</p>')
+        extras.append(accordion("Shipping cost, from the two lookups on Goodwill's slide 38", table,
+                                f"net {money(total)} · charged to buyers {money(charged)}"))
+        notes.append(f"<b>Shipping cost:</b> net {money(total)}; charged to buyers {money(charged)} (simulated lookups).")
     if payload.get("cross_checks"):
         other = LABELS.get(payload["cross_checks"][0]["against"], payload["cross_checks"][0]["against"])
         rows = "\n".join(
@@ -302,13 +325,27 @@ def render(month, folder):
                  '<th class="text">Acquisition / rule</th><th class="text">In this run</th><th class="text">What we read</th>'
                  f'</tr></thead><tbody>\n{rows}\n</tbody></table></div>'
                  '<p class="acc-note">The first three columns are Goodwill\'s own (their slide 38). "Sample file" is a synthetic '
-                 'file we generated; "simulated API" is a file written by a stand-in for an API we have not seen; "not modeled" '
-                 'means nothing reads that source yet.</p>')
+                 'file we generated; "simulated API" is a file written by a stand-in for an API we have not seen; "not in this '
+                 'inbox" means no file of that source reached this run.</p>')
         have = sum(present for _, present, _ in states)
         extras.append(accordion("Goodwill's nine month-end sources, and what this run has for each", table,
                                 f"{have} of {len(states)} in this run"))
         notes.append(f"<b>Month-end sources:</b> {have} of {len(states)} in this run: " + ", ".join(
             escape(r["Source"]) for r, present, _ in states if present) + ".")
+    jewels = read_if_there(folder / "engine" / "jewelry.csv")
+    if jewels:
+        by = defaultdict(lambda: [0, 0])
+        for r in jewels:
+            supplier = r["supplier"] or "(no supplier: not in the lookup)"
+            by[supplier][0] += 1
+            by[supplier][1] += int(r["amount_cents"])
+        rows = "\n".join(f'<tr><td>{escape(sup)}</td><td>{n}</td><td>{money(c)}</td></tr>' for sup, (n, c) in sorted(by.items()))
+        table = ('<div class="card"><table><thead><tr><th>Supplier</th><th>Items</th><th>Sales</th></tr></thead>'
+                 f'<tbody>\n{rows}\n</tbody></table></div>'
+                 '<p class="acc-note">From a simulated Jewelry Report and supplier lookup. "Supplier" is read as the store '
+                 'that supplied the item. These sales are already in the marketplace reports: this table adds nothing to '
+                 'revenue and changes no journal line.</p>')
+        extras.append(accordion("Jewelry sales by supplier", table, f"{len(jewels)} items · {len(by)} suppliers"))
     runs = read_if_there(folder / "runs.csv")
     if runs:
         head = "".join(f'<th class="text">{escape(c.replace("_", " "))}</th>' for c in runs[0])
@@ -347,8 +384,9 @@ def build(month, src=SRC, dest=DEST):
         raise SystemExit(f"no close files in {folder}; run reports.reconcile and reports.bc_export first")
     dest = Path(dest)
     (dest / month).mkdir(parents=True, exist_ok=True)
-    for k, _ in FILES:
-        shutil.copyfile(folder / f"{k}_{month}.csv", dest / month / f"{k}_{month}.csv")
+    for k, _ in FILES + OPTIONAL:
+        if (folder / f"{k}_{month}.csv").exists():
+            shutil.copyfile(folder / f"{k}_{month}.csv", dest / month / f"{k}_{month}.csv")
     page = dest / f"{month}.html"
     page.write_text(render(month, folder), encoding="utf-8")
     return page
