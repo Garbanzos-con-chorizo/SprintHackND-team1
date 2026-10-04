@@ -2,7 +2,7 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 20:45 EDT · **Branch:** claude/phase-2-3-kpi-dashboard-9cb46c
+**Last updated:** 2026-10-03 21:30 EDT · **Branch:** d/kpi-contract
 
 ## Done
 - P0 pulse contract (draft): `docs/contracts/pulse.md`, mocks `docs/contracts/examples/pulse.sample.json` (clean day) and `pulse.sample.missing.json` (eBay missing). Merged in PR #9.
@@ -16,7 +16,11 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - Added `docs/goodwill-project-context.md` (deck, rubric and problem-sheet extraction) for the whole team, linked from `docs/PROBLEM.md`
 
 ## In progress
-- **Phases 2 and 3 plan (proposed, not yet accepted by Victor and Orlando):** `docs/PLAN_PHASE_2_3.md` and `docs/decisions/007-phase-2-3-owners-database-scorecard.md`. Phase 2 split: I own the 15 scorecard KPIs (`recon/kpi/`), Orlando the frontend, Victor the database, internal API and exports. Phase 3 (Business Central, including D2 to D8) is a separate task with no owner yet; it is split between the three of us at the first phase 2 checkpoint. Internal API assumption added to `docs/ASSUMPTIONS.md` section 2b (claimed in `docs/CLAIMS.md`). Requests left in both teammates' files. No code yet for phase 2.
+- **C2, KPI contract (draft v0.1, new contract, announced here):** `docs/contracts/kpi.md` with two example files, `docs/contracts/examples/kpi.sample.month.json` (September, complete) and `kpi.sample.month.partial.json` (October to date, eBay missing one day). 15 KPIs in Goodwill's five scorecard areas, always all 15, with `status` (`ok` / `partial` / `no_data`), `note`, `prior_value`, `delta`, `source`, `simulated`.
+  - **Orlando:** build the scorecard page against the two example files; the "Mock for parallel work" section lists the states they cover. Tell me what the page needs that is missing.
+  - **Victor:** the section "Inputs the KPIs need" is my request for `store.md` and `internal-api.md` (tables, and the ten internal metrics with their dimensions).
+- Phase 2 plan and decision 007 are on `main` (PR #14); decision 007 is still `proposed`.
+- No calculator code yet: `recon/kpi/` starts with D2.1.
 
 ## For teammates: what the new context file changes
 - **Orlando (P-O2):** Goodwill's own nightly table (slide 31) labels the rows SHOPGOODWILL, AMAZON, EBAY, OTHER E-COMMERCE CHANNELS and TOTAL E-COMMERCE, with columns DAILY REVENUE and DAILY CUSTOMERS. Use their labels.
@@ -30,7 +34,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 - Not run against real engine output yet; that is integration (I1). The engine landed on main in PR #8.
 
 ## Next (phase 2, in order; task ids from `docs/PLAN_PHASE_2_3.md`)
-1. C2: `docs/contracts/kpi.md` and `docs/contracts/examples/kpi.sample.month.json` (unblocks Orlando's page)
+1. ~~C2: KPI contract and sample files~~ drafted, waiting for Orlando's and Victor's comments
 2. D2.1 to D2.3: `recon/kpi/` scaffold, periods, a fixture database built from Victor's `schema.sql` (hand-made until it exists)
 3. D2.4 to D2.9: the 15 KPIs and `python -m recon.kpi`
 4. D2.10: tests, including September revenue against `data/sample/clean_month/expected.json`
