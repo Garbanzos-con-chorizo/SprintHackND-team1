@@ -14,3 +14,9 @@
 - The monthly daily table (`reports/monthly/index.html`, which uses `fetch()`) works when served, which it can't from `file://`.
 - Root files (`server.py`, `Dockerfile`, `requirements-server.txt`) are shared ground: claim them in `docs/CLAIMS.md`.
 - Cut order: after the store backfill (Victor's 10:00 Sunday tripwire) and the PDF export; first thing to drop if Sunday is tight.
+
+## Implemented (2026-10-04, Victor)
+- `server.py`, `requirements-server.txt` (`fastapi`, `uvicorn`), `Dockerfile` (`python:3.13-slim`), `.dockerignore`. Run: `uvicorn server:app --host 127.0.0.1 --port 8000` (or `python server.py`); `GET /healthz` reports whether the portal exists, for Docker's health check.
+- **One change to point 1: the server doesn't serve all of `reports/`.** That folder also holds the generators' Python code and `config/subscribers.csv` (people's email addresses). It serves only what the generators write (`.html .css .js .json .csv .pdf .png .svg .ico`), never `config/`, `tests/` or dotfiles, and FastAPI's `/docs` and `/openapi.json` are off.
+- **The image builds its own pages:** `reports/` is git-ignored output, so a clean checkout has nothing to serve. The Dockerfile runs `python -m reports.run_scheduled --from 2026-09-30 --to 2026-10-04` at build time (September in the store, five nights, the September scorecard with its CSV, the close) and checks the portal exists. The slim image has no browser, so its PDF step says "print from the page" and the build goes on. It runs as a non-root user.
+- Checked without Docker (the daemon wasn't running): the same build steps on a clean copy with a fresh 3.13 environment and no browser took 37 s, exit 0. Then the server, started as the image's `CMD`: every link on the portal returns 200 (16 of 16, including the Business Central files), the monthly page's `fetch()` table renders September, and config, code and `/docs` return 404. **`docker build` itself not yet run.**

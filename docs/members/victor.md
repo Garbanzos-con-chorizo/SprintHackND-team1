@@ -2,12 +2,13 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-04 04:00 · **Branch:** victor/shipping-units
+**Last updated:** 2026-10-04 04:45 · **Branch:** victor/server
 
 ## Phase 2 (now): decision 007, plan in `docs/PLAN_PHASE_2_3.md`
 **Decision 007:** agreed by all three, SQLite included (Orlando's amendment at 21:30, my response appended). Tripwire: if September isn't in the store by 10:00 Sunday, the KPIs read the files instead.
 
 ### Done
+- **Decision 008** (branch `victor/server`): `server.py` (FastAPI static files over `reports/`, only generated file types, never `config/` or code; `/healthz`), `requirements-server.txt`, `Dockerfile` (`python:3.13-slim`; builds the demo pages at build time with `run_scheduled`, runs as non-root), `.dockerignore`. 4 tests in `engine/tests/test_server.py` (they skip without fastapi). Rehearsed without Docker: build steps 37 s, exit 0; all 16 portal links 200; the monthly `fetch()` table renders. **`docker build` not run yet: Docker Desktop wasn't running.** Run: `uv pip install -r requirements-server.txt`, then `python server.py` and open http://127.0.0.1:8000/.
 - **V2.7 + Orlando's request** (branch `victor/shipping-units`): `transactions.csv` v0.4 has `shipping_cents`, `handling_cents` and `units` from every parser (Upright, Cash Monkey, eBay, Amazon, ShopGoodwill). Refund rows carry negative shipping and 0 units; an export with no quantity column leaves units empty, never 0. Store schema v2 adds the two money columns, and `init` migrates an existing database in place. **On `messy_month` the shipping and handling totals per marketplace equal the answer key to the cent**, which removes the reason for the STOPGAP in `reports/reconcile.py` (Orlando's lane; request sent). With units in the store, Dani's KPIs switch by themselves: average selling price per unit $28.67 (was $29.21 per order), sell-through by units 79.1%. 6 tests in `engine/tests/test_shipping_units.py`.
 - **Fixed (Dani's report):** `pytest` no longer touches the real `out/` and `reports/`. `run_nightly` writes through `OUT`/`REPORTS` and its tests redirect them; a test checks the real folders are untouched.
 - **V2.9 + V2.10** (branch `victor/pdf-export`): `python -m engine.export pdf (--kpi-file F | --period P) [--dest DIR]` re-renders Orlando's scorecard page from the KPI file and prints it with headless Edge, Chrome or Chromium (`PDF_BROWSER` overrides) to `reports/scorecard/<type>-<id>.pdf`, next to the page and the CSV. No new dependency; without a browser it says to use Print, Save as PDF. September: 1 page, about 2 s. `run_scheduled` writes the CSV and the PDF after the monthly scorecard, and the monthly email (`reports/email_gen.py`) attaches the PDF and CSV first. 8 tests in `engine/tests/test_export_pdf.py` (the four contract examples each print on exactly one page) and 1 in `reports/tests/test_email_exports.py`.

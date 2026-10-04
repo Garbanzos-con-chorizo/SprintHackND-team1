@@ -1,0 +1,21 @@
+# The image builds its own outputs from the sample data; keep local runs, environments and history out.
+.git
+.github
+.claude
+.venv
+venv
+.env
+.env.*
+out
+**/__pycache__
+**/*.pyc
+.pytest_cache
+# Pages generated on this machine (git ignores them too); the image writes its own.
+reports/index.html
+reports/pulse/*
+reports/scorecard/*
+reports/weekly/*
+reports/close/*
+reports/monthly/*
+!reports/*/.gitignore
+!reports/monthly/index.html
