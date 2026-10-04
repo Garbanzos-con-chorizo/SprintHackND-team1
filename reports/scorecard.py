@@ -76,22 +76,26 @@ details.defs summary { cursor:pointer; font-weight:var(--fw-semi); color:var(--b
 @media print {
   @page { size:letter landscape; margin:0.35in; }
   body { font-size:8pt; }
-  .simnote { font-size:7pt; margin-top:3pt; }
-  .areas { margin-top:6pt; }
-  .area > h2 { padding:3pt 7pt; font-size:7pt; }
-  .tile { padding:5pt 7pt 6pt; }
-  .tile.partial { padding-left:calc(7pt - 3px); }
-  .tile .name { font-size:8pt; }
-  .tile .pillar, .sim, .flag { font-size:5.8pt; line-height:9pt; }
-  .sim, .flag { padding:0 2.5pt; }
-  .tile .value { font-size:16pt; margin-top:2pt; }
-  .tile .value .per { font-size:7pt; }
-  .tile .value.none { font-size:10pt; }
-  .tile .change, .tile .note { font-size:7pt; margin-top:2pt; }
-  .tile .tags { margin-top:3pt; gap:2pt 4pt; }
-  table.rank { margin-top:3pt; }
-  table.rank th, table.rank td { font-size:7pt; padding:1.2pt 3pt; }
-  table.rank th { font-size:6pt; }
+  header h1 { font-size:13pt; }
+  .summary { margin-top:4pt; padding:3pt 7pt; font-size:9pt; }
+  .facts, .banner { margin-top:4pt; }
+  .simnote { font-size:6.5pt; margin-top:2pt; }
+  .areas { margin-top:4pt; }
+  .area > h2 { padding:2pt 6pt; font-size:6.5pt; }
+  .tile { padding:3.5pt 6pt 4pt; }
+  .tile.partial { padding-left:calc(6pt - 3px); }
+  .tile .name { font-size:7.5pt; line-height:1.2; }
+  .tile .pillar, .sim, .flag { font-size:5.5pt; line-height:8pt; }
+  .sim, .flag { padding:0 2pt; }
+  .tile .value { font-size:14pt; margin-top:1pt; }
+  .tile .value .per { font-size:6.5pt; white-space:nowrap; }
+  .tile .value.none { font-size:9pt; }
+  .tile .change, .tile .note { font-size:6.5pt; line-height:1.25; margin-top:1pt; }
+  .tile .tags { margin-top:2pt; gap:1.5pt 3pt; }
+  table.rank { margin-top:2pt; }
+  table.rank th, table.rank td { font-size:6.5pt; padding:0.9pt 2.5pt; }
+  table.rank th { font-size:5.5pt; }
+  section.foot { margin-top:4pt; padding-top:2pt; font-size:6pt; }
   .gapnote, details.defs { display:none; }
 }
 """
