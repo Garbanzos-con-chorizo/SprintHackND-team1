@@ -1,7 +1,7 @@
 # Contract: KPI file, phase 2 (task C2)
 
 - **Owner:** Dani (`recon/kpi/`). **Consumers:** Orlando (scorecard page, print layout), Victor (KPI CSV, PDF and email exports; `kpi_values` in the store).
-- **Status:** draft v0.4, implemented in `recon/kpi/`. The tests reproduce every example file from the calculator.
+- **Status:** draft v0.5, implemented in `recon/kpi/`. The tests reproduce every example file from the calculator.
 - **Inputs:** the store, `docs/contracts/store.md` (the SQLite database of decision 007): the daily pulse, the transactions and the internal API snapshots of the period. What is read from it is under "Inputs the KPIs read".
 
 ## What this contract does
@@ -143,7 +143,7 @@ If several apply, `status` is the worst of them, `reason` is the first reason of
 | 8 | `inv.unlisted_backlog` | Unlisted Inventory Backlog | count | down | internal | Items sent to e-commerce and not yet listed, on `through` | `as_of` |
 | 9 | `inv.unsold_pct` | Unsold Inventory % | ratio | down | internal | Active listings older than 30 days / active listings, on `through` | `as_of`, `active_listings`, `active_over_threshold`, `threshold_days` |
 | 10 | `sales.asp` | Average Selling Price | cents per unit | up | files | revenue / units sold | `revenue_cents`, `units`, `orders` |
-| 11 | `sales.sell_through` | Sell-Through Rate | ratio | up | mixed | units sold / units listed, in the period (one listing = one unit). Shown as two boxes, see below | `units_sold`, `orders`, `units_listed`, `opening_stock` |
+| 11 | `sales.sell_through` | Sell-Through Rate | ratio | up | mixed | units sold / units listed, in the period (one listing = one unit). Shown as two boxes, see below | `units_sold`, `orders`, `units_listed`, `opening_stock`, `split_basis` |
 | 12 | `sales.sales_per_employee` | Sales per Employee | cents per employee | up | mixed | revenue / average daily e-commerce employees | `revenue_cents`, `employees` |
 | 13 | `cat.top_revenue` | Top 10 Categories by Revenue | ranking, cents | up | mixed | Revenue (KPI 1) split by the internal sales-by-category shares | `revenue_cents`, `internal_sales_cents`, `categories`, `rest_cents` |
 | 14 | `cat.top_margin` | Top 10 Categories by Margin | ranking, cents | up | mixed | Category revenue (KPI 13) minus category cost of goods; `ratio` = margin / category revenue | `revenue_cents`, `cogs_cents`, `margin_cents`, `categories`, `rest_cents` |
@@ -164,8 +164,11 @@ Variants (`basis`) and fallbacks, each stated in `definition` and `note`:
 | `listed_in_period` | Listed in the period | `sold / available` | What sold, up to what was listed in the period | Listings created in the period |
 | `left_from_earlier` | Left from earlier | `sold / available` | The rest of what sold | Listings still active the night before the period (`inputs.opening_stock`) |
 
-- **The assumption, stated in `note`:** the data does not say which listing each sale came from, so what was listed in the period is taken to sell first. The first box is therefore the most the period's own listings can account for, and the second the least that came from older stock. The second box is 0 whenever no more sold than was listed. Exact figures need sales by listing date from the listing system (a metric to add to `internal-api.md`).
-- The rule is applied to the period as a whole: a month's box 1 is "of what was listed this month, how much sold this month".
+- **How what sold is split between the two boxes (`inputs.split_basis`):**
+  - `listing_dates`, when the store has the listing system's sales by listing date (`listing_to_sale_days`, **requested from Victor, not in the mock yet**): a unit sold on day d, a days after it was listed, was listed on d - a, so it belongs to the period when that day is on or after the period's first day. That share of what sold goes to the first box. The note then starts "By listing date: ...".
+  - `period_first`, until then: the data does not say which listing each sale came from, so what was listed in the period is taken to sell first. The first box is then the most the period's own listings can account for and the second the least that came from older stock (0 whenever no more sold than was listed). The note starts "Assumes what was listed in the period sold first: ...".
+  - Either way the period cannot sell more than it listed: anything above that goes to the second box.
+- The split is made on the period as a whole: a month's first box is "of what was listed this month, how much sold this month".
 - There are always exactly two parts, in this order. A `value` is `null` when it cannot be computed: nothing listed in the period (first box), or no stock count for the day before the period (second box, `available` is `null` too). Without marketplace or listing data, both are `null`.
 - `value` of the KPI itself stays the overall rate, uncapped (it is the one stored in `kpi_values` and compared with the prior period). The page shows the two boxes in its place.
 - Real run, Sunday October 4: first box 100.0% (39 of 39), second box 1.2% (42 of the 3,519 left from earlier); note: "Assumes what was listed in the period sold first: 39 of the 81 units sold count against the 39 listed in the period, 42 against the 3,519 left from earlier."
@@ -213,6 +216,7 @@ The internal metrics read (a copy for convenience; `internal-api.md` is the auth
 | `labor_cost_cents` | `total` | flow | 3 |
 | `employees` | `total` (full-time equivalents) | snapshot | 6, 12 |
 | `listings_created` | marketplace | flow | 4, 6, 11 |
+| `listing_to_sale_days` | whole days as text (`"0"`, `"1"`, ...); value = units sold that day that had been listed that many days before | flow | 11, the split between its two boxes. **Requested from Victor (2026-10-03), not in `internal-api.md` or the mock yet**; without it the split is the `period_first` assumption. Only the shares are used, applied to the units sold in the files, so the mock's totals need not match them exactly |
 | `donation_to_listing_days` | whole days as text (`"0"`, `"1"`, ...); value = items listed that day with that age | flow | 7 (a median cannot be rebuilt from daily medians; it can from daily counts). A day on which nothing was listed has no rows, so KPI 7 is `no_data` only when the whole period has none |
 | `unlisted_backlog` | `total` | snapshot | 8 |
 | `active_listings_by_age` | `0-30`, `31-60`, `61-90`, `91+` | snapshot | 9, and 11 (the night before the period) |
@@ -255,11 +259,12 @@ python -m recon.kpi --date 2026-10-03                       # a day with eBay mi
 - Growth year over year or against the prior period (KPI 2): prior period, labelled.
 - Does margin include labor and shipping (KPIs 3, 14): net margin includes both; category margin is revenue minus cost of goods only.
 - What "unsold" means (KPI 9): active listings older than 30 days; the threshold is one constant.
-- Which listings a sale came from (KPI 11): unknown, so the period's own listings are taken to sell first and the two boxes are bounds. The overall rate is sold / listed in the period and can exceed 1; the page must not assume a ratio stays under 100%.
+- Which listings a sale came from (KPI 11): unknown until the store has sales by listing date (`listing_to_sale_days`, requested); until then the period's own listings are taken to sell first and the two boxes are bounds. The overall rate is sold / listed in the period and can exceed 1; the page must not assume a ratio stays under 100%.
 - Who counts as an e-commerce employee (KPIs 6, 12): full-time equivalents, as the internal API reports them.
 - Net shipping cost (KPI 3): carrier cost minus shipping charged to buyers, from the internal API until `transactions` carries shipping.
 
 ## Changelog
+- draft v0.5: sell-through's two boxes use the listing system's sales by listing date when the store has them (`listing_to_sale_days`, a metric requested from Victor); `inputs.split_basis` says which split was used (`listing_dates` or `period_first`). Additive: until the metric exists nothing changes but the new input.
 - draft v0.4: sell-through is shown as two boxes (Dani's decision): new field `parts` on every KPI (`null` except KPI 11), `inputs.opening_stock`, and the note now states the assumption. This replaces v0.3's `from_period`, `from_earlier` and `sold_from_earlier` inputs and its "100% + ..." note, which nobody used yet. The examples now carry unit counts, so average selling price and sell-through are on their per-unit basis, as on the real pipeline since `transaction.md` v0.4.
 - draft v0.3: sell-through over 100% is split into what the period's own listings can account for and what must have been listed earlier: three more `inputs` on KPI 11 (`from_period`, `from_earlier`, `sold_from_earlier`) and a note when the value is over 1. Additive: no field changes meaning, and the value itself is unchanged.
 - draft v0.2: implemented. The example files are now generated by the calculator (differences from v0.1: a few cents in the margin ranking, `inputs.items_listed` is `null` when there are no donation dates, a note now carries the gap sentence before a fallback sentence, and in the partial month the backlog snapshot is a day old). Two more examples, a week and a day, asked for by Orlando (C5). New fields `pillar` per KPI and `pillars` at the top level, asked for by Victor (slide 32's five pillars; mapping under Pillars). Inputs now point to `store.md` and `internal-api.md`; the KPIs are also recorded in `kpi_values`. Clarified: exit codes, `--period` alone, `through` when nothing is stored, `prior_value` across bases, `inputs` keys always present, how `status`, `reason` and `note` combine, `no_buyer_ids` as `no_data`, the `internal_data` label.

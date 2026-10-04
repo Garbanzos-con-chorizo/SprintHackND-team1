@@ -220,7 +220,8 @@ class HandComputed(unittest.TestCase):
     def test_sell_through_falls_back_to_orders(self):
         # 19 orders against 25 listings; all 19 count against the period's own listings, none against the 400 older
         self.check("sales.sell_through", 0.76,
-                   {"units_sold": None, "orders": 19, "units_listed": 25, "opening_stock": 400},
+                   {"units_sold": None, "orders": 19, "units_listed": 25, "opening_stock": 400,
+                    "split_basis": "period_first"},
                    prior_value=0.65, delta={"value": 0.11, "pct": None, "reason": None}, basis="orders",
                    note="Assumes what was listed in the period sold first: 19 of the 19 orders sold count against "
                         "the 25 listed in the period, 0 against the 400 left from earlier. " + BY_ORDERS[1],
@@ -372,7 +373,8 @@ class Units(unittest.TestCase):
         self.assertEqual(sold["note"],
                          "Assumes what was listed in the period sold first: 25 of the 38 units sold count against "
                          "the 25 listed in the period, 13 against the 400 left from earlier.")
-        self.assertEqual(sold["inputs"], {"units_sold": 38, "orders": 19, "units_listed": 25, "opening_stock": 400})
+        self.assertEqual(sold["inputs"], {"units_sold": 38, "orders": 19, "units_listed": 25, "opening_stock": 400,
+                                          "split_basis": "period_first"})
         self.assertEqual(sold["parts"], [box("listed_in_period", "Listed in the period", 1.0, 25, 25),
                                          box("left_from_earlier", "Left from earlier", 0.0325, 13, 400)])
 
@@ -430,6 +432,39 @@ class SellThroughBoxes(unittest.TestCase):
             self.assertEqual(kpis["sales.sell_through"]["parts"],
                              [box("listed_in_period", "Listed in the period", None, None, None),
                               box("left_from_earlier", "Left from earlier", None, None, None)])
+
+    def by_age(self, monday, tuesday):
+        """Units sold each day by days since listing, as the listing system would report them."""
+        return ([internal(MON, "listing_to_sale_days", n, age) for age, n in monday.items()]
+                + [internal(TUE, "listing_to_sale_days", n, age) for age, n in tuesday.items()])
+
+    def test_listing_dates_give_the_real_split(self):
+        # The window starts on Monday. Sold on Monday the day it was listed: 2 of 8. Sold on Tuesday after 0 or
+        # 1 day (listed Tuesday or Monday): 4 of 8. So 6 of 16, 37.5%, of what sold had been listed in the window.
+        rows = INTERNAL + self.by_age({"0": 2, "3": 6}, {"0": 1, "1": 3, "5": 4})
+        _, kpis = build(rows=rows)
+        k = kpis["sales.sell_through"]
+        self.assertEqual((k["value"], k["status"]), (0.76, "ok"))  # the overall rate does not depend on the split
+        self.assertEqual(k["inputs"]["split_basis"], "listing_dates")
+        # 37.5% of the 19 orders is 7.1: 7 against the 25 listed, the other 12 against the 400 left from earlier
+        self.assertEqual(k["parts"], [box("listed_in_period", "Listed in the period", 0.28, 7, 25),
+                                      box("left_from_earlier", "Left from earlier", 0.03, 12, 400)])
+        self.assertEqual(k["note"], "By listing date: 7 of the 19 orders sold had been listed in the period "
+                                    "(25 listed), 12 came from the 400 left from earlier. " + BY_ORDERS[1])
+
+    def test_the_period_cannot_sell_more_than_it_listed(self):
+        rows = self.listings(3, 2) + self.by_age({"0": 2, "3": 6}, {"0": 1, "1": 3, "5": 4})  # 7 by date, 5 listed
+        _, kpis = build(rows=rows)
+        self.assertEqual(kpis["sales.sell_through"]["parts"],
+                         [box("listed_in_period", "Listed in the period", 1.0, 5, 5),
+                          box("left_from_earlier", "Left from earlier", 0.035, 14, 400)])
+
+    def test_listing_dates_that_cannot_be_read_fall_back_to_the_assumption(self):
+        for ages in ({"0": 2, "30+": 6}, {"0": 0, "3": 0}):
+            _, kpis = build(rows=INTERNAL + self.by_age(ages, {}))
+            k = kpis["sales.sell_through"]
+            self.assertEqual(k["inputs"]["split_basis"], "period_first")
+            self.assertTrue(k["note"].startswith("Assumes what was listed in the period sold first: 19 of the 19 "))
 
     def test_only_sell_through_has_boxes(self):
         doc, _ = build()

@@ -2,7 +2,7 @@
 
 Only the owner edits this file, except the "Requests to me" section, where teammates/agents may append.
 
-**Last updated:** 2026-10-03 22:35 EDT · **Branch:** d/sell-through-boxes
+**Last updated:** 2026-10-03 22:45 EDT · **Branch:** d/sell-through-exact
 
 ## Done
 - P0 pulse contract (draft): `docs/contracts/pulse.md`, mocks `docs/contracts/examples/pulse.sample.json` (clean day) and `pulse.sample.missing.json` (eBay missing). Merged in PR #9.
@@ -18,7 +18,7 @@ Only the owner edits this file, except the "Requests to me" section, where teamm
 ## Done (phase 2)
 - **C2** KPI contract `docs/contracts/kpi.md`: v0.1 merged (#15). **v0.2 (contract change, announced here):** the examples are now the calculator's own output, two more examples (`kpi.sample.week.json`, `kpi.sample.day.json`, asked by Orlando), inputs point to `store.md` and `internal-api.md`, each KPI carries slide 32's `pillar` (Victor's alignment note), the KPIs are also recorded in `kpi_values`, and several rules are spelled out (changelog in the file).
 - **D2.1 to D2.9** `recon/kpi/`: the 15 KPIs for a day, an ISO week or a month, with status (`ok` / `partial` / `no_data`), note, prior value and change. `python -m recon.kpi --month 2026-09` (or `--week`, `--date`, or `--period month` alone for the period of the latest stored day) writes `out/kpi/<type>-<id>.json`, `latest-<type>.json` and `kpi_values`. Summary: `recon/kpi/README.md`.
-- **D2.10** tests: 110 new (141 in `recon`). All 15 KPIs against hand-computed values; the command reproduces the four contract examples exactly; September revenue equals the `clean_month` answer key to the cent (7,075,396). The test databases are built from Victor's `engine/store/schema.sql`.
+- **D2.10** tests: 113 new (144 in `recon`). All 15 KPIs against hand-computed values; the command reproduces the four contract examples exactly; September revenue equals the `clean_month` answer key to the cent (7,075,396). The test databases are built from Victor's `engine/store/schema.sql`.
 - Decision 007: resolution appended (SQLite agreed by all three).
 
 ## Checkpoint 1: done (2026-10-03 21:45, on my machine, real commands)
@@ -41,7 +41,7 @@ Found on the way:
 
 ## Still not verified
 - Real Goodwill files and a real internal API: everything above is synthetic data and the mock.
-- Which listing each sale came from: not in the data, so sell-through's two boxes are bounds (see checkpoint 1).
+- Which listing each sale came from: not in the data, so sell-through's two boxes are bounds (see checkpoint 1). **Victor paged (22:45) to add `listing_to_sale_days` to the mock; my side already reads it** (tested with hand-made rows, never with his mock, which does not have it yet).
 - PDF export on this machine: `engine/tests/test_export_pdf.py` fails here and on an untouched `main` ("the browser wrote no PDF"); told Victor.
 
 ## For teammates: what the new context file changes
@@ -55,12 +55,13 @@ Found on the way:
 - Orlando: tell me when the page reads `out/kpi/*.json`, then we delete the math in `reports/kpi.py` (D2.11).
 
 ## Next (task ids from `docs/PLAN_PHASE_2_3.md`)
-1. Check Orlando's two sell-through boxes once he has drawn them (render a day and a month).
-2. D2.11 with Orlando: the weekly page still computes its own numbers.
-3. Phase 3: Orlando has the export and the reconciliation on `main` (`reports/bc_export.py`, `reports/reconcile.py`); ask what is left to split.
+1. When Victor's `listing_to_sale_days` lands: re-run the backfill, check `inputs.split_basis` reads `listing_dates`, regenerate the contract examples with the metric in the sample database.
+2. Check Orlando's two sell-through boxes once he has drawn them (render a day and a month).
+3. D2.11 with Orlando: the weekly page still computes its own numbers.
+4. Phase 3: Orlando has the export and the reconciliation on `main` (`reports/bc_export.py`, `reports/reconcile.py`); ask what is left to split.
 
 ## How to run / test my part
-- Tests: `python -m unittest discover -s recon -t .` from the repo root (141 pass). On my machine Python 3.13 is only on the `py` launcher, so `py -m ...`.
+- Tests: `python -m unittest discover -s recon -t .` from the repo root (144 pass). On my machine Python 3.13 is only on the `py` launcher, so `py -m ...`.
 - Pulse: `python -m recon.pulse --in-dir recon/tests/fixtures/clean_day --out-dir <some folder>`.
 - KPIs without the real store: `python -m recon.tests.kpi_samples --db out/store/ecom.db` (synthetic September and October 1 to 4; refuses to overwrite an existing database), then `python -m recon.kpi --period month`, `--week 2026-W40`, `--date 2026-10-03`.
 - Regenerate the contract examples after a deliberate change: `python -m recon.tests.kpi_samples`.
