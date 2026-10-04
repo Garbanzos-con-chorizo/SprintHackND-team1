@@ -7,6 +7,7 @@ payout_mismatch,Accounting,Compare the payout with the marketplace's statement b
 unmatched_deposit,Accounting,Identify the deposit; it stays out of the journal until then
 unmapped_source,Accounting,Add the source to bc_mapping.csv and run the close again
 deposit_payout_mismatch,Accounting,Check the payout report against the deposit
+cross_check_difference,E-commerce,Find the report that is missing: the journal posts each marketplace from its own reports only
 missing_report,E-commerce,Download the report for those days and run the close again
 prior_month_refund,Accounting,Review last month's revenue for that order
 no_order_times,IT,The engine has to provide the order time (occurred_at)

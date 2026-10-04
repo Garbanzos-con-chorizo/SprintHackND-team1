@@ -1,6 +1,7 @@
 """Reconciliation from the raw messy-month inbox, checked against the answer key deposit by deposit
 and payout by payout, plus the payout-window rule on hand-made rows."""
 import json
+import shutil
 import tempfile
 import unittest
 from datetime import date
@@ -169,6 +170,75 @@ class UnmappedMarketplaceTest(unittest.TestCase):
         self.assertEqual(bc.unbalanced(journal), {})
         self.assertEqual([r["Source"] for r in control], ["eBay"])
         self.assertFalse(any("other" in str(line).lower() for line in journal + invoice))
+
+
+class CashMonkeyCrossCheckTest(unittest.TestCase):
+    """The Cash Monkey Orders report for the month, dropped in the inbox beside the eBay and Amazon reports:
+    compared with them order by order, never added to them."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.keys, cls.payloads = {}, {}
+        with tempfile.TemporaryDirectory() as tmp:
+            for month in ("tidy_month", "messy_month"):
+                sample = reconcile.ROOT / "data" / "sample" / month
+                inbox = Path(tmp) / month / "inbox"
+                shutil.copytree(sample / "inbox", inbox)
+                for f in (sample / "cashmonkey").iterdir():
+                    shutil.copy(f, inbox)
+                cls.keys[month] = json.loads((sample / "expected.json").read_text(encoding="utf-8"))["close"]
+                cls.payloads[month] = reconcile.build(inbox, "2026-09", bc.load_mapping(), Path(tmp) / month / "engine")
+
+    def check(self, month, source):
+        return next(c for c in self.payloads[month]["cross_checks"] if c["source"] == source)
+
+    def test_the_month_file_is_never_a_second_count(self):
+        for month, payload in self.payloads.items():
+            totals = self.keys[month]["marketplace_totals_from_files"]
+            for src in ("ebay", "amazon", "shopgoodwill"):
+                self.assertEqual(payload["sources"][src]["sales_cents"], totals[src]["sales_cents"], f"{month} {src}")
+                self.assertEqual(payload["sources"][src]["fees_cents"], totals[src]["fees_cents"], f"{month} {src}")
+            journal, _, control, _ = bc.build(payload, bc.load_mapping())
+            self.assertEqual(bc.unbalanced(journal), {})
+            self.assertEqual([r["Unexplained"] for r in control], [0, 0, 0], month)
+
+    def test_ebay_agrees_order_by_order_in_both_months(self):
+        for month in self.payloads:
+            c = self.check(month, "ebay")
+            self.assertEqual((c["difference_cents"], c["orders_only_in_against"], c["orders_only_in_report"],
+                              c["orders_with_another_amount"]), (0, 0, 0, 0), month)
+            self.assertEqual(c["report_sales_cents"], self.keys[month]["marketplace_totals_from_files"]["ebay"]["sales_cents"])
+
+    def test_the_tidy_month_differs_by_the_one_order_sold_in_the_first_minutes_of_the_month(self):
+        # 00:03 Eastern on September 1 is still August 31 in Pacific time, so no September Amazon report holds
+        # that order. Cash Monkey does: the cross-check finds a sale the Eastern month is missing.
+        c = self.check("tidy_month", "amazon")
+        self.assertEqual((c["orders_only_in_against"], c["orders_only_in_report"], c["difference_cents"]), (1, 0, 3199))
+        found = [e for e in self.payloads["tidy_month"]["exceptions"] if e["kind"] == "cross_check_difference"]
+        self.assertEqual([(e["source"], e["amount_cents"], e["effect"]) for e in found], [("amazon", 3199, "info")])
+        self.assertIn("2026-09-01", found[0]["detail"])
+
+    def test_the_messy_month_shows_the_sales_of_the_two_days_nobody_downloaded(self):
+        tidy, messy = self.check("tidy_month", "amazon"), self.check("messy_month", "amazon")
+        # What the two answer keys say the messy Amazon reports are missing, apart from this code:
+        missing = (self.keys["tidy_month"]["marketplace_totals_from_files"]["amazon"]["sales_cents"]
+                   - self.keys["messy_month"]["marketplace_totals_from_files"]["amazon"]["sales_cents"])
+        self.assertEqual(missing, 80312)
+        self.assertEqual(messy["difference_cents"] - tidy["difference_cents"], missing)
+        self.assertEqual(messy["orders_only_in_against"], 34)
+        detail = next(e["detail"] for e in self.payloads["messy_month"]["exceptions"] if e["kind"] == "cross_check_difference")
+        self.assertIn("2026-09-21 to 2026-09-22", detail)
+
+    def test_without_a_report_of_its_own_the_cash_monkey_rows_are_the_close(self):
+        mapping = bc.load_mapping()
+        row = lambda source, marketplace: {"source": source, "marketplace": marketplace}
+        nightly = [row("cashmonkey", "ebay"), row("cashmonkey", "amazon"), row("upright", "shopgoodwill")]
+        journal, aside = reconcile.split_cross_checks(nightly, mapping)
+        self.assertEqual((journal, dict(aside)), (nightly, {}))
+        month = nightly + [row("ebay", "ebay")]  # eBay's own report arrives: only eBay's Cash Monkey rows step aside
+        journal, aside = reconcile.split_cross_checks(month, mapping)
+        self.assertEqual(dict(aside), {"ebay": [row("cashmonkey", "ebay")]})
+        self.assertEqual(len(journal), 3)
 
 
 class EngineFilesTest(unittest.TestCase):
