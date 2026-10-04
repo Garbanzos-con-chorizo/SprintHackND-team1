@@ -1911,7 +1911,7 @@
         "detail": "payouts for September activity that reach the bank in October: EBAY-0928, EBAY-0929, EBAY-0930, AMZN-0928; EBAY-0930 is paid on Oct 1, so no September report shows it"
       }
     ],
-    "not_modeled": "Goodwill Books, payout fees and reserves, chargebacks; the August payouts that settle in early September are not in the bank file"
+    "not_modeled": "Goodwill Books, payout fees and reserves, chargebacks; the August payouts that settle in early September are not in the bank file. Cash Monkey and the ShopGoodwill periodic report are in cashmonkey/ and periodic/, beside the inbox: no total in this key counts them"
   },
   "mess": "None: every report downloaded once. See close.exceptions for what is still open at month end"
 }

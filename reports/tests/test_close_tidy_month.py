@@ -3,6 +3,7 @@
 The inbox is synthetic (`data/generate.py`); the answer key is computed from the generated events, never
 by the engine. Everything is written to a temporary folder, never to the real `out/` or `reports/`.
 """
+import csv
 import json
 import tempfile
 import unittest
@@ -67,6 +68,30 @@ class TidyMonthCloseTest(unittest.TestCase):
         # run_scheduled takes the first sample in name order whose key has close.month;
         # tidy_month sorts after messy_month on purpose.
         self.assertEqual(run_scheduled.month_inbox("2026-09"), SAMPLES / "messy_month" / "inbox")
+
+
+class MonthSideFoldersTest(unittest.TestCase):
+    """periodic/ and cashmonkey/ sit beside inbox/ in both months (synthetic layouts, see data/README.md)."""
+
+    def test_the_periodic_report_states_the_four_shopgoodwill_payouts_of_the_key(self):
+        us = lambda iso: f"{iso[5:7]}/{iso[8:]}/{iso[:4]}"
+        for month in ("messy_month", "tidy_month"):
+            key = json.loads((SAMPLES / month / "expected.json").read_text(encoding="utf-8"))["close"]
+            expected = [(us(p["activity_from"]), us(p["activity_to"]), us(p["paid_date"]),
+                         f"{p['amount_cents'] // 100}.{p['amount_cents'] % 100:02d}", p["id"])
+                        for p in key["payouts"] if p["source"] == "shopgoodwill"]
+            with open(SAMPLES / month / "periodic" / "shopgoodwill_periodic_2026-09.csv", encoding="utf-8", newline="") as f:
+                rows = list(csv.reader(f))
+            self.assertEqual(rows[0], ["Period Start", "Period End", "Paid Date", "Payout Amount", "Reference"])
+            self.assertEqual([tuple(r) for r in rows[1:]], expected, month)
+            self.assertEqual(len(expected), 4)
+
+    def test_the_side_folders_are_not_in_the_inbox(self):
+        for month in ("messy_month", "tidy_month"):
+            self.assertEqual([p.name for p in (SAMPLES / month / "cashmonkey").iterdir()],
+                             ["orders2023-20261001-001512-96170.xlsx"])
+            names = [p.name for p in (SAMPLES / month / "inbox").iterdir()]
+            self.assertEqual([n for n in names if n.startswith(("orders2023", "shopgoodwill_periodic"))], [])
 
 
 if __name__ == "__main__":

@@ -557,6 +557,36 @@ def write_bank(path, payouts, unexplained=True):
     return [r for r in rows if r[3] is not None]  # deposits only
 
 
+def write_periodic(path, payouts):
+    """ShopGoodwill's periodic report AS WE IMAGINE IT: nobody on the team has seen the real one, the
+    layout is ours. One row per ShopGoodwill payout with the period (Pacific days) it pays for."""
+    us = lambda d: f"{d.month:02d}/{d.day:02d}/{d.year}"
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\r\n")
+    w.writerow(["Period Start", "Period End", "Paid Date", "Payout Amount", "Reference"])
+    for p in payouts:
+        if p["source"] == "shopgoodwill":
+            w.writerow([us(p["from"]), us(p["to"]), us(p["paid"]), money(p["amount"]), p["id"]])
+    path.write_text(buf.getvalue(), encoding="utf-8", newline="")
+
+
+def month_side_folders(name, events, payouts):
+    """Two more September reports in folders BESIDE inbox/, never inside it, so nothing that reads the
+    inbox changes. Both are complete in the messy month too: they come from the marketplace and from
+    the tool, not from what staff happened to download.
+
+    periodic/   ShopGoodwill's periodic report (see write_periodic): its four payouts with their periods.
+    cashmonkey/ the Cash Monkey "Orders Report" for eBay and Amazon, one file for the month, pulled at
+                00:15 Eastern on Oct 1 for UTC dates Sep 1 - Oct 1 (wide enough for the Eastern month).
+                Orders only: write_cashmonkey cannot express a refund."""
+    (OUT / name / "periodic").mkdir()
+    write_periodic(OUT / name / "periodic" / "shopgoodwill_periodic_2026-09.csv", payouts)
+    asof = datetime(2026, 10, 1, 0, 15, tzinfo=ET)
+    (OUT / name / "cashmonkey").mkdir()
+    write_cashmonkey(OUT / name / "cashmonkey" / f"orders2023-{asof:%Y%m%d}-001512-96170.xlsx",
+                     asof_window(events, {"ebay", "amazon"}, SEP1, date(2026, 10, 1), UTC, asof))
+
+
 def month_downloads(inbox, events, payouts, rng, ebay_ranges, amazon_ranges, upright_skip=(), upright_twice=(),
                     ebay_junk=None):
     """One September of marketplace reports, the way staff download them; returns the events they hold.
@@ -674,6 +704,7 @@ def messy_month(events):
         ebay_junk={(date(2026, 9, 15), ""): junk})
 
     deposits = write_bank(inbox / "bank_activity_2026-09.csv", payouts)
+    month_side_folders(name, events, payouts)  # beside inbox/: not part of the key below
 
     key = close_key(
         name, exported, payouts, deposits,
@@ -719,6 +750,7 @@ def tidy_month(events):
         amazon_ranges=((date(2026, 9, 1), date(2026, 9, 20)), (date(2026, 9, 21), date(2026, 9, 30))))
 
     deposits = write_bank(inbox / "bank_activity_2026-09.csv", payouts, unexplained=False)
+    month_side_folders(name, events, payouts)  # beside inbox/: not part of the key below
 
     late = [p for p in payouts if p["deposit"] > SEP30]
     key = close_key(
@@ -732,7 +764,8 @@ def tidy_month(events):
                                              + " is paid on Oct 1, so no September report shows it"},
         ],
         not_modeled="Goodwill Books, payout fees and reserves, chargebacks; the August payouts that settle in "
-                    "early September are not in the bank file")
+                    "early September are not in the bank file. Cash Monkey and the ShopGoodwill periodic report "
+                    "are in cashmonkey/ and periodic/, beside the inbox: no total in this key counts them")
     key["mess"] = "None: every report downloaded once. See close.exceptions for what is still open at month end"
     (OUT / name / "expected.json").write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
     return key
